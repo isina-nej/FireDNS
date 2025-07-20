@@ -1,0 +1,109 @@
+from PIL import Image
+import os
+import shutil
+
+# مسیر فایل لوگوی اصلی
+logo_path = r"assets/logo/logo.png"
+
+# تنظیمات آیکون‌های اندروید
+android_icons = {
+    'mipmap-mdpi': 48,
+    'mipmap-hdpi': 72,
+    'mipmap-xhdpi': 96,
+    'mipmap-xxhdpi': 144,
+    'mipmap-xxxhdpi': 192
+}
+
+# تنظیمات آیکون‌های iOS
+ios_icons = {
+    '20x20': 20,
+    '29x29': 29,
+    '40x40': 40,
+    '60x60': 60,
+    '76x76': 76,
+    '83.5x83.5': 84,
+    '1024x1024': 1024
+}
+
+# تنظیمات آیکون‌های وب
+web_icons = {
+    'favicon.png': 16,
+    'icon-192.png': 192,
+    'icon-512.png': 512,
+}
+
+# تنظیمات آیکون‌های ویندوز
+windows_icons = {
+    'app_icon.ico': 256,
+}
+
+# تنظیمات آیکون‌های مک
+macos_icons = {
+    'app.icns': 512,
+}
+
+# تنظیمات آیکون‌های لینوکس
+linux_icons = {
+    '16x16': 16,
+    '32x32': 32,
+    '48x48': 48,
+    '64x64': 64,
+    '128x128': 128,
+    '256x256': 256
+}
+
+android_res_path = os.path.join('android', 'app', 'src', 'main', 'res')
+
+# بارگذاری لوگو
+logo = Image.open(logo_path)
+
+def save_resized_image(image, size, output_path):
+    if not os.path.exists(os.path.dirname(output_path)):
+        os.makedirs(os.path.dirname(output_path))
+    resized = image.resize((size, size), Image.LANCZOS)
+    resized.save(output_path)
+    print(f"Saved: {output_path}")
+
+# ساخت آیکون‌های اندروید
+print("\nGenerating Android icons...")
+for folder, size in android_icons.items():
+    out_dir = os.path.join(android_res_path, folder)
+    out_path = os.path.join(out_dir, 'ic_launcher.png')
+    save_resized_image(logo, size, out_path)
+
+# ساخت آیکون‌های iOS
+print("\nGenerating iOS icons...")
+ios_asset_path = os.path.join('ios', 'Runner', 'Assets.xcassets', 'AppIcon.appiconset')
+for name, size in ios_icons.items():
+    out_path = os.path.join(ios_asset_path, f'Icon-{name}.png')
+    save_resized_image(logo, size, out_path)
+
+# ساخت آیکون‌های وب
+print("\nGenerating Web icons...")
+web_path = 'web'
+for name, size in web_icons.items():
+    out_path = os.path.join(web_path, name)
+    save_resized_image(logo, size, out_path)
+
+# ساخت آیکون‌های ویندوز
+print("\nGenerating Windows icons...")
+windows_path = os.path.join('windows', 'runner', 'resources')
+for name, size in windows_icons.items():
+    out_path = os.path.join(windows_path, name)
+    save_resized_image(logo, size, out_path)
+
+# ساخت آیکون‌های مک
+print("\nGenerating macOS icons...")
+macos_path = os.path.join('macos', 'Runner', 'Assets.xcassets', 'AppIcon.appiconset')
+for name, size in macos_icons.items():
+    out_path = os.path.join(macos_path, name)
+    save_resized_image(logo, size, out_path)
+
+# ساخت آیکون‌های لینوکس
+print("\nGenerating Linux icons...")
+linux_path = os.path.join('linux', 'icons')
+for name, size in linux_icons.items():
+    out_path = os.path.join(linux_path, f'app-{name}.png')
+    save_resized_image(logo, size, out_path)
+
+print("\nتمام آیکون‌ها برای همه پلتفرم‌ها ساخته شدند.")
