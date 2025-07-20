@@ -28,18 +28,28 @@ ios_icons = {
 # تنظیمات آیکون‌های وب
 web_icons = {
     'favicon.png': 16,
-    'icon-192.png': 192,
-    'icon-512.png': 512,
+    'icons/Icon-192.png': 192,
+    'icons/Icon-512.png': 512,
+    'icons/Icon-maskable-192.png': 192,
+    'icons/Icon-maskable-512.png': 512
 }
 
 # تنظیمات آیکون‌های ویندوز
 windows_icons = {
     'app_icon.ico': 256,
+    'resources/app_icon.ico': 256
 }
 
 # تنظیمات آیکون‌های مک
 macos_icons = {
     'app.icns': 512,
+    'AppIcon.iconset/icon_16x16.png': 16,
+    'AppIcon.iconset/icon_32x32.png': 32,
+    'AppIcon.iconset/icon_64x64.png': 64,
+    'AppIcon.iconset/icon_128x128.png': 128,
+    'AppIcon.iconset/icon_256x256.png': 256,
+    'AppIcon.iconset/icon_512x512.png': 512,
+    'AppIcon.iconset/icon_1024x1024.png': 1024
 }
 
 # تنظیمات آیکون‌های لینوکس
@@ -87,17 +97,30 @@ for name, size in web_icons.items():
 
 # ساخت آیکون‌های ویندوز
 print("\nGenerating Windows icons...")
-windows_path = os.path.join('windows', 'runner', 'resources')
+windows_path = 'windows/runner'
 for name, size in windows_icons.items():
     out_path = os.path.join(windows_path, name)
     save_resized_image(logo, size, out_path)
 
-# ساخت آیکون‌های مک
-print("\nGenerating macOS icons...")
-macos_path = os.path.join('macos', 'Runner', 'Assets.xcassets', 'AppIcon.appiconset')
-for name, size in macos_icons.items():
-    out_path = os.path.join(macos_path, name)
-    save_resized_image(logo, size, out_path)
+def create_icns():
+    print("\nGenerating macOS .icns file...")
+    macos_path = os.path.join('macos', 'Runner', 'Assets.xcassets', 'AppIcon.appiconset')
+    iconset_path = os.path.join(macos_path, 'AppIcon.iconset')
+    
+    if not os.path.exists(iconset_path):
+        os.makedirs(iconset_path)
+    
+    # ساخت همه سایزهای مورد نیاز
+    for name, size in macos_icons.items():
+        if 'iconset' in name:  # فقط فایل‌های داخل iconset
+            out_path = os.path.join(macos_path, name)
+            save_resized_image(logo, size, out_path)
+    
+    # تبدیل iconset به icns
+    if os.system('which iconutil') == 0:  # فقط در مک‌او‌اس
+        os.system(f'iconutil -c icns {iconset_path} -o {os.path.join(macos_path, "AppIcon.icns")}')
+    else:
+        print("Warning: iconutil not found. .icns file could not be created. This is normal if you're not on macOS.")
 
 # ساخت آیکون‌های لینوکس
 print("\nGenerating Linux icons...")
