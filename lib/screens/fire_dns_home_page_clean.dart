@@ -6,37 +6,38 @@ import '../services/dns_service.dart';
 import '../services/vpn_status_service.dart';
 import '../services/auto_ping_service.dart';
 import '../constants/dns_constants.dart';
+import '../widgets/settings_drawer.dart';
+import 'red_settings_screen.dart';
+import 'personal_screen.dart';
+import 'config_screen.dart';
 import 'dns_record_list_screen.dart';
 import 'dns_manager_screen.dart';
 import 'dns_api_demo_screen.dart';
 
-/// صفحه اصلی برنامه DNS Changer
-class DnsChangerHomePage extends StatefulWidget {
+/// صفحه اصلی برنامه Fire DNS
+class FireDNSHomePage extends StatefulWidget {
   final String title;
 
-  const DnsChangerHomePage({Key? key, required this.title}) : super(key: key);
+  const FireDNSHomePage({Key? key, required this.title}) : super(key: key);
 
   @override
-  State<DnsChangerHomePage> createState() => _DnsChangerHomePageState();
+  State<FireDNSHomePage> createState() => _FireDNSHomePageState();
 }
 
-class _DnsChangerHomePageState extends State<DnsChangerHomePage>
-    with WidgetsBindingObserver, TickerProviderStateMixin {
+class _FireDNSHomePageState extends State<FireDNSHomePage>
+    with WidgetsBindingObserver {
   // Controllers
   late final TextEditingController _dns1Controller;
   late final TextEditingController _dns2Controller;
-  late final AnimationController _settingsPanelController;
-  late final Animation<double> _settingsPanelAnimation;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   // State variables
   bool _vpnActive = false;
   bool _autoPingEnabled = false;
   bool _isTestingConnectivity = false;
-  bool _isPinging = false;
-  bool _autoStartOnBoot = false;
+  bool _autoStartOnBoot = true;
   bool _darkTheme = false;
-  bool _isSettingsPanelVisible = false;
-  bool _isSettingsPanelLocked = false;
+  bool _notificationsEnabled = true;
 
   // Stream subscriptions
   StreamSubscription<bool>? _vpnStatusSubscription;
@@ -49,7 +50,6 @@ class _DnsChangerHomePageState extends State<DnsChangerHomePage>
     _initializeControllers();
     _initializeObserver();
     _initializeServices();
-    _initializeAnimations();
     _checkInitialStatus();
   }
 
@@ -58,7 +58,6 @@ class _DnsChangerHomePageState extends State<DnsChangerHomePage>
     _disposeControllers();
     _disposeObserver();
     _disposeServices();
-    _settingsPanelController.dispose();
     super.dispose();
   }
 
@@ -71,28 +70,13 @@ class _DnsChangerHomePageState extends State<DnsChangerHomePage>
     );
   }
 
-  void _initializeAnimations() {
-    _settingsPanelController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _settingsPanelAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _settingsPanelController,
-        curve: Curves.easeInOut,
-      ),
-    );
-  }
-
   void _initializeObserver() {
     WidgetsBinding.instance.addObserver(this);
   }
 
   void _initializeServices() {
-    // شروع listening به وضعیت VPN
     VpnStatusService.startListening();
 
-    // اشتراک در stream ها
     _vpnStatusSubscription = VpnStatusService.vpnStatusStream.listen((
       isActive,
     ) {
@@ -112,8 +96,7 @@ class _DnsChangerHomePageState extends State<DnsChangerHomePage>
     ) {
       if (mounted) {
         setState(() {
-          // نتایج پینگ در UI جدید نیازی نیست
-          _isPinging = false;
+          // Ping results received - can be used for updating UI if needed
         });
       }
     });
@@ -174,37 +157,6 @@ class _DnsChangerHomePageState extends State<DnsChangerHomePage>
     );
   }
 
-  void _toggleAutoPing() {
-    setState(() {
-      _autoPingEnabled = !_autoPingEnabled;
-      if (_autoPingEnabled) {
-        _startAutoPing();
-      } else {
-        AutoPingService.stop();
-      }
-    });
-  }
-
-  Future<void> _performManualPing() async {
-    if (_isPinging) return;
-
-    setState(() {
-      _isPinging = true;
-    });
-
-    try {
-      await AutoPingService.performManualPing(
-        _dns1Controller.text.trim(),
-        _dns2Controller.text.trim(),
-      );
-    } catch (e) {
-      debugPrint('Error performing manual ping: $e');
-      setState(() {
-        _isPinging = false;
-      });
-    }
-  }
-
   Future<void> _toggleVpn(bool value) async {
     if (value) {
       await _activateVpn();
@@ -255,7 +207,6 @@ class _DnsChangerHomePageState extends State<DnsChangerHomePage>
         setState(() {
           _isTestingConnectivity = false;
         });
-
         _showConnectivityResult(result);
       }
     } catch (e) {
@@ -291,144 +242,12 @@ class _DnsChangerHomePageState extends State<DnsChangerHomePage>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: Stack(
-        children: [
-          // محتوای اصلی
-          GestureDetector(
-            onPanUpdate: (details) {
-              if (details.delta.dy > 0 && !_isSettingsPanelVisible) {
-                // کشیدن به پایین - نمایش پنل
-                setState(() {
-                  _isSettingsPanelVisible = true;
-                });
-                _settingsPanelController.forward();
-              } else if (details.delta.dy < 0 &&
-                  _isSettingsPanelVisible &&
-                  !_isSettingsPanelLocked) {
-                // کشیدن به بالا - مخفی کردن پنل
-                _hideSettingsPanel();
-              }
-            },
-            onPanEnd: (details) {
-              if (_isSettingsPanelVisible &&
-                  details.velocity.pixelsPerSecond.dy < -500) {
-                // سرعت بالا به بالا - قفل کردن پنل
-                setState(() {
-                  _isSettingsPanelLocked = true;
-                });
-              }
-            },
-            child: Column(
-              children: [
-                // App Bar
-                Container(
-                  height: 100,
-                  decoration: const BoxDecoration(color: Colors.white),
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const SizedBox(width: 40), // برای تعادل
-                          const Text(
-                            'My DNS',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.apps, color: Colors.black),
-                            onPressed: () {
-                              _showMenuOptions(context);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // محتوای اصلی
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        // DNS Connection Status Card
-                        _buildConnectionStatusCard(),
-
-                        const SizedBox(height: 20),
-
-                        // Speed Test Card
-                        _buildSpeedTestCard(),
-
-                        const SizedBox(height: 20),
-
-                        // Configuration Card
-                        _buildConfigurationCard(),
-
-                        const SizedBox(height: 100),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // پنل تنظیمات کشویی
-          AnimatedBuilder(
-            animation: _settingsPanelAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, -300 * (1 - _settingsPanelAnimation.value)),
-                child: Opacity(
-                  opacity: _settingsPanelAnimation.value,
-                  child: _isSettingsPanelVisible
-                      ? _buildSettingsPanel()
-                      : const SizedBox.shrink(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// مخفی کردن پنل تنظیمات
-  void _hideSettingsPanel() {
-    _settingsPanelController.reverse().then((_) {
-      setState(() {
-        _isSettingsPanelVisible = false;
-        _isSettingsPanelLocked = false;
-      });
-    });
-  }
-
-  /// نمایش/مخفی کردن پنل تنظیمات
-  void _toggleSettingsPanel() {
-    if (_isSettingsPanelVisible) {
-      _hideSettingsPanel();
-    } else {
-      setState(() {
-        _isSettingsPanelVisible = true;
-      });
-      _settingsPanelController.forward();
-    }
-  }
-
-  /// نمایش منوی گزینه‌ها
   void _showMenuOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -478,6 +297,223 @@ class _DnsChangerHomePageState extends State<DnsChangerHomePage>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('About My DNS'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('My DNS - Advanced DNS Manager'),
+            SizedBox(height: 10),
+            Text('Version: 1.0.0'),
+            SizedBox(height: 10),
+            Text('A powerful DNS management app with API integration.'),
+            SizedBox(height: 10),
+            Text('Features:'),
+            Text('• DNS record management'),
+            Text('• Speed testing'),
+            Text('• Connection monitoring'),
+            Text('• API integration'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSupportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Support This App'),
+        content: const Text(
+          'Thank you for using My DNS! Your support helps us continue developing and improving this app.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // اینجا می‌توانید لینک پرداخت یا rate app اضافه کنید
+            },
+            child: const Text('Support'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'My DNS',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.apps, color: Colors.black),
+            onPressed: () => _showMenuOptions(context),
+          ),
+        ],
+      ),
+      drawer: SettingsDrawer(
+        autoStartOnBoot: _autoStartOnBoot,
+        darkTheme: _darkTheme,
+        notificationsEnabled: _notificationsEnabled,
+        currentDns1: _dns1Controller.text.isEmpty
+            ? '10.10.14.1'
+            : _dns1Controller.text,
+        currentDns2: _dns2Controller.text.isEmpty
+            ? 'Unknown'
+            : _dns2Controller.text,
+        currentIpv4: '1.1.1.1',
+        onAutoStartChanged: (value) {
+          setState(() {
+            _autoStartOnBoot = value;
+          });
+        },
+        onDarkThemeChanged: (value) {
+          setState(() {
+            _darkTheme = value;
+          });
+        },
+        onNotificationsChanged: (value) {
+          setState(() {
+            _notificationsEnabled = value;
+          });
+        },
+        onAboutPressed: _showAboutDialog,
+        onSupportPressed: _showSupportDialog,
+        onChangeServerPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const DnsManagerScreen()),
+          );
+        },
+      ),
+      body: GestureDetector(
+        onPanEnd: (details) {
+          const double threshold = 100.0;
+
+          // کشیدن به پایین - صفحه تنظیمات قرمز
+          if (details.velocity.pixelsPerSecond.dy > threshold) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RedSettingsScreen(
+                  autoStartOnBoot: _autoStartOnBoot,
+                  darkTheme: _darkTheme,
+                  onAutoStartChanged: (value) {
+                    setState(() {
+                      _autoStartOnBoot = value;
+                    });
+                  },
+                  onDarkThemeChanged: (value) {
+                    setState(() {
+                      _darkTheme = value;
+                    });
+                  },
+                  onAboutPressed: _showAboutDialog,
+                  onSupportPressed: _showSupportDialog,
+                ),
+              ),
+            );
+          }
+          // کشیدن به چپ - صفحه Personal
+          else if (details.velocity.pixelsPerSecond.dx < -threshold) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PersonalScreen(
+                  notificationsEnabled: _notificationsEnabled,
+                  currentDns1: _dns1Controller.text.isEmpty
+                      ? '10.10.14.1'
+                      : _dns1Controller.text,
+                  currentDns2: _dns2Controller.text.isEmpty
+                      ? 'Unknown'
+                      : _dns2Controller.text,
+                  currentIpv4: '1.1.1.1',
+                  onNotificationsChanged: (value) {
+                    setState(() {
+                      _notificationsEnabled = value;
+                    });
+                  },
+                  onChangeServerPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DnsManagerScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          }
+          // کشیدن به راست - صفحه Config
+          else if (details.velocity.pixelsPerSecond.dx > threshold) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ConfigScreen(
+                  onDnsManagerPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DnsManagerScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          }
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              // DNS Connection Status Card
+              _buildConnectionStatusCard(),
+
+              const SizedBox(height: 20),
+
+              // Speed Test Card
+              _buildSpeedTestCard(),
+
+              const SizedBox(height: 20),
+
+              // Configuration Card
+              _buildConfigurationCard(),
+            ],
+          ),
+        ), // پایان GestureDetector
       ),
     );
   }
@@ -629,18 +665,24 @@ class _DnsChangerHomePageState extends State<DnsChangerHomePage>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // دکمه Run
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 25,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: const Text(
-                  'Run',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              GestureDetector(
+                onTap: _testGoogleConnectivity,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 25,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: Text(
+                    _isTestingConnectivity ? 'Testing...' : 'Run',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
               // آیکون سرعت
@@ -651,7 +693,11 @@ class _DnsChangerHomePageState extends State<DnsChangerHomePage>
                   color: Colors.green,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.speed, color: Colors.white, size: 25),
+                child: Icon(
+                  _isTestingConnectivity ? Icons.sync : Icons.speed,
+                  color: Colors.white,
+                  size: 25,
+                ),
               ),
             ],
           ),
@@ -805,279 +851,6 @@ class _DnsChangerHomePageState extends State<DnsChangerHomePage>
                 TextSpan(text: ' that best suits your connection needs.'),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// ساخت پنل تنظیمات (کشویی)
-  Widget _buildSettingsPanel() {
-    return GestureDetector(
-      onPanUpdate: (details) {
-        // اگر پنل قفل باشد، فقط با دکمه بسته شود
-        if (_isSettingsPanelLocked) return;
-
-        // بررسی جهت حرکت
-        if (details.delta.dy > 5) {
-          // حرکت به پایین - بستن پنل
-          _hideSettingsPanel();
-        } else if (details.delta.dy < -10) {
-          // حرکت سریع به بالا - قفل کردن پنل
-          setState(() {
-            _isSettingsPanelLocked = true;
-          });
-        }
-      },
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFF6B6B), // قرمز روشن
-              Color(0xFFFF5252), // قرمز کمی تیره‌تر
-            ],
-          ),
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(30),
-            bottomRight: Radius.circular(30),
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-            child: Column(
-              children: [
-                // Handle indicator or header
-                if (_isSettingsPanelLocked)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Settings',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: _hideSettingsPanel,
-                      ),
-                    ],
-                  )
-                else
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-
-                // Auto start on boot
-                _buildSettingsItem(
-                  title: 'Auto start on boot',
-                  value: _autoStartOnBoot,
-                  onChanged: (value) {
-                    setState(() {
-                      _autoStartOnBoot = value;
-                    });
-                  },
-                  icon: Icons.shield_outlined,
-                ),
-
-                const SizedBox(height: 20),
-
-                // Dark theme
-                _buildSettingsItem(
-                  title: 'Dark theme',
-                  value: _darkTheme,
-                  onChanged: (value) {
-                    setState(() {
-                      _darkTheme = value;
-                    });
-                  },
-                  icon: Icons.nightlight_round,
-                ),
-
-                const SizedBox(height: 20),
-
-                // About My DNS
-                _buildSettingsButton(
-                  title: 'About My DNS',
-                  icon: Icons.info_outline,
-                  onTap: () {
-                    _showAboutDialog();
-                  },
-                ),
-
-                const SizedBox(height: 30),
-
-                // Support this app button
-                GestureDetector(
-                  onTap: () {
-                    // اقدام پشتیبانی از برنامه
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Thank you for your support!'),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.favorite, color: Colors.red, size: 20),
-                        const SizedBox(width: 10),
-                        const Text(
-                          'Support this app',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Icon(
-                          Icons.shield,
-                          color: Colors.grey.shade600,
-                          size: 20,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // راهنمای استفاده
-                if (!_isSettingsPanelLocked)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 20),
-                    child: Text(
-                      'Swipe down: Close • Swipe up: Lock',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// ساخت آیتم تنظیمات با سوییچ
-  Widget _buildSettingsItem({
-    required String title,
-    required bool value,
-    required Function(bool) onChanged,
-    required IconData icon,
-  }) {
-    return Row(
-      children: [
-        // سوییچ
-        Transform.scale(
-          scale: 1.2,
-          child: Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: Colors.white,
-            activeTrackColor: Colors.green,
-            inactiveThumbColor: Colors.white,
-            inactiveTrackColor: Colors.white.withOpacity(0.3),
-          ),
-        ),
-
-        const SizedBox(width: 20),
-
-        // متن
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-        ),
-
-        // آیکون
-        Icon(icon, color: Colors.white, size: 24),
-      ],
-    );
-  }
-
-  /// ساخت دکمه تنظیمات
-  Widget _buildSettingsButton({
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        children: [
-          // فضای خالی برای تراز کردن با سوییچ‌ها
-          const SizedBox(width: 60),
-
-          // متن
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-          ),
-
-          // آیکون
-          Icon(icon, color: Colors.white, size: 24),
-        ],
-      ),
-    );
-  }
-
-  /// نمایش دیالوگ درباره برنامه
-  void _showAboutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('About My DNS'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('My DNS - Advanced DNS Manager'),
-            SizedBox(height: 10),
-            Text('Version: 1.0.0'),
-            SizedBox(height: 10),
-            Text('A powerful DNS management app with API integration.'),
-            SizedBox(height: 10),
-            Text('Features:'),
-            Text('• DNS record management'),
-            Text('• Speed testing'),
-            Text('• Connection monitoring'),
-            Text('• API integration'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
           ),
         ],
       ),

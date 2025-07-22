@@ -22,7 +22,7 @@ class ThemeSelector extends StatelessWidget {
                   children: [
                     Icon(
                       themeManager.themeIcon,
-                      color: AppColors.iconPrimary,
+                      color: AppColors.fireRed,
                       size: AppSizes.iconL,
                     ),
                     const SizedBox(width: AppSizes.spaceM),
@@ -97,12 +97,12 @@ class ThemeSelector extends StatelessWidget {
         padding: const EdgeInsets.all(AppSizes.paddingM),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryRed.withValues(alpha: 0.1)
+              ? AppColors.fireRed.withOpacity(0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(AppSizes.radiusM),
           border: isSelected
               ? Border.all(
-                  color: AppColors.primaryRed,
+                  color: AppColors.fireRed,
                   width: AppSizes.borderMedium,
                 )
               : null,
@@ -111,9 +111,7 @@ class ThemeSelector extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected
-                  ? AppColors.primaryRed
-                  : AppColors.iconSecondary,
+              color: isSelected ? AppColors.fireRed : AppColors.lightGray,
               size: AppSizes.iconL,
             ),
             const SizedBox(width: AppSizes.spaceM),
@@ -124,7 +122,9 @@ class ThemeSelector extends StatelessWidget {
                   Text(
                     title,
                     style: AppTextStyles.bodyLarge.copyWith(
-                      color: isSelected ? AppColors.primaryRed : null,
+                      color: isSelected
+                          ? AppColors.fireRed
+                          : AppColors.pureWhite,
                       fontWeight: isSelected
                           ? FontWeight.bold
                           : FontWeight.normal,
@@ -133,7 +133,7 @@ class ThemeSelector extends StatelessWidget {
                   Text(
                     subtitle,
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.lightGray,
                     ),
                   ),
                 ],
@@ -142,7 +142,7 @@ class ThemeSelector extends StatelessWidget {
             if (isSelected)
               const Icon(
                 Icons.check_circle,
-                color: AppColors.primaryRed,
+                color: AppColors.fireRed,
                 size: AppSizes.iconL,
               ),
           ],
@@ -164,9 +164,7 @@ class ThemeToggleSwitch extends StatelessWidget {
           title: Text('تم تاریک', style: AppTextStyles.bodyLarge),
           subtitle: Text(
             'استفاده از تم تاریک',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.lightGray),
           ),
           value: themeManager.isDarkMode,
           onChanged: (value) async {
@@ -178,7 +176,7 @@ class ThemeToggleSwitch extends StatelessWidget {
           },
           secondary: Icon(
             themeManager.isDarkMode ? Icons.brightness_2 : Icons.brightness_7,
-            color: AppColors.iconPrimary,
+            color: AppColors.fireRed,
           ),
         );
       },
@@ -283,12 +281,12 @@ class LanguageToggleSwitch extends StatelessWidget {
         padding: const EdgeInsets.all(AppSizes.paddingM),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryRed.withValues(alpha: 0.1)
+              ? AppColors.fireRed.withOpacity(0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(AppSizes.radiusM),
           border: isSelected
               ? Border.all(
-                  color: AppColors.primaryRed,
+                  color: AppColors.fireRed,
                   width: AppSizes.borderMedium,
                 )
               : null,
@@ -301,15 +299,15 @@ class LanguageToggleSwitch extends StatelessWidget {
               child: Text(
                 title,
                 style: AppTextStyles.bodyLarge.copyWith(
-                  color: isSelected ? AppColors.primaryRed : null,
+                  color: isSelected ? AppColors.fireRed : AppColors.pureWhite,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ),
             if (isSelected)
-              const Icon(
+              Icon(
                 Icons.check_circle,
-                color: AppColors.primaryRed,
+                color: AppColors.fireRed,
                 size: AppSizes.iconL,
               ),
           ],

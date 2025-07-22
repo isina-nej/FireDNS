@@ -1,6 +1,111 @@
 from PIL import Image
 import os
 import shutil
+import json
+
+def create_directory_if_not_exists(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+def update_json_file(file_path, content):
+    create_directory_if_not_exists(os.path.dirname(file_path))
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(content, f, indent=2)
+
+def generate_ios_json():
+    contents = {
+        "images": [
+            {
+                "size": "20x20",
+                "idiom": "iphone",
+                "filename": "Icon-App-20x20@2x.png",
+                "scale": "2x"
+            },
+            {
+                "size": "20x20",
+                "idiom": "iphone",
+                "filename": "Icon-App-20x20@3x.png",
+                "scale": "3x"
+            },
+            # ... سایر سایزها برای iPhone
+            {
+                "size": "1024x1024",
+                "idiom": "ios-marketing",
+                "filename": "Icon-App-1024x1024@1x.png",
+                "scale": "1x"
+            }
+        ],
+        "info": {
+            "version": 1,
+            "author": "xcode"
+        }
+    }
+    update_json_file('ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json', contents)
+
+def generate_macos_json():
+    contents = {
+        "images": [
+            {
+                "size": "16x16",
+                "idiom": "mac",
+                "filename": "app_icon_16.png",
+                "scale": "1x"
+            },
+            # ... سایر سایزها برای macOS
+        ],
+        "info": {
+            "version": 1,
+            "author": "xcode"
+        }
+    }
+    update_json_file('macos/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json', contents)
+
+def update_web_manifest():
+    manifest_path = 'web/manifest.json'
+    if os.path.exists(manifest_path):
+        with open(manifest_path, 'r', encoding='utf-8') as f:
+            manifest = json.load(f)
+        
+        manifest['icons'] = [
+            {
+                "src": "icons/Icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": "icons/Icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            },
+            {
+                "src": "icons/Icon-maskable-192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "maskable"
+            },
+            {
+                "src": "icons/Icon-maskable-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable"
+            }
+        ]
+        update_json_file(manifest_path, manifest)
+
+def create_linux_desktop():
+    desktop_content = """[Desktop Entry]
+Name=FireDNS
+Comment=FireDNS Application
+Exec=firedns
+Icon=${SNAP}/meta/gui/icon.png
+Terminal=false
+Type=Application
+Categories=Utility;
+"""
+    desktop_path = 'linux/firedns.desktop'
+    create_directory_if_not_exists(os.path.dirname(desktop_path))
+    with open(desktop_path, 'w', encoding='utf-8') as f:
+        f.write(desktop_content)
 
 # مسیر فایل لوگوی اصلی
 logo_path = r"assets/logo/logo.png"
@@ -129,4 +234,11 @@ for name, size in linux_icons.items():
     out_path = os.path.join(linux_path, f'app-{name}.png')
     save_resized_image(logo, size, out_path)
 
-print("\nتمام آیکون‌ها برای همه پلتفرم‌ها ساخته شدند.")
+# به‌روزرسانی فایل‌های پیکربندی
+print("\nUpdating configuration files...")
+generate_ios_json()
+generate_macos_json()
+update_web_manifest()
+create_linux_desktop()
+
+print("\nتمام آیکون‌ها و فایل‌های پیکربندی برای همه پلتفرم‌ها به‌روز شدند.")

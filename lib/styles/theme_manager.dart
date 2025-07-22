@@ -14,8 +14,8 @@ class ThemeManager extends ChangeNotifier {
   bool get isLightMode => _themeMode == ThemeMode.light;
   bool get isSystemMode => _themeMode == ThemeMode.system;
 
-  /// دریافت تم روشن
-  ThemeData get lightTheme => AppThemes.lightTheme;
+  /// دریافت تم روشن (همان تم تاریک)
+  ThemeData get lightTheme => AppThemes.darkTheme;
 
   /// دریافت تم تاریک
   ThemeData get darkTheme => AppThemes.darkTheme;

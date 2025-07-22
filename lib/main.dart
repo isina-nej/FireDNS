@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'screens/dns_changer_home_page_clean.dart';
+import 'screens/fire_dns_home_page_clean.dart';
+// import 'screens/fire_dns_home_page.dart';
 import 'styles/app_styles.dart';
 
 void main() async {
@@ -16,16 +17,16 @@ void main() async {
   await languageManager.loadLanguage();
 
   runApp(
-    DnsChangerApp(themeManager: themeManager, languageManager: languageManager),
+    FireDNSApp(themeManager: themeManager, languageManager: languageManager),
   );
 }
 
-/// اپلیکیشن اصلی DNS Changer
-class DnsChangerApp extends StatelessWidget {
+/// اپلیکیشن اصلی Fire DNS
+class FireDNSApp extends StatelessWidget {
   final ThemeManager themeManager;
   final LanguageManager languageManager;
 
-  const DnsChangerApp({
+  const FireDNSApp({
     super.key,
     required this.themeManager,
     required this.languageManager,
@@ -41,7 +42,7 @@ class DnsChangerApp extends StatelessWidget {
       child: Consumer2<ThemeManager, LanguageManager>(
         builder: (context, themeManager, languageManager, child) {
           return MaterialApp(
-            title: 'DNS Changer',
+            title: 'Fire DNS',
 
             // تنظیمات زبان و محلی‌سازی
             locale: languageManager.locale,
@@ -65,7 +66,7 @@ class DnsChangerApp extends StatelessWidget {
               );
             },
 
-            home: const DnsChangerHomePage(title: 'DNS Changer'),
+            home: const FireDNSHomePage(title: 'Fire DNS'),
             debugShowCheckedModeBanner: false,
           );
         },

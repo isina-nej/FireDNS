@@ -27,39 +27,39 @@ class MyVpnService : VpnService() {
 
     private fun testInternetConnectivity() {
         try {
-            Log.d("DNSChanger", "Testing internet connectivity after VPN setup...")
+            Log.d("FireDNS", "Testing internet connectivity after VPN setup...")
             
             // Test basic connectivity
             val pingProcess = Runtime.getRuntime().exec("/system/bin/ping -c 1 -W 3 8.8.8.8")
             val pingExitCode = pingProcess.waitFor()
             if (pingExitCode == 0) {
-                Log.d("DNSChanger", "✅ Basic internet connectivity test PASSED")
+                Log.d("FireDNS", "✅ Basic internet connectivity test PASSED")
             } else {
-                Log.e("DNSChanger", "❌ Basic internet connectivity test FAILED")
+                Log.e("FireDNS", "❌ Basic internet connectivity test FAILED")
             }
             
             // Test Google connectivity specifically
-            Log.d("DNSChanger", "Testing Google connectivity...")
+            Log.d("FireDNS", "Testing Google connectivity...")
             val googlePingProcess = Runtime.getRuntime().exec("/system/bin/ping -c 1 -W 3 google.com")
             val googleExitCode = googlePingProcess.waitFor()
             if (googleExitCode == 0) {
-                Log.d("DNSChanger", "✅ Google connectivity test PASSED")
+                Log.d("FireDNS", "✅ Google connectivity test PASSED")
             } else {
-                Log.e("DNSChanger", "❌ Google connectivity test FAILED - DNS resolution issue")
+                Log.e("FireDNS", "❌ Google connectivity test FAILED - DNS resolution issue")
             }
             
             // Test DNS resolution specifically
-            Log.d("DNSChanger", "Testing DNS resolution...")
+            Log.d("FireDNS", "Testing DNS resolution...")
             val nslookupProcess = Runtime.getRuntime().exec("nslookup google.com")
             val nslookupExitCode = nslookupProcess.waitFor()
             if (nslookupExitCode == 0) {
-                Log.d("DNSChanger", "✅ DNS resolution test PASSED")
+                Log.d("FireDNS", "✅ DNS resolution test PASSED")
             } else {
-                Log.e("DNSChanger", "❌ DNS resolution test FAILED")
+                Log.e("FireDNS", "❌ DNS resolution test FAILED")
             }
             
         } catch (e: Exception) {
-            Log.e("DNSChanger", "Connectivity test failed with exception: ${e.message}")
+            Log.e("FireDNS", "Connectivity test failed with exception: ${e.message}")
         }
     }
 
@@ -74,7 +74,7 @@ class MyVpnService : VpnService() {
 
     private fun forceStop() {
         try {
-            Log.d("DNSChanger", "Force stopping VPN service...")
+            Log.d("FireDNS", "Force stopping VPN service...")
             vpnInterface?.close()
             vpnInterface = null
             isRunning = false
@@ -86,9 +86,9 @@ class MyVpnService : VpnService() {
                 stopForeground(true)
             }
             stopSelf()
-            Log.d("DNSChanger", "VPN service force stopped successfully")
+            Log.d("FireDNS", "VPN service force stopped successfully")
         } catch (e: Exception) {
-            Log.e("DNSChanger", "Error in force stop: ${e.message}")
+            Log.e("FireDNS", "Error in force stop: ${e.message}")
             isRunning = false
             statusListener?.invoke("DNS_STOPPED")
             stopSelf()
@@ -97,7 +97,7 @@ class MyVpnService : VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "FORCE_STOP") {
-            Log.d("DNSChanger", "Force stop requested")
+            Log.d("FireDNS", "Force stop requested")
             forceStop()
             return START_NOT_STICKY
         }
@@ -107,15 +107,15 @@ class MyVpnService : VpnService() {
 
         // اعتبارسنجی DNS ها
         if (!isValidIpAddress(dns1)) {
-            Log.w("DNSChanger", "Invalid primary DNS: $dns1, using default")
+            Log.w("FireDNS", "Invalid primary DNS: $dns1, using default")
             dns1 = DEFAULT_PRIMARY_DNS
         }
         if (!isValidIpAddress(dns2)) {
-            Log.w("DNSChanger", "Invalid secondary DNS: $dns2, using default")
+            Log.w("FireDNS", "Invalid secondary DNS: $dns2, using default")
             dns2 = DEFAULT_SECONDARY_DNS
         }
 
-        Log.d("DNSChanger", "MyVpnService onStartCommand: dns1=$dns1, dns2=$dns2")
+        Log.d("FireDNS", "MyVpnService onStartCommand: dns1=$dns1, dns2=$dns2")
 
         // ساخت notification برای سرویس foreground
         val notificationId = 1
@@ -124,9 +124,9 @@ class MyVpnService : VpnService() {
 
         try {
             // ایجاد VPN با تنظیمات ساده مانند NetShift
-            Log.d("DNSChanger", "Setting up VPN configuration (NetShift style)")
+            Log.d("FireDNS", "Setting up VPN configuration (NetShift style)")
             val builder = Builder()
-                .setSession("DNSChangerVPN")
+                .setSession("FireDNSVPN")
                 .addAddress("10.0.0.2", 24)
                 .setConfigureIntent(android.app.PendingIntent.getActivity(
                     this, 0,
@@ -135,7 +135,7 @@ class MyVpnService : VpnService() {
                 ))
 
             // تنظیم DNS سرورها (مانند NetShift)
-            Log.d("DNSChanger", "Setting DNS servers: $dns1, $dns2")
+            Log.d("FireDNS", "Setting DNS servers: $dns1, $dns2")
             builder.addDnsServer(dns1)
             if (dns2.isNotEmpty()) {
                 builder.addDnsServer(dns2)
@@ -143,28 +143,28 @@ class MyVpnService : VpnService() {
 
             // فقط خود برنامه را از VPN جدا می‌کنیم
             builder.addDisallowedApplication(packageName)
-            Log.d("DNSChanger", "Excluding self app from VPN: $packageName")
+            Log.d("FireDNS", "Excluding self app from VPN: $packageName")
 
             // راه‌اندازی VPN
-            Log.d("DNSChanger", "Establishing VPN connection...")
+            Log.d("FireDNS", "Establishing VPN connection...")
             vpnInterface = builder.establish()
 
             if (vpnInterface != null) {
-                Log.d("DNSChanger", "VPN interface established successfully")
-                Log.d("DNSChanger", "DNS servers active: $dns1, $dns2")
+                Log.d("FireDNS", "VPN interface established successfully")
+                Log.d("FireDNS", "DNS servers active: $dns1, $dns2")
                 isRunning = true
                 statusListener?.invoke("VPN_STARTED")
                 testInternetConnectivity() // Test internet connectivity after VPN setup
                 return START_STICKY
             } else {
-                Log.e("DNSChanger", "Failed to establish VPN interface")
+                Log.e("FireDNS", "Failed to establish VPN interface")
                 isRunning = false
                 statusListener?.invoke("DNS_STOPPED")
                 return START_NOT_STICKY
             }
 
         } catch (e: Exception) {
-            Log.e("DNSChanger", "Error setting up VPN: ${e.message}")
+            Log.e("FireDNS", "Error setting up VPN: ${e.message}")
             isRunning = false
             statusListener?.invoke("DNS_STOPPED")
             return START_NOT_STICKY
@@ -173,22 +173,22 @@ class MyVpnService : VpnService() {
 
     private fun createNotification(): Notification {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "dns_changer_vpn"
-            val channelName = "DNS Changer VPN"
+            val channelId = "fire_dns_vpn"
+            val channelName = "Fire DNS VPN"
             val manager = getSystemService(NotificationManager::class.java)
             if (manager?.getNotificationChannel(channelId) == null) {
                 val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
                 manager.createNotificationChannel(channel)
             }
             Notification.Builder(this, channelId)
-                .setContentTitle("DNS Changer Active")
+                .setContentTitle("Fire DNS Active")
                 .setContentText("DNS VPN Service is running")
                 .setSmallIcon(android.R.drawable.ic_menu_manage)
                 .build()
         } else {
             @Suppress("DEPRECATION")
             Notification.Builder(this)
-                .setContentTitle("DNS Changer Active")
+                .setContentTitle("Fire DNS Active")
                 .setContentText("DNS VPN Service is running")
                 .setSmallIcon(android.R.drawable.ic_menu_manage)
                 .build()
@@ -196,8 +196,8 @@ class MyVpnService : VpnService() {
     }
 
     override fun onDestroy() {
-        Log.d("DNSChanger", "MyVpnService onDestroy called")
-        Log.d("DNSChanger", "Stopping VPN service, releasing resources.")
+        Log.d("FireDNS", "MyVpnService onDestroy called")
+        Log.d("FireDNS", "Stopping VPN service, releasing resources.")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             stopForeground(STOP_FOREGROUND_REMOVE)
         } else {
@@ -206,9 +206,9 @@ class MyVpnService : VpnService() {
         }
         try {
             vpnInterface?.close()
-            Log.d("DNSChanger", "vpnInterface closed successfully.")
+            Log.d("FireDNS", "vpnInterface closed successfully.")
         } catch (e: Exception) {
-            Log.e("DNSChanger", "Error closing vpnInterface: ${e.message}")
+            Log.e("FireDNS", "Error closing vpnInterface: ${e.message}")
         }
         vpnInterface = null
         isRunning = false

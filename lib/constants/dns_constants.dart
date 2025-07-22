@@ -1,9 +1,9 @@
 /// کلاس ثوابت DNS
 class DnsConstants {
   // Channel های ارتباطی
-  static const String methodChannel = 'com.example.dnschanger/dns';
-  static const String vpnStatusChannel = 'com.example.dnschanger/vpnStatus';
-  static const String dataUsageChannel = 'com.example.dnschanger/dataUsage';
+  static const String methodChannel = 'com.example.firedns/dns';
+  static const String vpnStatusChannel = 'com.example.firedns/vpnStatus';
+  static const String dataUsageChannel = 'com.example.firedns/dataUsage';
 
   // DNS های پیشفرض
   static const String defaultPrimaryDns = '178.22.122.100'; // Shecan DNS

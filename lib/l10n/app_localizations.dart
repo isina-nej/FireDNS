@@ -106,7 +106,7 @@ class AppLocalizations {
 
     'en': {
       // General
-      'appTitle': 'DNS Changer',
+      'appTitle': 'Fire DNS',
       'settings': 'Settings',
       'about': 'About',
       'support': 'Support',

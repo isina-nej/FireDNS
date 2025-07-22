@@ -7,8 +7,8 @@ import 'app_text_styles.dart';
 class AppButtonStyles {
   // دکمه اصلی (Primary)
   static ButtonStyle primaryButton = ElevatedButton.styleFrom(
-    foregroundColor: AppColors.textWhite,
-    backgroundColor: AppColors.primaryRed,
+    foregroundColor: AppColors.pureWhite,
+    backgroundColor: AppColors.fireRed,
     elevation: AppSizes.elevationMedium,
     padding: const EdgeInsets.symmetric(
       horizontal: AppSizes.paddingXL,
@@ -22,11 +22,11 @@ class AppButtonStyles {
 
   // دکمه ثانویه (Secondary)
   static ButtonStyle secondaryButton = ElevatedButton.styleFrom(
-    foregroundColor: AppColors.textPrimary,
-    backgroundColor: AppColors.backgroundWhite,
+    foregroundColor: AppColors.pureWhite,
+    backgroundColor: AppColors.brightBlue,
     elevation: AppSizes.elevationLow,
     side: const BorderSide(
-      color: AppColors.cardBorder,
+      color: AppColors.gradientOrange,
       width: AppSizes.borderThin,
     ),
     padding: const EdgeInsets.symmetric(
@@ -41,8 +41,8 @@ class AppButtonStyles {
 
   // دکمه سبز (Success)
   static ButtonStyle successButton = ElevatedButton.styleFrom(
-    foregroundColor: AppColors.textWhite,
-    backgroundColor: AppColors.primaryGreen,
+    foregroundColor: AppColors.pureWhite,
+    backgroundColor: AppColors.gradientOrange,
     elevation: AppSizes.elevationMedium,
     padding: const EdgeInsets.symmetric(
       horizontal: AppSizes.paddingXL,
@@ -56,8 +56,8 @@ class AppButtonStyles {
 
   // دکمه خطرناک (Danger)
   static ButtonStyle dangerButton = ElevatedButton.styleFrom(
-    foregroundColor: AppColors.textWhite,
-    backgroundColor: AppColors.textError,
+    foregroundColor: AppColors.pureWhite,
+    backgroundColor: AppColors.fireRed,
     elevation: AppSizes.elevationMedium,
     padding: const EdgeInsets.symmetric(
       horizontal: AppSizes.paddingXL,
@@ -71,8 +71,8 @@ class AppButtonStyles {
 
   // دکمه گرد (Rounded)
   static ButtonStyle roundedButton = ElevatedButton.styleFrom(
-    foregroundColor: AppColors.textPrimary,
-    backgroundColor: AppColors.backgroundWhite,
+    foregroundColor: AppColors.pureWhite,
+    backgroundColor: AppColors.brightBlue,
     elevation: AppSizes.elevationNone,
     padding: const EdgeInsets.symmetric(
       horizontal: AppSizes.paddingXXL,
@@ -86,7 +86,7 @@ class AppButtonStyles {
 
   // دکمه متنی (Text Button)
   static ButtonStyle textButton = TextButton.styleFrom(
-    foregroundColor: AppColors.primaryRed,
+    foregroundColor: AppColors.brightBlue,
     padding: const EdgeInsets.symmetric(
       horizontal: AppSizes.paddingL,
       vertical: AppSizes.paddingS,
@@ -96,7 +96,7 @@ class AppButtonStyles {
 
   // دکمه آیکونی (Icon Button)
   static ButtonStyle iconButton = IconButton.styleFrom(
-    foregroundColor: AppColors.iconPrimary,
+    foregroundColor: AppColors.pureWhite,
     backgroundColor: Colors.transparent,
     padding: const EdgeInsets.all(AppSizes.paddingS),
     iconSize: AppSizes.iconL,
@@ -104,8 +104,8 @@ class AppButtonStyles {
 
   // دکمه شناور (Floating Action Button)
   static ButtonStyle floatingActionButton = ElevatedButton.styleFrom(
-    foregroundColor: AppColors.textWhite,
-    backgroundColor: AppColors.primaryRed,
+    foregroundColor: AppColors.pureWhite,
+    backgroundColor: AppColors.fireRed,
     elevation: AppSizes.elevationHigh,
     shape: const CircleBorder(),
     padding: const EdgeInsets.all(AppSizes.paddingL),
@@ -113,8 +113,8 @@ class AppButtonStyles {
 
   // دکمه‌های مخصوص DNS
   static ButtonStyle connectButton = ElevatedButton.styleFrom(
-    foregroundColor: AppColors.textWhite,
-    backgroundColor: AppColors.primaryGreen,
+    foregroundColor: AppColors.pureWhite,
+    backgroundColor: AppColors.gradientOrange,
     elevation: AppSizes.elevationMedium,
     padding: const EdgeInsets.symmetric(
       horizontal: AppSizes.paddingXXXL,
@@ -127,8 +127,8 @@ class AppButtonStyles {
   );
 
   static ButtonStyle disconnectButton = ElevatedButton.styleFrom(
-    foregroundColor: AppColors.textWhite,
-    backgroundColor: AppColors.textError,
+    foregroundColor: AppColors.pureWhite,
+    backgroundColor: AppColors.fireRed,
     elevation: AppSizes.elevationMedium,
     padding: const EdgeInsets.symmetric(
       horizontal: AppSizes.paddingXXXL,
@@ -142,8 +142,8 @@ class AppButtonStyles {
 
   // دکمه تغییر سرور
   static ButtonStyle changeServerButton = ElevatedButton.styleFrom(
-    foregroundColor: AppColors.textPrimary,
-    backgroundColor: AppColors.backgroundGrey,
+    foregroundColor: AppColors.pureWhite,
+    backgroundColor: AppColors.brightBlue,
     elevation: AppSizes.elevationNone,
     padding: const EdgeInsets.symmetric(
       horizontal: AppSizes.paddingXL,
@@ -157,8 +157,8 @@ class AppButtonStyles {
 
   // دکمه کوچک
   static ButtonStyle smallButton = ElevatedButton.styleFrom(
-    foregroundColor: AppColors.textWhite,
-    backgroundColor: AppColors.primaryRed,
+    foregroundColor: AppColors.pureWhite,
+    backgroundColor: AppColors.fireRed,
     elevation: AppSizes.elevationLow,
     padding: const EdgeInsets.symmetric(
       horizontal: AppSizes.paddingL,
@@ -173,8 +173,8 @@ class AppButtonStyles {
 
   // دکمه بزرگ
   static ButtonStyle largeButton = ElevatedButton.styleFrom(
-    foregroundColor: AppColors.textWhite,
-    backgroundColor: AppColors.primaryRed,
+    foregroundColor: AppColors.pureWhite,
+    backgroundColor: AppColors.fireRed,
     elevation: AppSizes.elevationMedium,
     padding: const EdgeInsets.symmetric(
       horizontal: AppSizes.paddingXXXL,

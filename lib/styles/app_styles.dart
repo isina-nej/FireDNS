@@ -18,7 +18,7 @@ class AppStyles {
   AppStyles._();
 
   // نام اپلیکیشن
-  static const String appName = 'DNS Changer';
+  static const String appName = 'Fire DNS';
 
   // ورژن استایل
   static const String styleVersion = '1.0.0';

@@ -21,9 +21,9 @@ class MainActivity : FlutterActivity() {
         lastDns1 = sharedPreferences.getString("dns1", "8.8.8.8") ?: "8.8.8.8"
         lastDns2 = sharedPreferences.getString("dns2", "8.8.4.4") ?: "8.8.4.4"
         val isServiceRunning = isMyVpnServiceRunning()
-        Log.d("DNSChanger", "onResume: isVpnRunning=$isVpnRunning, isMyVpnServiceRunning=$isServiceRunning")
+        Log.d("FireDNS", "onResume: isVpnRunning=$isVpnRunning, isMyVpnServiceRunning=$isServiceRunning")
         if (!isServiceRunning) {
-            Log.d("DNSChanger", "VPN service is not running, restarting VPN service...")
+            Log.d("FireDNS", "VPN service is not running, restarting VPN service...")
             startDnsVpnService(lastDns1, lastDns2)
         }
     }
@@ -39,16 +39,16 @@ class MainActivity : FlutterActivity() {
         }
         return false
     }
-    private val CHANNEL = "com.example.dnschanger/dns"
-    private val VPN_STATUS_CHANNEL = "com.example.dnschanger/vpnStatus"
-    private val DATA_USAGE_CHANNEL = "com.example.dnschanger/dataUsage"
+    private val CHANNEL = "com.example.firedns/dns"
+    private val VPN_STATUS_CHANNEL = "com.example.firedns/vpnStatus"
+    private val DATA_USAGE_CHANNEL = "com.example.firedns/dataUsage"
     private var lastDns1: String = "178.22.122.100"  // Shecan DNS
     private var lastDns2: String = "1.1.1.1"        // Cloudflare DNS
     private var vpnStatusEventSink: EventChannel.EventSink? = null
 
     private fun pingDns(dns: String): Map<String, Any> {
         return try {
-            Log.d("DNSChanger", "Starting ping test for DNS: $dns")
+            Log.d("FireDNS", "Starting ping test for DNS: $dns")
             // Use -W 1 to set the timeout to 1 second per packet
             // Use -c 2 to send 2 packets (in case one is lost)
             val process = Runtime.getRuntime().exec("/system/bin/ping -W 1 -c 2 $dns")
@@ -61,7 +61,7 @@ class MainActivity : FlutterActivity() {
             reader.useLines { lines ->
                 lines.forEach { line ->
                     output.append(line).append("\n")
-                    Log.d("DNSChanger", "Ping output line: $line")
+                    Log.d("FireDNS", "Ping output line: $line")
                     
                     when {
                         line.contains("time=") -> {
@@ -78,9 +78,9 @@ class MainActivity : FlutterActivity() {
                                     pingTime = currentPing
                                 }
                                 isReachable = true
-                                Log.d("DNSChanger", "Extracted ping time: $pingTime ms")
+                                Log.d("FireDNS", "Extracted ping time: $pingTime ms")
                             } catch (e: Exception) {
-                                Log.e("DNSChanger", "Error parsing ping time from line: $line", e)
+                                Log.e("FireDNS", "Error parsing ping time from line: $line", e)
                             }
                         }
                         line.contains("packet loss") -> {
@@ -88,9 +88,9 @@ class MainActivity : FlutterActivity() {
                                 // Parse packet loss percentage
                                 val lossStr = line.substringBefore("%").substringAfterLast(" ")
                                 packetLoss = lossStr.toIntOrNull() ?: 100
-                                Log.d("DNSChanger", "Packet loss: $packetLoss%")
+                                Log.d("FireDNS", "Packet loss: $packetLoss%")
                             } catch (e: Exception) {
-                                Log.e("DNSChanger", "Error parsing packet loss from line: $line", e)
+                                Log.e("FireDNS", "Error parsing packet loss from line: $line", e)
                             }
                         }
                     }
@@ -98,8 +98,8 @@ class MainActivity : FlutterActivity() {
             }
             
             val exitCode = process.waitFor()
-            Log.d("DNSChanger", "Ping process exit code: $exitCode")
-            Log.d("DNSChanger", "Full ping output:\n$output")
+            Log.d("FireDNS", "Ping process exit code: $exitCode")
+            Log.d("FireDNS", "Full ping output:\n$output")
             
             // Consider the server reachable if we got any response or if packet loss is less than 100%
             isReachable = isReachable || packetLoss < 100
@@ -108,10 +108,10 @@ class MainActivity : FlutterActivity() {
                 "isReachable" to isReachable,
                 "ping" to if (isReachable) pingTime else -1
             )
-            Log.d("DNSChanger", "Final ping result for $dns: $result")
+            Log.d("FireDNS", "Final ping result for $dns: $result")
             result
         } catch (e: Exception) {
-            Log.e("DNSChanger", "Error pinging $dns: ${e.message}", e)
+            Log.e("FireDNS", "Error pinging $dns: ${e.message}", e)
             mapOf(
                 "isReachable" to false,
                 "ping" to -1
@@ -147,7 +147,7 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            Log.d("DNSChanger", "MethodChannel call: ${call.method}")
+            Log.d("FireDNS", "MethodChannel call: ${call.method}")
             when (call.method) {
                 "testDns" -> {
                     val dns = call.argument<String>("dns") ?: ""
@@ -161,10 +161,10 @@ class MainActivity : FlutterActivity() {
                             val pingResult = withContext(Dispatchers.IO) {
                                 pingDns(dns)
                             }
-                            Log.d("DNSChanger", "Ping to $dns completed with result: $pingResult")
+                            Log.d("FireDNS", "Ping to $dns completed with result: $pingResult")
                             result.success(pingResult)
                         } catch (e: Exception) {
-                            Log.e("DNSChanger", "Error in testDns: ${e.message}", e)
+                            Log.e("FireDNS", "Error in testDns: ${e.message}", e)
                             result.error("PING_ERROR", "Error pinging DNS server", e.message)
                         }
                     }
@@ -175,10 +175,10 @@ class MainActivity : FlutterActivity() {
                             val connectivityResult = withContext(Dispatchers.IO) {
                                 testGoogleConnectivity()
                             }
-                            Log.d("DNSChanger", "Google connectivity test completed with result: $connectivityResult")
+                            Log.d("FireDNS", "Google connectivity test completed with result: $connectivityResult")
                             result.success(connectivityResult)
                         } catch (e: Exception) {
-                            Log.e("DNSChanger", "Error in testGoogleConnectivity: ${e.message}", e)
+                            Log.e("FireDNS", "Error in testGoogleConnectivity: ${e.message}", e)
                             result.error("CONNECTIVITY_ERROR", "Error testing Google connectivity", e.message)
                         }
                     }
@@ -188,12 +188,12 @@ class MainActivity : FlutterActivity() {
                     val dns2 = call.argument<String>("dns2") ?: "8.8.4.4"
                     lastDns1 = dns1
                     lastDns2 = dns2
-                    Log.d("DNSChanger", "setDns called with dns1=$dns1, dns2=$dns2")
+                    Log.d("FireDNS", "setDns called with dns1=$dns1, dns2=$dns2")
                     setDns(dns1, dns2)
                     result.success(true)
                 }
                 "stopDnsVpn" -> {
-                    Log.d("DNSChanger", "stopDnsVpn called")
+                    Log.d("FireDNS", "stopDnsVpn called")
                     stopDnsVpn()
                     result.success(true)
                 }
@@ -201,7 +201,7 @@ class MainActivity : FlutterActivity() {
                     result.success(isVpnRunning)
                 }
                 else -> {
-                    Log.d("DNSChanger", "notImplemented: ${call.method}")
+                    Log.d("FireDNS", "notImplemented: ${call.method}")
                     result.notImplemented()
                 }
             }
@@ -230,7 +230,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun setDns(dns1: String, dns2: String?) {
-        Log.d("DNSChanger", "setDns: prepare VPN")
+        Log.d("FireDNS", "setDns: prepare VPN")
         // Save DNS to SharedPreferences
         val sharedPreferences = getSharedPreferences("DNSPreferences", android.content.Context.MODE_PRIVATE)
         val editor = sharedPreferences.edit()
@@ -239,16 +239,16 @@ class MainActivity : FlutterActivity() {
         editor.apply()
         val prepareIntent = VpnService.prepare(this)
         if (prepareIntent != null) {
-            Log.d("DNSChanger", "VPN permission required, launching intent")
+            Log.d("FireDNS", "VPN permission required, launching intent")
             startActivityForResult(prepareIntent, 1001)
         } else {
-            Log.d("DNSChanger", "VPN permission already granted, starting service")
+            Log.d("FireDNS", "VPN permission already granted, starting service")
             startDnsVpnService(dns1, dns2)
         }
     }
 
     private fun startDnsVpnService(dns1: String?, dns2: String?) {
-        Log.d("DNSChanger", "startDnsVpnService: dns1=$dns1, dns2=$dns2")
+        Log.d("FireDNS", "startDnsVpnService: dns1=$dns1, dns2=$dns2")
         val intent = Intent(this, MyVpnService::class.java)
         intent.putExtra("dns1", dns1)
         intent.putExtra("dns2", dns2)
@@ -258,19 +258,19 @@ class MainActivity : FlutterActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        Log.d("DNSChanger", "onActivityResult: requestCode=$requestCode, resultCode=$resultCode")
+        Log.d("FireDNS", "onActivityResult: requestCode=$requestCode, resultCode=$resultCode")
         if (requestCode == 1001 && resultCode == RESULT_OK) {
-            Log.d("DNSChanger", "VPN permission granted by user, starting service with lastDns1=$lastDns1, lastDns2=$lastDns2")
+            Log.d("FireDNS", "VPN permission granted by user, starting service with lastDns1=$lastDns1, lastDns2=$lastDns2")
             startDnsVpnService(lastDns1, lastDns2)
         } else if (requestCode == 1001) {
-            Log.d("DNSChanger", "VPN permission denied by user")
+            Log.d("FireDNS", "VPN permission denied by user")
             vpnStatusEventSink?.success("DNS_STOPPED")
             isVpnRunning = false
         }
     }
 
     private fun stopDnsVpn() {
-        Log.d("DNSChanger", "stopDnsVpn: Attempting to stop VPN service...")
+        Log.d("FireDNS", "stopDnsVpn: Attempting to stop VPN service...")
         try {
             val intent = Intent(this, MyVpnService::class.java)
             intent.action = "FORCE_STOP"
@@ -279,15 +279,15 @@ class MainActivity : FlutterActivity() {
             // Wait briefly and check if service is still running
             Thread.sleep(500)
             if (isMyVpnServiceRunning()) {
-                Log.d("DNSChanger", "Force stopping VPN service...")
+                Log.d("FireDNS", "Force stopping VPN service...")
                 stopService(intent)
             }
             
             isVpnRunning = false
             vpnStatusEventSink?.success("DNS_STOPPED")
-            Log.d("DNSChanger", "VPN service stopped successfully")
+            Log.d("FireDNS", "VPN service stopped successfully")
         } catch (e: Exception) {
-            Log.e("DNSChanger", "Error stopping VPN service: ${e.message}")
+            Log.e("FireDNS", "Error stopping VPN service: ${e.message}")
             isVpnRunning = false
             vpnStatusEventSink?.success("DNS_STOPPED")
         }
@@ -295,7 +295,7 @@ class MainActivity : FlutterActivity() {
 
     private fun testGoogleConnectivity(): Map<String, Any> {
         return try {
-            Log.d("DNSChanger", "Starting Google connectivity test...")
+            Log.d("FireDNS", "Starting Google connectivity test...")
             
             // Test 1: Basic ping to Google
             val googlePingProcess = Runtime.getRuntime().exec("/system/bin/ping -c 1 -W 3 google.com")
@@ -307,7 +307,7 @@ class MainActivity : FlutterActivity() {
                 val process = Runtime.getRuntime().exec("/system/bin/ping -c 1 -W 2 www.google.com")
                 process.waitFor() == 0
             } catch (e: Exception) {
-                Log.w("DNSChanger", "DNS resolution test failed: ${e.message}")
+                Log.w("FireDNS", "DNS resolution test failed: ${e.message}")
                 false
             }
             
@@ -319,10 +319,10 @@ class MainActivity : FlutterActivity() {
                 false
             }
             
-            Log.d("DNSChanger", "Google connectivity results:")
-            Log.d("DNSChanger", "  - Google ping: ${if (googlePingWorking) "✅ WORKING" else "❌ FAILED"}")
-            Log.d("DNSChanger", "  - DNS resolution: ${if (dnsResolutionWorking) "✅ WORKING" else "❌ FAILED"}")
-            Log.d("DNSChanger", "  - HTTPS connectivity: ${if (httpsConnectivityWorking) "✅ WORKING" else "❌ FAILED"}")
+            Log.d("FireDNS", "Google connectivity results:")
+            Log.d("FireDNS", "  - Google ping: ${if (googlePingWorking) "✅ WORKING" else "❌ FAILED"}")
+            Log.d("FireDNS", "  - DNS resolution: ${if (dnsResolutionWorking) "✅ WORKING" else "❌ FAILED"}")
+            Log.d("FireDNS", "  - HTTPS connectivity: ${if (httpsConnectivityWorking) "✅ WORKING" else "❌ FAILED"}")
             
             val overallStatus = googlePingWorking && dnsResolutionWorking && httpsConnectivityWorking
             
@@ -334,7 +334,7 @@ class MainActivity : FlutterActivity() {
                 "message" to if (overallStatus) "Google services are working properly" else "Some Google services may not work correctly"
             )
         } catch (e: Exception) {
-            Log.e("DNSChanger", "Error testing Google connectivity: ${e.message}")
+            Log.e("FireDNS", "Error testing Google connectivity: ${e.message}")
             mapOf(
                 "googlePing" to false,
                 "dnsResolution" to false,

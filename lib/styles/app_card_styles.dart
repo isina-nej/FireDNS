@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_sizes.dart';
+import '';
 
 /// کلاس مدیریت تمام استایل‌های کارت و Container
 class AppCardStyles {
   // کارت اصلی
   static BoxDecoration primaryCard = BoxDecoration(
-    color: AppColors.cardBackground,
+    color: AppColors.darkNavy,
     borderRadius: BorderRadius.circular(AppSizes.radiusL),
+    border: Border.all(color: AppColors.brightBlue, width: AppSizes.borderThin),
     boxShadow: [
       BoxShadow(
         color: AppColors.cardShadow,
@@ -19,19 +21,19 @@ class AppCardStyles {
 
   // کارت با border (مطابق UI specs)
   static BoxDecoration borderedCard = BoxDecoration(
-    color: AppColors.cardBackground,
+    color: AppColors.darkNavy,
     borderRadius: BorderRadius.circular(AppSizes.radiusXS), // 2dp corners
     border: Border.all(
-      color: AppColors.cardBorder,
+      color: AppColors.brightBlue,
       width: AppSizes.borderThick, // 4dp border
     ),
   );
 
   // کارت ساده بدون سایه
   static BoxDecoration simpleCard = BoxDecoration(
-    color: AppColors.cardBackground,
+    color: AppColors.darkNavy,
     borderRadius: BorderRadius.circular(AppSizes.radiusM),
-    border: Border.all(color: AppColors.cardBorder, width: AppSizes.borderThin),
+    border: Border.all(color: AppColors.brightBlue, width: AppSizes.borderThin),
   );
 
   // کارت با گرادیانت قرمز
@@ -39,7 +41,7 @@ class AppCardStyles {
     gradient: const LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: AppColors.redGradient,
+      colors: [AppColors.fireRed, AppColors.gradientOrange],
     ),
     borderRadius: BorderRadius.circular(AppSizes.radiusL),
     boxShadow: [
@@ -51,12 +53,12 @@ class AppCardStyles {
     ],
   );
 
-  // کارت با گرادیانت سبز
+  // کارت با گرادیانت آبی
   static BoxDecoration greenGradientCard = BoxDecoration(
     gradient: const LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: AppColors.greenGradient,
+      colors: [AppColors.brightBlue, AppColors.darkNavy],
     ),
     borderRadius: BorderRadius.circular(AppSizes.radiusL),
     boxShadow: [
@@ -77,15 +79,16 @@ class AppCardStyles {
 
   // Container برای DNS input
   static BoxDecoration dnsInputContainer = BoxDecoration(
-    color: AppColors.cardBackground,
+    color: AppColors.darkNavy,
     borderRadius: BorderRadius.circular(AppSizes.radiusM),
-    border: Border.all(color: AppColors.cardBorder, width: AppSizes.borderThin),
+    border: Border.all(color: AppColors.brightBlue, width: AppSizes.borderThin),
   );
 
   // Container برای ping box
   static BoxDecoration pingBoxContainer = BoxDecoration(
-    color: AppColors.cardBackground,
+    color: AppColors.darkNavy,
     borderRadius: BorderRadius.circular(AppSizes.radiusM),
+    border: Border.all(color: AppColors.brightBlue, width: AppSizes.borderThin),
     boxShadow: [
       BoxShadow(
         color: AppColors.cardShadow,
@@ -97,7 +100,7 @@ class AppCardStyles {
 
   // Container آیکونی
   static BoxDecoration iconContainer = BoxDecoration(
-    color: AppColors.textPrimary,
+    color: AppColors.fireRed,
     borderRadius: BorderRadius.circular(AppSizes.radiusM),
   );
 
@@ -114,22 +117,19 @@ class AppCardStyles {
 
   // Container سرور (در صفحه config)
   static BoxDecoration serverContainer = BoxDecoration(
-    color: AppColors.cardBackground,
+    color: AppColors.darkNavy,
     borderRadius: BorderRadius.circular(AppSizes.radiusM),
-    border: Border.all(color: AppColors.cardBorder, width: AppSizes.borderThin),
+    border: Border.all(color: AppColors.brightBlue, width: AppSizes.borderThin),
   );
 
   // Container انتخاب شده
   static BoxDecoration selectedContainer = BoxDecoration(
-    color: AppColors.cardBackground,
+    color: AppColors.darkNavy,
     borderRadius: BorderRadius.circular(AppSizes.radiusM),
-    border: Border.all(
-      color: AppColors.primaryRed,
-      width: AppSizes.borderMedium,
-    ),
+    border: Border.all(color: AppColors.fireRed, width: AppSizes.borderMedium),
     boxShadow: [
       BoxShadow(
-        color: AppColors.withOpacity(AppColors.primaryRed, 0.1),
+        color: AppColors.fireRed.withOpacity(0.1),
         blurRadius: AppSizes.elevationMedium,
         offset: const Offset(0, 2),
       ),
@@ -138,7 +138,7 @@ class AppCardStyles {
 
   // Container متحرک (نمونه برای انیمیشن)
   static BoxDecoration animatedContainer = BoxDecoration(
-    color: AppColors.cardBackground,
+    color: AppColors.darkNavy,
     borderRadius: BorderRadius.circular(AppSizes.radiusL),
     boxShadow: [
       BoxShadow(
@@ -157,34 +157,31 @@ class AppCardStyles {
 
   // Badge container
   static BoxDecoration badgeContainer = BoxDecoration(
-    color: AppColors.primaryRed,
+    color: AppColors.fireRed,
     borderRadius: BorderRadius.circular(AppSizes.radiusRound),
   );
 
   // Error container
   static BoxDecoration errorContainer = BoxDecoration(
-    color: AppColors.withOpacity(AppColors.textError, 0.1),
+    color: AppColors.fireRed.withOpacity(0.1),
     borderRadius: BorderRadius.circular(AppSizes.radiusM),
-    border: Border.all(color: AppColors.textError, width: AppSizes.borderThin),
+    border: Border.all(color: AppColors.fireRed, width: AppSizes.borderThin),
   );
 
   // Success container
   static BoxDecoration successContainer = BoxDecoration(
-    color: AppColors.withOpacity(AppColors.textSuccess, 0.1),
+    color: AppColors.gradientOrange.withOpacity(0.1),
     borderRadius: BorderRadius.circular(AppSizes.radiusM),
     border: Border.all(
-      color: AppColors.textSuccess,
+      color: AppColors.gradientOrange,
       width: AppSizes.borderThin,
     ),
   );
 
   // Warning container
   static BoxDecoration warningContainer = BoxDecoration(
-    color: AppColors.withOpacity(AppColors.textWarning, 0.1),
+    color: AppColors.brightBlue.withOpacity(0.1),
     borderRadius: BorderRadius.circular(AppSizes.radiusM),
-    border: Border.all(
-      color: AppColors.textWarning,
-      width: AppSizes.borderThin,
-    ),
+    border: Border.all(color: AppColors.brightBlue, width: AppSizes.borderThin),
   );
 }
