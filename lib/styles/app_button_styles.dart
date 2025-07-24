@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
-import 'app_sizes.dart';
-import 'app_text_styles.dart';
+import '../path/path.dart';
+
 
 /// کلاس مدیریت تمام استایل‌های دکمه‌ها
 class AppButtonStyles {

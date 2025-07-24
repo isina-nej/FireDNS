@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
-import '../models/api_response.dart';
+import '../../path/path.dart';
 
 /// کلاس مدیریت درخواست‌های HTTP
 class ApiClient {
-  static const String _baseUrl = 'https://fire-dns-0.vercel.app';
+  static const String _baseUrl = 'https://dns-changer-0.vercel.app';
   static const Duration _timeout = Duration(seconds: 30);
 
   final http.Client _client;

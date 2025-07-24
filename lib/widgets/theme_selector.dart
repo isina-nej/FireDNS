@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../styles/app_styles.dart';
-import '../styles/language_manager.dart';
-import '../l10n/localization_extension.dart';
+import '../path/path.dart';
+
 
 /// ویجت انتخاب تم
 class ThemeSelector extends StatelessWidget {

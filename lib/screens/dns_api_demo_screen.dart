@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../api/models/dns_record.dart';
-import '../api/services/dns_api_service.dart';
+import '../path/path.dart';
+
 
 /// صفحه نمایش نحوه استفاده از API
 class DnsApiDemoScreen extends StatefulWidget {

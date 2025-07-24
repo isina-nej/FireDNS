@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/google_connectivity_result.dart';
-import '../utils/format_utils.dart';
+import '../path/path.dart';
 
 /// ویجت نمایش نتیجه تست اتصال Google
 class GoogleConnectivityWidget extends StatelessWidget {

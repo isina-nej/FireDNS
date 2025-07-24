@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../styles/app_styles.dart';
+import '../path/path.dart';
 
 /// صفحه Config (کشیدن به راست)
 class ConfigScreen extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../utils/dns_validator.dart';
-import '../constants/dns_constants.dart';
+import '../path/path.dart';
+
 
 /// ویجت ورودی DNS
 class DnsInputWidget extends StatefulWidget {

@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import '../api/models/dns_record.dart';
-// import '../api/models/api_response.dart';
-import '../api/services/dns_api_service.dart';
-import '../widgets/dns_record_card.dart';
-import '../widgets/dns_type_filter.dart';
-import 'dns_record_form_screen.dart';
+import '../path/path.dart';
+
 
 /// صفحه جامع مدیریت DNS با تمام امکانات API
 class DnsManagerScreen extends StatefulWidget {

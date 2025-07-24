@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/dns_status.dart';
-import '../styles/app_styles.dart';
+import '../path/path.dart';
+
 
 /// ویجت نمایش وضعیت پینگ
 class PingBox extends StatelessWidget {

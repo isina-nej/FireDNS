@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'screens/fire_dns_home_page_clean.dart';
-// import 'screens/fire_dns_home_page.dart';
-import 'styles/app_styles.dart';
+import '../path/path.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

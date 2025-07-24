@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/format_utils.dart';
+import '../path/path.dart';
 
 /// ویجت نمایش مصرف داده
 class DataUsageWidget extends StatelessWidget {

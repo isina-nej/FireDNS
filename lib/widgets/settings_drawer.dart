@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../styles/app_styles.dart';
-import 'theme_selector.dart';
+import '../path/path.dart';
+
 
 /// منوی کناری تنظیمات
 class SettingsDrawer extends StatefulWidget {

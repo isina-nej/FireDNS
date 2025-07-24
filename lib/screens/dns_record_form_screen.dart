@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../api/models/dns_record.dart';
-import '../api/models/api_response.dart';
-import '../api/services/dns_api_service.dart';
-import '../utils/dns_validator.dart';
+import '../path/path.dart';
+
 
 /// صفحه فرم ایجاد/ویرایش رکورد DNS
 class DnsRecordFormScreen extends StatefulWidget {

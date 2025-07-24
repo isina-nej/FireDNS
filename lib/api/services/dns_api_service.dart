@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
-import '../models/dns_record.dart';
-import '../models/api_response.dart';
-import 'api_client.dart';
+import '../../path/path.dart';
+
 
 /// سرویس API برای مدیریت DNS
 class DnsApiService {

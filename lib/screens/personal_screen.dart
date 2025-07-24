@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../styles/app_styles.dart';
+import '../path/path.dart';
 
 /// صفحه Personal (کشیدن به چپ)
 class PersonalScreen extends StatefulWidget {

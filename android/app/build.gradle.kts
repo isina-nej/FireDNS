@@ -6,7 +6,9 @@ plugins {
 }
 
 android {
-    namespace = "com.example.dnschenger"
+    namespace = "com.example.firedns"
+    //namespace 'com.example.internet_speed_test'
+
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -21,7 +23,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.dnschenger"
+        applicationId = "com.example.firedns"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -42,6 +44,8 @@ android {
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+    implementation("dnsjava:dnsjava:3.5.2")
+    implementation("com.squareup.okhttp3:okhttp:4.9.1")
 }
 
 flutter {

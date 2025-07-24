@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../api/models/dns_record.dart';
+import '../path/path.dart';
 
 /// ویجت فیلتر نوع DNS
 class DnsTypeFilter extends StatelessWidget {

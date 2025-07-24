@@ -163,4 +163,23 @@ class DnsService {
       return false;
     }
   }
+
+  /// تست پینگ یک دامنه با دی‌ان‌اس سفارشی (برای نمایش در لیست)
+  static Future<DnsStatus> testDnsWithDns(String domain, String dns) async {
+    try {
+      // فراخوانی متد native جدید (باید در اندروید پیاده‌سازی شود)
+      final result = await _platform.invokeMethod('testDnsWithDns', {
+        'domain': domain,
+        'dns': dns,
+      });
+      if (result is Map) {
+        final ping = (result['ping'] as int?) ?? -1;
+        final isReachable = (result['isReachable'] as bool?) ?? false;
+        return DnsStatus(ping, isReachable);
+      }
+      return const DnsStatus(-1, false);
+    } catch (e) {
+      return const DnsStatus(-1, false);
+    }
+  }
 }

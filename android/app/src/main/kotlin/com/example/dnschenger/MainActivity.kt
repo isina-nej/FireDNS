@@ -1,8 +1,8 @@
-package com.example.dnschenger
+package com.example.firedns
 
 import android.content.Intent
 import android.content.Context
-import com.example.dnschenger.MyVpnService
+import com.example.firedns.MyVpnService
 import android.net.VpnService
 import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
@@ -33,7 +33,7 @@ class MainActivity : FlutterActivity() {
         val activityManager = getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
         val services = activityManager.getRunningServices(Int.MAX_VALUE)
         for (service in services) {
-            if (service.service.className == com.example.dnschenger.MyVpnService::class.java.name) {
+            if (service.service.className == com.example.firedns.MyVpnService::class.java.name) {
                 return true
             }
         }
@@ -200,6 +200,21 @@ class MainActivity : FlutterActivity() {
                 "getServiceStatus" -> {
                     result.success(isVpnRunning)
                 }
+                "testDnsWithDns" -> {
+                    val domain = call.argument<String>("domain") ?: ""
+                    val dns = call.argument<String>("dns") ?: ""
+                    CoroutineScope(Dispatchers.Main).launch {
+                        try {
+                            val pingResult = withContext(Dispatchers.IO) {
+                                testDomainWithCustomDns(domain, dns)
+                            }
+                            result.success(pingResult)
+                        } catch (e: Exception) {
+                            Log.e("FireDNS", "Error in testDnsWithDns: ${e.message}", e)
+                            result.error("PING_ERROR", "Error pinging domain with custom DNS", e.message)
+                        }
+                    }
+                }
                 else -> {
                     Log.d("FireDNS", "notImplemented: ${call.method}")
                     result.notImplemented()
@@ -341,6 +356,44 @@ class MainActivity : FlutterActivity() {
                 "httpsConnectivity" to false,
                 "overallStatus" to false,
                 "message" to "Error testing connectivity: ${e.message}"
+            )
+        }
+    }
+
+    private fun testDomainWithCustomDns(domain: String, dns: String): Map<String, Any> {
+        // این پیاده‌سازی ساده است و فقط dig را با دی‌ان‌اس سفارشی اجرا می‌کند (باید dig روی دستگاه باشد)
+        // اگر dig نصب نیست، می‌توانید از nslookup یا ابزار مشابه استفاده کنید
+        try {
+            val cmd = arrayOf("/system/bin/dig", "@${dns}", domain)
+            val process = Runtime.getRuntime().exec(cmd)
+            val reader = process.inputStream.bufferedReader()
+            var pingTime = -1
+            var isReachable = false
+            val output = StringBuilder()
+            val start = System.currentTimeMillis()
+            reader.useLines { lines ->
+                lines.forEach { line ->
+                    output.append(line).append("\n")
+                    if (line.contains("ANSWER SECTION")) {
+                        isReachable = true
+                    }
+                }
+            }
+            val exitCode = process.waitFor()
+            val end = System.currentTimeMillis()
+            if (isReachable) {
+                pingTime = (end - start).toInt()
+            }
+            Log.d("FireDNS", "dig output for $domain with $dns:\n$output")
+            return mapOf(
+                "isReachable" to isReachable,
+                "ping" to if (isReachable) pingTime else -1
+            )
+        } catch (e: Exception) {
+            Log.e("FireDNS", "Error in testDomainWithCustomDns: ${e.message}", e)
+            return mapOf(
+                "isReachable" to false,
+                "ping" to -1
             )
         }
     }

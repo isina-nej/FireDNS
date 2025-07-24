@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../styles/language_manager.dart';
-import 'app_localizations.dart';
+import '../path/path.dart';
+
 
 /// Extension برای دسترسی آسان به ترجمه‌ها
 extension LocalizationExtension on BuildContext {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
+import '../path/path.dart';
 
 /// کلاس مدیریت تمام استایل‌های متن و Typography
 class AppTextStyles {

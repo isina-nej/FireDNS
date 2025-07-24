@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../api/models/dns_record.dart';
+import '../path/path.dart';
+
 
 /// کارت نمایش رکورد DNS
 class DnsRecordCard extends StatelessWidget {
