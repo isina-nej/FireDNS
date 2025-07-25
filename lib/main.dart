@@ -1,34 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import '../path/path.dart';
 
+import '../path/path.dart';
+import 'utils/update_checker.dart';
+import 'screens/force_update_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ایجاد ThemeManager و بارگذاری تنظیمات
   final themeManager = ThemeManager();
   await themeManager.loadThemeMode();
-
-  // ایجاد LanguageManager و بارگذاری تنظیمات
   final languageManager = LanguageManager();
   await languageManager.loadLanguage();
 
+  // چک کردن آپدیت
+  final isLatest = await UpdateChecker.isLatestVersion();
+
   runApp(
-    FireDNSApp(themeManager: themeManager, languageManager: languageManager),
+    FireDNSApp(
+      themeManager: themeManager,
+      languageManager: languageManager,
+      forceUpdate: !isLatest,
+    ),
   );
 }
 
 /// اپلیکیشن اصلی Fire DNS
+
 class FireDNSApp extends StatelessWidget {
   final ThemeManager themeManager;
   final LanguageManager languageManager;
+  final bool forceUpdate;
 
   const FireDNSApp({
     super.key,
     required this.themeManager,
     required this.languageManager,
+    this.forceUpdate = false,
   });
 
   @override
@@ -65,7 +74,9 @@ class FireDNSApp extends StatelessWidget {
               );
             },
 
-            home: const FireDNSHomePage(title: 'Fire DNS'),
+            home: forceUpdate
+                ? const ForceUpdatePage(updateUrl: UpdateChecker.updateUrl)
+                : const FireDNSHomePage(title: 'Fire DNS'),
             debugShowCheckedModeBanner: false,
           );
         },

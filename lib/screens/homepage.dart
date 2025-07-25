@@ -271,12 +271,14 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         centerTitle: true,
         toolbarHeight: Platform.isWindows ? 30 : kToolbarHeight,
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final double minCardHeight = 170;
-          final double totalSpacing = 24;
-          final double availableHeight = constraints.maxHeight - totalSpacing;
-          double cardHeight = availableHeight / 3;
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final double minCardHeight = 170;
+            final double totalSpacing = 24;
+            final double availableHeight = constraints.maxHeight - totalSpacing;
+            double cardHeight = availableHeight / 3;
           if (cardHeight < minCardHeight) cardHeight = minCardHeight;
           return Padding(
             padding: EdgeInsets.all(
@@ -298,7 +300,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           );
         },
       ),
+      )
     );
+
   }
 
   /// کارت وضعیت اتصال DNS
@@ -327,13 +331,24 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                       maxWidth: constraints.maxWidth * factor,
                       maxHeight: constraints.maxHeight * factor,
                       alignment: Alignment.center,
-                      child: Lottie.asset(
-                        'assets/icone/laptop.json',
-                        width: constraints.maxWidth * factor,
-                        height: constraints.maxHeight * factor,
-                        fit: BoxFit.contain,
-                        alignment: Alignment.center,
-                        repeat: true,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          responsiveSize(
+                            24,
+                            context,
+                            min: 10,
+                            max: 40,
+                            scaleByHeight: true,
+                          ),
+                        ),
+                        child: Lottie.asset(
+                          'assets/icone/laptop.json',
+                          width: constraints.maxWidth * factor,
+                          height: constraints.maxHeight * factor,
+                          fit: BoxFit.contain,
+                          alignment: Alignment.center,
+                          repeat: true,
+                        ),
                       ),
                     ),
                   ),

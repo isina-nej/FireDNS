@@ -189,7 +189,7 @@ Win32Window::MessageHandler(HWND hwnd,
       RECT rect;
       SystemParametersInfo(SPI_GETWORKAREA, 0, &rect, 0);
       int minWidth = static_cast<int>((rect.right - rect.left) * 0.25); // 25% of screen width
-      int minHeight = static_cast<int>((rect.bottom - rect.top) * 0.50); // 43% of screen height
+      int minHeight = static_cast<int>((rect.bottom - rect.top) * 0.50) + 35; // 50% of screen height
       mmi->ptMinTrackSize.x = minWidth;
       mmi->ptMinTrackSize.y = minHeight;
       // حالا هم عرض و هم ارتفاع محدود شد

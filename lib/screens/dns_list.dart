@@ -809,6 +809,7 @@ class _DnsListPageState extends State<DnsListPage> {
   // Map<String, int> _pingCache = {}; // Removed duplicate declaration
 
   Future<void> _testAllDns({bool auto = false}) async {
+    final prefs = await SharedPreferences.getInstance();
     final pingCache = await DnsPingHelper.testAllDns(
       context: context,
       dnsRecords: _dnsRecords,
@@ -816,25 +817,44 @@ class _DnsListPageState extends State<DnsListPage> {
       sortDnsRecords: _sortDnsRecords,
       auto: auto,
       mounted: mounted,
-      showDialogCallback: (List<String> results) {
+      showDialogCallback: (List<String> results) async {
         if (!mounted) return;
-        showDialog(
+        // اگر کاربر قبلا گزینه دیگر نشان نده را زده بود، دیالوگ را نمایش نده
+        final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
+        if (dontShow) return;
+        await showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('نتیجه تست همه DNSها'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: ListView(
-                shrinkWrap: true,
-                children: results.map((e) => Text(e)).toList(),
+          barrierDismissible: true,
+          builder: (context) => GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              Navigator.of(context).pop();
+            },
+            child: AlertDialog(
+              title: const Text('نتیجه تست همه DNSها'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: results.map((e) => Text(e)).toList(),
+                ),
               ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('بستن'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await prefs.setBool('dont_show_dns_test_dialog', true);
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('دیگر نشان نده'),
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('بستن'),
-              ),
-            ],
           ),
         );
       },
@@ -1105,136 +1125,139 @@ class _DnsListPageState extends State<DnsListPage> {
             ),
           ],
         ),
-        body: Stack(
-          children: [
-            _loadingList
-                ? const Center(child: CircularProgressIndicator())
-                : _loadError != null
-                ? Center(child: Text(_loadError!))
-                : RefreshIndicator(
-                    onRefresh: _fetchDnsList,
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              final isWide =
-                                  constraints.maxWidth > 600 &&
-                                  Theme.of(context).platform ==
-                                      TargetPlatform.windows;
-                              if (isWide) {
-                                // اگر خیلی عریض بود سه ستونه، اگر فقط عریض بود دو ستونه
-                                int columns = constraints.maxWidth > 1050
-                                    ? 3
-                                    : 2;
-                                return GridView.builder(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: columns,
-                                        crossAxisSpacing: 8,
-                                        mainAxisSpacing: 8,
-                                        mainAxisExtent:
-                                            140, // ارتفاع ثابت برای هر آیتم
-                                      ),
-                                  itemCount: _filteredDnsRecords.length,
-                                  itemBuilder: (context, index) =>
-                                      _buildDnsCard(
-                                        context,
-                                        _filteredDnsRecords[index],
-                                        index,
-                                      ),
-                                );
-                              } else {
-                                // حالت معمول لیست
-                                return ListView.separated(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  itemCount: _filteredDnsRecords.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 8),
-                                  itemBuilder: (context, index) =>
-                                      _buildDnsCard(
-                                        context,
-                                        _filteredDnsRecords[index],
-                                        index,
-                                      ),
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-            if (_showSearch)
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _showSearch = false;
-                    });
-                  },
-                  child: Container(
-                    color: Colors.black.withOpacity(0.2),
-                    alignment: Alignment.topCenter,
-                    child: SafeArea(
-                      child: Container(
-                        margin: const EdgeInsets.all(24),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Stack(
+            children: [
+              _loadingList
+                  ? const Center(child: CircularProgressIndicator())
+                  : _loadError != null
+                  ? Center(child: Text(_loadError!))
+                  : RefreshIndicator(
+                      onRefresh: _fetchDnsList,
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isWide =
+                                    constraints.maxWidth > 600 &&
+                                    Theme.of(context).platform ==
+                                        TargetPlatform.windows;
+                                if (isWide) {
+                                  // اگر خیلی عریض بود سه ستونه، اگر فقط عریض بود دو ستونه
+                                  int columns = constraints.maxWidth > 1050
+                                      ? 3
+                                      : 2;
+                                  return GridView.builder(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: columns,
+                                          crossAxisSpacing: 8,
+                                          mainAxisSpacing: 8,
+                                          mainAxisExtent:
+                                              140, // ارتفاع ثابت برای هر آیتم
+                                        ),
+                                    itemCount: _filteredDnsRecords.length,
+                                    itemBuilder: (context, index) =>
+                                        _buildDnsCard(
+                                          context,
+                                          _filteredDnsRecords[index],
+                                          index,
+                                        ),
+                                  );
+                                } else {
+                                  // حالت معمول لیست
+                                  return ListView.separated(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    itemCount: _filteredDnsRecords.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 8),
+                                    itemBuilder: (context, index) =>
+                                        _buildDnsCard(
+                                          context,
+                                          _filteredDnsRecords[index],
+                                          index,
+                                        ),
+                                  );
+                                }
+                              },
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _searchController,
-                                autofocus: true,
-                                decoration: const InputDecoration(
-                                  hintText: 'جستجو بر اساس نام یا آی‌پی',
-                                  border: InputBorder.none,
+                          ),
+                        ],
+                      ),
+                    ),
+              if (_showSearch)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showSearch = false;
+                      });
+                    },
+                    child: Container(
+                      color: Colors.black.withOpacity(0.2),
+                      alignment: Alignment.topCenter,
+                      child: SafeArea(
+                        child: Container(
+                          margin: const EdgeInsets.all(24),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _searchController,
+                                  autofocus: true,
+                                  decoration: const InputDecoration(
+                                    hintText: 'جستجو بر اساس نام یا آی‌پی',
+                                    border: InputBorder.none,
+                                  ),
+                                  onChanged: (v) {
+                                    setState(() {
+                                      _searchQuery = v;
+                                    });
+                                  },
+                                  onSubmitted: (v) {
+                                    setState(() {
+                                      _searchQuery = v;
+                                      _showSearch = false;
+                                    });
+                                  },
                                 ),
-                                onChanged: (v) {
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () {
                                   setState(() {
-                                    _searchQuery = v;
-                                  });
-                                },
-                                onSubmitted: (v) {
-                                  setState(() {
-                                    _searchQuery = v;
                                     _showSearch = false;
                                   });
                                 },
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close),
-                              onPressed: () {
-                                setState(() {
-                                  _showSearch = false;
-                                });
-                              },
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
         floatingActionButton: FloatingActionButton(
           child: const Icon(Icons.add),
