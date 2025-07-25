@@ -738,6 +738,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  sleek_circular_slider:
+    dependency: "direct main"
+    description:
+      name: sleek_circular_slider
+      sha256: "89c7d0d37befc9818a2b53ef6ff126c43b70485dabb189b734d46106db190931"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   source_gen:
     dependency: transitive
     description:
@@ -802,6 +810,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  syncfusion_flutter_core:
+    dependency: transitive
+    description:
+      name: syncfusion_flutter_core
+      sha256: "536753489e168f49659261d0abd02b101b34c0b1bde27898f2869aab05f1cbb6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "30.1.41"
+  syncfusion_flutter_gauges:
+    dependency: "direct main"
+    description:
+      name: syncfusion_flutter_gauges
+      sha256: "447c1687ae90e6d59ed68bed97e8223d3ec5840fdaa0faf3a9bd38a45ac7b8a6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "30.1.41"
   term_glyph:
     dependency: transitive
     description:

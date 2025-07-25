@@ -31,6 +31,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
+  // محدودیت حداقل عرض پنجره در win32_window.cpp هندل شده است (WM_GETMINMAXINFO)
+  // اگر خواستی مقدار minWidth را اینجا هم محاسبه کن:
+  // RECT rect; SystemParametersInfo(SPI_GETWORKAREA, 0, &rect, 0);
+  // int minWidth = (rect.right - rect.left) / 5;
 
   ::MSG msg;
   while (::GetMessage(&msg, nullptr, 0, 0)) {

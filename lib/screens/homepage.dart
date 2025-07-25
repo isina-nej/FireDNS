@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'dart:async';
 import '../path/path.dart';
 import 'dns_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:io';
 
 /// صفحه اصلی برنامه Fire DNS
 class FireDNSHomePage extends StatefulWidget {
@@ -17,6 +19,27 @@ class FireDNSHomePage extends StatefulWidget {
 
 class _FireDNSHomePageState extends State<FireDNSHomePage>
     with WidgetsBindingObserver {
+  // تابع سایز ریسپانسیو فقط برای ویندوز
+  double responsiveSize(
+    double base,
+    BuildContext context, {
+    double min = 12,
+    double max = 40,
+    bool scaleByHeight = false,
+  }) {
+    if (!Platform.isWindows) return base;
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+    double scale;
+    if (scaleByHeight) {
+      scale = height / 800;
+    } else {
+      scale = ((width / 600) + (height / 800)) / 2;
+    }
+    double value = base * scale;
+    return value.clamp(min, max);
+  }
+
   String? _selectedDnsLabel;
   String? _selectedDnsIp;
   // Controllers
@@ -26,11 +49,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
   // State variables
   bool _vpnActive = false;
+  bool _vpnLoading = false;
   bool _autoPingEnabled = false;
-  bool _isTestingConnectivity = false;
-  bool _autoStartOnBoot = true;
-  bool _darkTheme = false;
-  bool _notificationsEnabled = true;
 
   // Stream subscriptions
   StreamSubscription<bool>? _vpnStatusSubscription;
@@ -43,6 +63,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     _initializeControllers();
     _initializeObserver();
     _initializeServices();
+    setState(() {
+      _vpnLoading = true;
+    });
     _checkInitialStatus();
     _loadSelectedDnsLabel();
   }
@@ -116,19 +139,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       }
     });
 
-    _dataUsageSubscription = VpnStatusService.dataUsageStream.listen((usage) {
-      // مصرف داده در UI جدید نیازی نیست
-    });
-
-    _pingResultSubscription = AutoPingService.pingResultStream.listen((
-      results,
-    ) {
-      if (mounted) {
-        setState(() {
-          // Ping results received - can be used for updating UI if needed
-        });
-      }
-    });
+    _dataUsageSubscription = VpnStatusService.dataUsageStream.listen(
+      (usage) {},
+    );
   }
 
   void _disposeControllers() {
@@ -145,21 +158,17 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     _dataUsageSubscription?.cancel();
     _pingResultSubscription?.cancel();
     VpnStatusService.stopListening();
-    AutoPingService.stop();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        if (_autoPingEnabled) {
-          _startAutoPing();
-        }
+        if (_autoPingEnabled) {}
         break;
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
       case AppLifecycleState.detached:
-        AutoPingService.stop();
         break;
       default:
         break;
@@ -172,25 +181,33 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       if (mounted) {
         setState(() {
           _vpnActive = status;
+          _vpnLoading = false;
         });
       }
     } catch (e) {
+      if (mounted) {
+        setState(() {
+          _vpnLoading = false;
+        });
+      }
       debugPrint('Error checking initial status: $e');
     }
   }
 
-  void _startAutoPing() {
-    AutoPingService.start(
-      dns1: _dns1Controller.text.trim(),
-      dns2: _dns2Controller.text.trim(),
-    );
-  }
-
   Future<void> _toggleVpn(bool value) async {
+    if (_vpnLoading) return;
+    setState(() {
+      _vpnLoading = true;
+    });
     if (value) {
       await _activateVpn();
     } else {
       await _deactivateVpn();
+    }
+    if (mounted) {
+      setState(() {
+        _vpnLoading = false;
+      });
     }
   }
 
@@ -223,28 +240,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     }
   }
 
-  Future<void> _testGoogleConnectivity() async {
-    if (_isTestingConnectivity) return;
-
-    setState(() {
-      _isTestingConnectivity = true;
-    });
-
-    try {
-      final result = await DnsService.testGoogleConnectivity();
-      if (mounted) {
-        setState(() {
-          _isTestingConnectivity = false;
-        });
-        _showConnectivityResult(result);
-      }
-    } catch (e) {
-      setState(() {
-        _isTestingConnectivity = false;
-      });
-      _showErrorMessage('خطا در تست اتصال: $e');
-    }
-  }
+  // ...existing code...
 
   void _showSuccessMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -258,134 +254,11 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     );
   }
 
-  void _showConnectivityResult(GoogleConnectivityResult result) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          result.overallStatus
-              ? DnsConstants.errorMessages['connectivityTestPassed']!
-              : DnsConstants.errorMessages['connectivityTestFailed']!,
-        ),
-        backgroundColor: result.overallStatus ? Colors.green : Colors.red,
-      ),
-    );
-  }
+  // ...existing code...
 
-  void _showMenuOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.list),
-              title: const Text('لیست DNS'),
-              subtitle: const Text('مدیریت ساده رکوردها'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DnsRecordListScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.dns),
-              title: const Text('مدیریت کامل DNS'),
-              subtitle: const Text('مدیریت پیشرفته با آمار'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DnsManagerScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.code),
-              title: const Text('نمونه API'),
-              subtitle: const Text('مثال‌های استفاده از API'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DnsApiDemoScreen(),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // ...existing code...
 
-  void _showAboutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('About FireDNS'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('FireDNS - Advanced DNS Manager'),
-            SizedBox(height: 10),
-            Text('Version: 1.0.0'),
-            SizedBox(height: 10),
-            Text('A powerful DNS management app with API integration.'),
-            SizedBox(height: 10),
-            Text('Features:'),
-            Text('• DNS record management'),
-            Text('• Speed testing'),
-            Text('• Connection monitoring'),
-            Text('• API integration'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSupportDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Support This App'),
-        content: const Text(
-          'Thank you for using FireDNS! Your support helps us continue developing and improving this app.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // اینجا می‌توانید لینک پرداخت یا rate app اضافه کنید
-            },
-            child: const Text('Support'),
-          ),
-        ],
-      ),
-    );
-  }
+  // ...existing code...
 
   @override
   Widget build(BuildContext context) {
@@ -405,51 +278,17 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         ),
         centerTitle: true,
       ),
-      drawer: SettingsDrawer(
-        autoStartOnBoot: _autoStartOnBoot,
-        darkTheme: _darkTheme,
-        notificationsEnabled: _notificationsEnabled,
-        currentDns1: _dns1Controller.text.isEmpty
-            ? '10.10.14.1'
-            : _dns1Controller.text,
-        currentDns2: _dns2Controller.text.isEmpty
-            ? 'Unknown'
-            : _dns2Controller.text,
-        currentIpv4: '1.1.1.1',
-        onAutoStartChanged: (value) {
-          setState(() {
-            _autoStartOnBoot = value;
-          });
-        },
-        onDarkThemeChanged: (value) {
-          setState(() {
-            _darkTheme = value;
-          });
-        },
-        onNotificationsChanged: (value) {
-          setState(() {
-            _notificationsEnabled = value;
-          });
-        },
-        onAboutPressed: _showAboutDialog,
-        onSupportPressed: _showSupportDialog,
-        onChangeServerPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const DnsManagerScreen()),
-          );
-        },
-      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(responsiveSize(12, context, min: 4, max: 16, scaleByHeight: true)),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // DNS Connection Status Card
             _buildConnectionStatusCard(),
-            const SizedBox(height: 20),
+            SizedBox(height: responsiveSize(8, context, min: 2, max: 12, scaleByHeight: true)),
             // Speed Test Card
             _buildSpeedTestCard(),
-            const SizedBox(height: 20),
+            SizedBox(height: responsiveSize(8, context, min: 2, max: 12, scaleByHeight: true)),
             // Configuration Card
             _buildConfigurationCard(),
           ],
@@ -462,179 +301,210 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   Widget _buildConnectionStatusCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(30),
+      padding: EdgeInsets.all(responsiveSize(24, context, min: 10, max: 28, scaleByHeight: true)),
       decoration: BoxDecoration(
         color: const Color(0xFFE8E8E8),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(14, context, min: 6, max: 20, scaleByHeight: true),
+        ),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          // آیکون و لپ تاپ
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // آیکون power (عملکرد جدید)
-              GestureDetector(
-                onTap: () => _toggleVpn(!_vpnActive),
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: _vpnActive ? Colors.green : Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.power_settings_new,
-                    color: Colors.white,
-                    size: 40,
-                  ),
-                ),
-              ),
-              // آیکون لپ تاپ
-              Container(
-                width: 100,
-                height: 80,
-                child: Stack(
-                  children: [
-                    // لپ تاپ
-                    Positioned(
-                      bottom: 0,
-                      right: 10,
-                      child: Container(
-                        width: 70,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(5),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Container(
-                          margin: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final double factor = 1.55;
+                return Opacity(
+                  opacity: 0.88,
+                  child: Center(
+                    child: OverflowBox(
+                      maxWidth: constraints.maxWidth * factor,
+                      maxHeight: constraints.maxHeight * factor,
+                      alignment: Alignment.center,
+                      child: Lottie.asset(
+                        'assets/icone/laptop.json',
+                        width: constraints.maxWidth * factor,
+                        height: constraints.maxHeight * factor,
+                        fit: BoxFit.contain,
+                        alignment: Alignment.center,
+                        repeat: true,
                       ),
                     ),
-                    // کیبورد
-                    Positioned(
-                      bottom: -5,
-                      right: 5,
-                      child: Container(
-                        width: 80,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade400,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                    ),
-                    // نقطه قرمز
-                    Positioned(
-                      top: 20,
-                      left: 0,
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 30),
-
-          // متن وضعیت
-          Row(
-            children: [
-              GestureDetector(
-                onTap:
-                    (_selectedDnsLabel != null &&
-                        _selectedDnsIp != null &&
-                        _selectedDnsIp!.isNotEmpty)
-                    ? () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => DnsInfoPopup(
-                            label: _selectedDnsLabel!,
-                            ip: _selectedDnsIp!,
-                            ping:
-                                null, // مقدار پینگ را اینجا قرار دهید اگر دارید
-                          ),
-                        );
-                      }
-                    : null,
-                child: Icon(
-                  Icons.info_outline,
-                  size: 20,
-                  color:
-                      (_selectedDnsLabel != null &&
-                          _selectedDnsIp != null &&
-                          _selectedDnsIp!.isNotEmpty)
-                      ? Colors.blue
-                      : Colors.grey,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _vpnActive ? 'متصل شد' : 'قطع اتصال',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // نمایش دی‌ان‌اس انتخابی
-          if (_selectedDnsLabel != null)
-            Row(
-              children: [
-                const Icon(Icons.dns, size: 20, color: Colors.blue),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'DNS انتخابی: ${_selectedDnsLabel!}' +
-                        (_selectedDnsIp != null && _selectedDnsIp!.isNotEmpty
-                            ? ' (${_selectedDnsIp!})'
-                            : ''),
-                    style: const TextStyle(fontSize: 16, color: Colors.blue),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                );
+              },
             ),
-
-          // متن وضعیت جلسه یا نمایش دی‌ان‌اس انتخابی
-          if (!_vpnActive) ...[
-            if (_selectedDnsLabel != null)
+          ),
+          Column(
+            children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(Icons.dns, size: 20, color: Colors.blue),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'DNS انتخابی: ${_selectedDnsLabel!}' +
-                          (_selectedDnsIp != null && _selectedDnsIp!.isNotEmpty
-                              ? ' (${_selectedDnsIp!})'
-                              : ''),
-                      style: const TextStyle(fontSize: 16, color: Colors.blue),
-                      overflow: TextOverflow.ellipsis,
+                  SizedBox(
+                    width: responsiveSize(120, context, min: 60, max: 160, scaleByHeight: true),
+                    height: responsiveSize(90, context, min: 40, max: 120, scaleByHeight: true),
+                  ),
+                  GestureDetector(
+                    onTap: _vpnLoading ? null : () => _toggleVpn(!_vpnActive),
+                    child: Container(
+                      width: responsiveSize(80, context, min: 40, max: 100, scaleByHeight: true),
+                      height: responsiveSize(80, context, min: 40, max: 100, scaleByHeight: true),
+                      decoration: BoxDecoration(
+                        color: _vpnActive ? Colors.green : Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: _vpnLoading
+                          ? Center(
+                              child: SizedBox(
+                                width: responsiveSize(
+                                  36,
+                                  context,
+                                  min: 20,
+                                  max: 40,
+                                  scaleByHeight: true,
+                                ),
+                                height: responsiveSize(
+                                  36,
+                                  context,
+                                  min: 20,
+                                  max: 40,
+                                  scaleByHeight: true,
+                                ),
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                  strokeWidth: 4,
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              Icons.power_settings_new,
+                              color: Colors.white,
+                              size: responsiveSize(
+                                40,
+                                context,
+                                min: 24,
+                                max: 48,
+                                scaleByHeight: true,
+                              ),
+                            ),
                     ),
                   ),
                 ],
               ),
-          ],
+              SizedBox(height: responsiveSize(30, context, min: 12, max: 40, scaleByHeight: true)),
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap:
+                        (_selectedDnsLabel != null &&
+                            _selectedDnsIp != null &&
+                            _selectedDnsIp!.isNotEmpty)
+                        ? () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => DnsInfoPopup(
+                                label: _selectedDnsLabel!,
+                                ip: _selectedDnsIp!,
+                                ping: null,
+                              ),
+                            );
+                          }
+                        : null,
+                    child: Icon(
+                      Icons.info_outline,
+                      size: responsiveSize(20, context, min: 14, max: 28, scaleByHeight: true),
+                      color:
+                          (_selectedDnsLabel != null &&
+                              _selectedDnsIp != null &&
+                              _selectedDnsIp!.isNotEmpty)
+                          ? Colors.blue
+                          : Colors.grey,
+                    ),
+                  ),
+                  SizedBox(width: responsiveSize(8, context, min: 4, max: 16, scaleByHeight: true)),
+                  Text(
+                    _vpnActive ? 'متصل شد' : 'قطع اتصال',
+                    style: TextStyle(
+                      fontSize: responsiveSize(24, context, min: 14, max: 32, scaleByHeight: true),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: responsiveSize(8, context, min: 4, max: 16, scaleByHeight: true)),
+              if (_selectedDnsLabel != null)
+                Row(
+                  children: [
+                    Icon(
+                      Icons.dns,
+                      size: responsiveSize(20, context, min: 14, max: 28, scaleByHeight: true),
+                      color: _vpnActive ? Colors.green : Colors.blue,
+                    ),
+                    SizedBox(
+                      width: responsiveSize(8, context, min: 4, max: 16, scaleByHeight: true),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'DNS انتخابی: ${_selectedDnsLabel!}' +
+                            (_selectedDnsIp != null &&
+                                    _selectedDnsIp!.isNotEmpty
+                                ? ' (${_selectedDnsIp!})'
+                                : ''),
+                        style: TextStyle(
+                          fontSize: responsiveSize(
+                            16,
+                            context,
+                            min: 12,
+                            max: 24,
+                            scaleByHeight: true,
+                          ),
+                          color: _vpnActive ? Colors.green : Colors.blue,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              if (!_vpnActive) ...[
+                if (_selectedDnsLabel != null)
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.dns,
+                        size: responsiveSize(20, context, min: 14, max: 28, scaleByHeight: true),
+                        color: _vpnActive ? Colors.green : Colors.blue,
+                      ),
+                      SizedBox(
+                        width: responsiveSize(8, context, min: 4, max: 16, scaleByHeight: true),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'DNS انتخابی: ${_selectedDnsLabel!}' +
+                              (_selectedDnsIp != null &&
+                                      _selectedDnsIp!.isNotEmpty
+                                  ? ' (${_selectedDnsIp!})'
+                                  : ''),
+                          style: TextStyle(
+                            fontSize: responsiveSize(
+                              16,
+                              context,
+                              min: 12,
+                              max: 24,
+                              scaleByHeight: true,
+                            ),
+                            color: _vpnActive ? Colors.green : Colors.blue,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ],
+          ),
         ],
       ),
     );
@@ -644,10 +514,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   Widget _buildSpeedTestCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(25),
+      padding: EdgeInsets.all(responsiveSize(12, context, min: 6, max: 18, scaleByHeight: true)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(responsiveSize(12, context, min: 6, max: 16, scaleByHeight: true)),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
@@ -674,51 +544,60 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 25,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: responsiveSize(16, context, min: 8, max: 25, scaleByHeight: true),
+                    vertical: responsiveSize(8, context, min: 4, max: 12, scaleByHeight: true),
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(25),
+                    color: const Color(0xFF1976D2), // Strong blue
+                    borderRadius: BorderRadius.circular(responsiveSize(16, context, min: 8, max: 25, scaleByHeight: true)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: const Text(
+                  child: Text(
                     'شروع تست',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: responsiveSize(14, context, min: 10, max: 16, scaleByHeight: true),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
               // آیکون سرعت
               Container(
-                width: 50,
-                height: 50,
+                width: responsiveSize(32, context, min: 24, max: 50, scaleByHeight: true),
+                height: responsiveSize(32, context, min: 24, max: 50, scaleByHeight: true),
                 decoration: const BoxDecoration(
                   color: Colors.green,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.speed, color: Colors.white, size: 25),
+                child: Icon(Icons.speed, color: Colors.white, size: responsiveSize(18, context, min: 14, max: 25, scaleByHeight: true)),
               ),
             ],
           ),
 
-          const SizedBox(height: 20),
+          SizedBox(height: responsiveSize(12, context, min: 4, max: 20, scaleByHeight: true)),
 
-          // عنوان
-          const Text(
+          Text(
             'تست سرعت اینترنت',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: responsiveSize(18, context, min: 14, max: 24, scaleByHeight: true),
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
 
-          const SizedBox(height: 10),
+          SizedBox(height: responsiveSize(8, context, min: 2, max: 10, scaleByHeight: true)),
 
-          // توضیحات
           RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
+            text: TextSpan(
+              style: TextStyle(fontSize: responsiveSize(12, context, min: 10, max: 14, scaleByHeight: true), color: Colors.grey, height: 1.5),
               children: [
                 TextSpan(
                   text: 'تست سرعت',
@@ -748,10 +627,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   Widget _buildConfigurationCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(25),
+      padding: EdgeInsets.all(responsiveSize(12, context, min: 6, max: 18, scaleByHeight: true)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(responsiveSize(12, context, min: 6, max: 16, scaleByHeight: true)),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
@@ -780,24 +659,35 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                   await _loadSelectedDnsLabel();
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 25,
-                    vertical: 12,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: responsiveSize(16, context, min: 8, max: 25, scaleByHeight: true),
+                    vertical: responsiveSize(8, context, min: 4, max: 12, scaleByHeight: true),
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(25),
+                    color: const Color(0xFF1976D2), // Strong blue
+                    borderRadius: BorderRadius.circular(responsiveSize(16, context, min: 8, max: 25, scaleByHeight: true)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: const Text(
+                  child: Text(
                     'تغییر DNS',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: responsiveSize(14, context, min: 10, max: 16, scaleByHeight: true),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
               // آیکون تنظیمات
               Container(
-                width: 50,
-                height: 50,
+                width: responsiveSize(32, context, min: 24, max: 50, scaleByHeight: true),
+                height: responsiveSize(32, context, min: 24, max: 50, scaleByHeight: true),
                 decoration: const BoxDecoration(
                   color: Colors.green,
                   shape: BoxShape.circle,
@@ -805,13 +695,13 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    const Icon(Icons.settings, color: Colors.white, size: 20),
+                    Icon(Icons.settings, color: Colors.white, size: responsiveSize(16, context, min: 12, max: 20, scaleByHeight: true)),
                     Positioned(
                       right: 8,
                       top: 8,
                       child: Container(
-                        width: 8,
-                        height: 8,
+                        width: responsiveSize(6, context, min: 4, max: 8, scaleByHeight: true),
+                        height: responsiveSize(6, context, min: 4, max: 8, scaleByHeight: true),
                         decoration: const BoxDecoration(
                           color: Colors.green,
                           shape: BoxShape.circle,
@@ -824,24 +714,22 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
             ],
           ),
 
-          const SizedBox(height: 20),
+          SizedBox(height: responsiveSize(12, context, min: 4, max: 20, scaleByHeight: true)),
 
-          // عنوان
-          const Text(
+          Text(
             'پیکربندی شبکه',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: responsiveSize(18, context, min: 14, max: 24, scaleByHeight: true),
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
 
-          const SizedBox(height: 10),
+          SizedBox(height: responsiveSize(8, context, min: 2, max: 10, scaleByHeight: true)),
 
-          // توضیحات
           RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
+            text: TextSpan(
+              style: TextStyle(fontSize: responsiveSize(12, context, min: 10, max: 14, scaleByHeight: true), color: Colors.grey, height: 1.5),
               children: [
                 TextSpan(text: 'در این بخش می‌توانید '),
                 TextSpan(

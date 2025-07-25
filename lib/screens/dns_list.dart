@@ -3,6 +3,7 @@ import 'package:lottie/lottie.dart';
 import 'dart:convert';
 import '../path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/add_dns_dialog.dart';
 
 class DnsListPage extends StatefulWidget {
   const DnsListPage({Key? key}) : super(key: key);
@@ -91,12 +92,22 @@ class _DnsListPageState extends State<DnsListPage> {
     final cachedOrder = prefs.getStringList('cached_dns_order');
     final cachedSelected = prefs.getString('cached_selected_dns');
     final cachedPing = prefs.getString('cached_ping_cache');
+    final userDnsJson = prefs.getString('user_dns_list');
+    List<DnsRecord> userDnsRecords = [];
+    if (userDnsJson != null) {
+      try {
+        final List<dynamic> userList = List.from(jsonDecode(userDnsJson));
+        userDnsRecords = userList.map((e) => DnsRecord.fromJson(e)).toList();
+      } catch (_) {}
+    }
     if (cached != null) {
       try {
         final List<dynamic> jsonList = List.from(jsonDecode(cached));
         List<DnsRecord> records = jsonList
             .map((e) => DnsRecord.fromJson(e))
             .toList();
+        // Add user DNS records (persistent)
+        records.addAll(userDnsRecords);
         // Remove duplicates by ip1+ip2
         final seen = <String>{};
         records = records.where((r) {
@@ -124,6 +135,16 @@ class _DnsListPageState extends State<DnsListPage> {
           }
         });
       } catch (_) {}
+    } else if (userDnsRecords.isNotEmpty) {
+      // If no cached list, but user DNS exists
+      setState(() {
+        _dnsRecords = userDnsRecords;
+        if (cachedSelected != null) _selectedDnsId = cachedSelected;
+        if (cachedPing != null) {
+          final Map<String, dynamic> map = jsonDecode(cachedPing);
+          _pingCache = map.map((k, v) => MapEntry(k, v as int));
+        }
+      });
     }
   }
 
@@ -301,26 +322,98 @@ class _DnsListPageState extends State<DnsListPage> {
     }).toList();
   }
 
+  Future<void> _deleteUserDns(DnsRecord record) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userDnsJson = prefs.getString('user_dns_list');
+    List<dynamic> userDnsList = [];
+    if (userDnsJson != null) {
+      try {
+        userDnsList = List.from(jsonDecode(userDnsJson));
+      } catch (_) {}
+    }
+    userDnsList.removeWhere((e) => e['id'] == record.id);
+    await prefs.setString('user_dns_list', jsonEncode(userDnsList));
+    // Remove from liked if present
+    final liked = prefs.getStringList('liked_dns_ids') ?? [];
+    liked.remove(record.id);
+    await prefs.setStringList('liked_dns_ids', liked);
+    await _loadCachedDnsList();
+    setState(() {
+      _sortDnsRecords();
+    });
+  }
+
+  Future<void> _editUserDns(DnsRecord record) async {
+    // For now, just show add dialog with onAdd, since initialRecord is not supported in AddDnsDialog
+    await showDialog(
+      context: context,
+      builder: (context) => AddDnsDialog(
+        onAdd: (editedRecord) async {
+          // Replace in user_dns_list
+          final prefs = await SharedPreferences.getInstance();
+          final userDnsJson = prefs.getString('user_dns_list');
+          List<dynamic> userDnsList = [];
+          if (userDnsJson != null) {
+            try {
+              userDnsList = List.from(jsonDecode(userDnsJson));
+            } catch (_) {}
+          }
+          userDnsList.removeWhere((e) => e['id'] == record.id);
+          userDnsList.add(editedRecord.toJson());
+          await prefs.setString('user_dns_list', jsonEncode(userDnsList));
+          await _loadCachedDnsList();
+          setState(() {
+            _sortDnsRecords();
+          });
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
-        title: const Text('انتخاب DNS'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.wifi_tethering),
-            tooltip: 'تست همه DNSها',
-            onPressed: _loadingList || _dnsRecords.isEmpty ? null : _testAllDns,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: const Text(
+          'انتخاب DNS',
+          style: TextStyle(
+            color: Color(0xFF222B45),
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            letterSpacing: 0.5,
           ),
+        ),
+        iconTheme: const IconThemeData(color: Color(0xFF222B45)),
+        actions: [
+          _testDialogOpen
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF5A9CFF),
+                    ),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.wifi_tethering),
+                  tooltip: 'تست همه DNSها',
+                  onPressed: _loadingList || _dnsRecords.isEmpty
+                      ? null
+                      : _testAllDns,
+                ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.sort),
             tooltip: 'مرتب‌سازی',
-            onSelected: (value) {
-              setState(() {
-                _sortType = value;
-                _sortDnsRecords();
-              });
-            },
+            color: Colors.white,
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'default', child: Text('پیش‌فرض')),
               const PopupMenuItem(value: 'ping', child: Text('کمترین پینگ')),
@@ -329,6 +422,12 @@ class _DnsListPageState extends State<DnsListPage> {
                 child: Text('مرتب‌سازی بر اساس نام'),
               ),
             ],
+            onSelected: (value) {
+              setState(() {
+                _sortType = value;
+                _sortDnsRecords();
+              });
+            },
           ),
           IconButton(
             icon: const Icon(Icons.search),
@@ -345,6 +444,13 @@ class _DnsListPageState extends State<DnsListPage> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             tooltip: 'بیشتر',
+            color: Colors.white,
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'customTest',
+                child: Text('تست دامنه با همه DNSها'),
+              ),
+            ],
             onSelected: (value) async {
               if (value == 'customTest') {
                 final controller = TextEditingController();
@@ -385,12 +491,6 @@ class _DnsListPageState extends State<DnsListPage> {
                 }
               }
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'customTest',
-                child: Text('تست دامنه با همه DNSها'),
-              ),
-            ],
           ),
         ],
       ),
@@ -408,113 +508,234 @@ class _DnsListPageState extends State<DnsListPage> {
                         child: ListView.separated(
                           physics: const AlwaysScrollableScrollPhysics(),
                           itemCount: _filteredDnsRecords.length,
-                          separatorBuilder: (_, __) => const Divider(),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final record = _filteredDnsRecords[index];
                             final isSelected = _selectedDnsId == record.id;
                             final ping = _pingCache[record.id];
                             Color pingColor;
-                            if (ping == null) {
-                              pingColor = Colors.grey;
-                            } else if (ping < 0) {
-                              pingColor = Colors.grey;
+                            if (ping == null || ping < 0) {
+                              pingColor = Colors.grey.shade400;
                             } else if (ping < 50) {
-                              pingColor = Colors.green;
+                              pingColor = const Color(0xFF4CAF50);
                             } else if (ping < 120) {
-                              pingColor = Colors.lightGreen;
+                              pingColor = const Color(0xFF8BC34A);
                             } else if (ping < 250) {
-                              pingColor = Colors.yellow[700]!;
+                              pingColor = const Color(0xFFFFC107);
                             } else if (ping < 500) {
-                              pingColor = Colors.orange;
+                              pingColor = const Color(0xFFFF9800);
                             } else {
-                              pingColor = Colors.red;
+                              pingColor = const Color(0xFFF44336);
                             }
-                            return ListTile(
-                              leading: Text(
-                                '${index + 1}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            final isUserDns = record.id.length > 8;
+                            return Card(
+                              elevation: isSelected ? 4 : 1,
+                              color: isSelected
+                                  ? const Color(0xFFE3F2FD)
+                                  : Colors.white,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 4,
                               ),
-                              title: Row(
-                                children: [
-                                  Expanded(child: Text(record.label)),
-                                  IconButton(
-                                    icon: Icon(
-                                      _likedDnsIds.contains(record.id)
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color: _likedDnsIds.contains(record.id)
-                                          ? Colors.red
-                                          : Colors.grey,
-                                    ),
-                                    tooltip: _likedDnsIds.contains(record.id)
-                                        ? 'حذف از علاقه‌مندی'
-                                        : 'افزودن به علاقه‌مندی',
-                                    onPressed: () => _toggleLikeDns(record.id),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: _isLoading
+                                    ? null
+                                    : () => _connectToDns(record),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
                                   ),
-                                ],
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
+                                      Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color: const Color(
+                                            0xFF5A9CFF,
+                                          ).withOpacity(0.08),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        alignment: Alignment.center,
                                         child: Text(
-                                          '${index + 1}. DNS1: ${record.ip1}',
+                                          '${index + 1}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: Color(0xFF5A9CFF),
+                                          ),
                                         ),
                                       ),
-                                      if (ping != null)
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            Container(
-                                              margin: const EdgeInsets.only(
-                                                left: 4,
-                                              ),
-                                              child: Text(
-                                                'پینگ: ${ping > 0 ? '$ping ms' : '---'}',
-                                                style: TextStyle(
-                                                  color: pingColor,
-                                                  fontWeight: FontWeight.bold,
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    record.label,
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 16,
+                                                      color: Color(0xFF222B45),
+                                                    ),
+                                                  ),
                                                 ),
-                                                textAlign: TextAlign.left,
-                                              ),
+                                                IconButton(
+                                                  icon: Icon(
+                                                    _likedDnsIds.contains(
+                                                          record.id,
+                                                        )
+                                                        ? Icons.favorite
+                                                        : Icons.favorite_border,
+                                                    color:
+                                                        _likedDnsIds.contains(
+                                                          record.id,
+                                                        )
+                                                        ? Colors.red
+                                                        : Colors.grey.shade400,
+                                                  ),
+                                                  tooltip:
+                                                      _likedDnsIds.contains(
+                                                        record.id,
+                                                      )
+                                                      ? 'حذف از علاقه‌مندی'
+                                                      : 'افزودن به علاقه‌مندی',
+                                                  onPressed: () =>
+                                                      _toggleLikeDns(record.id),
+                                                ),
+                                                if (isUserDns) ...[
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.edit,
+                                                      color: Colors.blue,
+                                                    ),
+                                                    tooltip: 'ویرایش',
+                                                    onPressed: () =>
+                                                        _editUserDns(record),
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.delete,
+                                                      color: Colors.red,
+                                                    ),
+                                                    tooltip: 'حذف',
+                                                    onPressed: () =>
+                                                        _deleteUserDns(record),
+                                                  ),
+                                                ],
+                                              ],
                                             ),
-                                            if (ping > 0 && ping < 80)
-                                              Container(
-                                                margin: const EdgeInsets.only(
-                                                  left: 2,
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.dns,
+                                                  size: 18,
+                                                  color: Color(0xFF5A9CFF),
                                                 ),
-                                                width: 28,
-                                                height: 28,
-                                                child: Lottie.asset(
-                                                  'assets/icone/Fire.json',
-                                                  repeat: true,
-                                                  animate: true,
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  record.ip1,
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    color: Color(0xFF607D8B),
+                                                  ),
                                                 ),
-                                              ),
+                                                const SizedBox(width: 12),
+                                                if (ping != null)
+                                                  Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.speed,
+                                                        size: 18,
+                                                        color: pingColor,
+                                                      ),
+                                                      const SizedBox(width: 2),
+                                                      Text(
+                                                        ping > 0
+                                                            ? '$ping ms'
+                                                            : '---',
+                                                        style: TextStyle(
+                                                          color: pingColor,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
+                                                      if (ping > 0 && ping < 80)
+                                                        Container(
+                                                          margin:
+                                                              const EdgeInsets.only(
+                                                                left: 2,
+                                                              ),
+                                                          width: 22,
+                                                          height: 22,
+                                                          child: Lottie.asset(
+                                                            'assets/icone/Fire.json',
+                                                            repeat: true,
+                                                            animate: true,
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.dns_outlined,
+                                                  size: 18,
+                                                  color: Color(0xFFB0BEC5),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  record.ip2,
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    color: Color(0xFF90A4AE),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ],
+                                        ),
+                                      ),
+                                      if (isSelected && _isLoading)
+                                        const Padding(
+                                          padding: EdgeInsets.only(
+                                            left: 8,
+                                            top: 8,
+                                          ),
+                                          child: SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
                                         ),
                                     ],
                                   ),
-                                  Text('${index + 1}. DNS2: ${record.ip2}'),
-                                ],
+                                ),
                               ),
-                              trailing: isSelected && _isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : null,
-                              selected: isSelected,
-                              onTap: _isLoading
-                                  ? null
-                                  : () => _connectToDns(record),
                             );
                           },
                         ),
@@ -589,6 +810,22 @@ class _DnsListPageState extends State<DnsListPage> {
               ),
             ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () async {
+          await showDialog(
+            context: context,
+            builder: (context) => AddDnsDialog(
+              onAdd: (newRecord) async {
+                await _loadCachedDnsList();
+                setState(() {
+                  _sortDnsRecords();
+                });
+              },
+            ),
+          );
+        },
       ),
     );
   }

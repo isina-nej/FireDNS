@@ -179,6 +179,17 @@ Win32Window::MessageHandler(HWND hwnd,
                             WPARAM const wparam,
                             LPARAM const lparam) noexcept {
   switch (message) {
+    case WM_GETMINMAXINFO: {
+      MINMAXINFO* mmi = reinterpret_cast<MINMAXINFO*>(lparam);
+      RECT rect;
+      SystemParametersInfo(SPI_GETWORKAREA, 0, &rect, 0);
+      int minWidth = static_cast<int>((rect.right - rect.left) * 0.25); // 25% of screen width
+      int minHeight = static_cast<int>((rect.bottom - rect.top) * 0.45); // 43% of screen height
+      mmi->ptMinTrackSize.x = minWidth;
+      mmi->ptMinTrackSize.y = minHeight;
+      // حالا هم عرض و هم ارتفاع محدود شد
+      return 0;
+    }
     case WM_DESTROY:
       window_handle_ = nullptr;
       Destroy();

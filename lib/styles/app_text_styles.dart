@@ -14,11 +14,9 @@ class AppTextStyles {
   static const double _fontSizeXL = 18.0;
   static const double _fontSizeXXL = 20.0;
   static const double _fontSizeXXXL = 24.0;
-  static const double _fontSizeHuge = 28.0;
   static const double _fontSizeGiant = 32.0;
 
   // وزن‌های فونت
-  static const FontWeight _fontWeightLight = FontWeight.w300;
   static const FontWeight _fontWeightRegular = FontWeight.w400;
   static const FontWeight _fontWeightMedium = FontWeight.w500;
   static const FontWeight _fontWeightSemiBold = FontWeight.w600;

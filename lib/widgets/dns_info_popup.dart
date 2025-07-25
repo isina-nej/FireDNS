@@ -67,22 +67,32 @@ class DnsInfoPopup extends StatelessWidget {
                 ],
               ),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1976D2), // Strong blue
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 3,
+                      shadowColor: Colors.blue.shade100,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text(
+                      'بستن',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text(
-                  'بستن',
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                ),
-              ),
+              ],
             ),
           ],
         ),
