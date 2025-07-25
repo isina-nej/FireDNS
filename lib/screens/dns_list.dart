@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:flutter/gestures.dart';
 import 'dart:convert';
 import '../path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/dns_ping_helper.dart';
 import '../widgets/animated_overflow_label.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class DnsListPage extends StatefulWidget {
   const DnsListPage({Key? key}) : super(key: key);
@@ -14,10 +17,49 @@ class DnsListPage extends StatefulWidget {
 }
 
 class _DnsListPageState extends State<DnsListPage> {
+  Set<String> _userDnsIds = {};
+
+  Future<void> _loadUserDnsIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userDnsJson = prefs.getString('user_dns_list');
+    final ids = <String>{};
+    if (userDnsJson != null) {
+      try {
+        final List<dynamic> userList = List.from(jsonDecode(userDnsJson));
+        for (var e in userList) {
+          ids.add(e['id']);
+        }
+      } catch (_) {}
+    }
+    setState(() {
+      _userDnsIds = ids;
+    });
+  }
+
+  bool _isUserDns(DnsRecord record) => _userDnsIds.contains(record.id);
   Widget _buildDnsCard(BuildContext context, DnsRecord record, int index) {
     final isSelected = _selectedDnsId == record.id;
     final ping = _pingCache['${record.id}_1'] ?? _pingCache[record.id];
     final ping2 = _pingCache['${record.id}_2'] ?? _pingCache[record.id];
+
+    Future<void> _rePingBoth() async {
+      setState(() {
+        _pingCache['${record.id}_1'] = -2; // انتظار (لودینگ)
+        _pingCache['${record.id}_2'] = -2;
+      });
+      final ping1 = await DnsPingHelper.ping(record.ip1);
+      final ping2 = await DnsPingHelper.ping(record.ip2);
+      setState(() {
+        _pingCache['${record.id}_1'] = (ping1 == null || ping1 < 0)
+            ? -1
+            : ping1;
+        _pingCache['${record.id}_2'] = (ping2 == null || ping2 < 0)
+            ? -1
+            : ping2;
+        _sortDnsRecords();
+      });
+    }
+
     Color pingColor;
     if (ping == null || ping < 0) {
       pingColor = Colors.grey.shade400;
@@ -46,7 +88,7 @@ class _DnsListPageState extends State<DnsListPage> {
     } else {
       pingColor2 = const Color(0xFFF44336);
     }
-    final isUserDns = record.id.length > 8;
+    final isUserDns = _isUserDns(record);
     return ClipRect(
       child: SizedBox(
         height: 140,
@@ -201,35 +243,77 @@ class _DnsListPageState extends State<DnsListPage> {
                               ),
                               const SizedBox(width: 12),
                               if (ping != null)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.speed,
-                                      size: 18,
-                                      color: pingColor,
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      ping > 0 ? '$ping ms' : '---',
-                                      style: TextStyle(
-                                        color: pingColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    if (ping > 0 && ping < 80)
-                                      Container(
-                                        margin: const EdgeInsets.only(left: 2),
-                                        width: 22,
-                                        height: 22,
-                                        child: Lottie.asset(
-                                          'assets/icone/Fire.json',
-                                          repeat: true,
-                                          animate: true,
+                                Listener(
+                                  behavior: HitTestBehavior.opaque,
+                                  onPointerDown: (event) {
+                                    if (Theme.of(context).platform ==
+                                        TargetPlatform.windows) {
+                                      if (event.kind ==
+                                          PointerDeviceKind.mouse) {
+                                        _rePingBoth();
+                                      }
+                                    }
+                                  },
+                                  child: GestureDetector(
+                                    onTap: _rePingBoth,
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.speed,
+                                          size: 18,
+                                          color: pingColor,
                                         ),
-                                      ),
-                                  ],
+                                        const SizedBox(width: 2),
+                                        ping == -2
+                                            ? const SizedBox(
+                                                width: 18,
+                                                height: 18,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                            : (ping == -1 ||
+                                                  ping < 0 ||
+                                                  ping >= 1000)
+                                            ? Text(
+                                                '---',
+                                                style: TextStyle(
+                                                  color: pingColor,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  decoration:
+                                                      TextDecoration.underline,
+                                                ),
+                                              )
+                                            : Text(
+                                                '$ping ms',
+                                                style: TextStyle(
+                                                  color: pingColor,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  decoration:
+                                                      TextDecoration.underline,
+                                                ),
+                                              ),
+                                        if (ping > 0 && ping < 80)
+                                          Container(
+                                            margin: const EdgeInsets.only(
+                                              left: 2,
+                                            ),
+                                            width: 22,
+                                            height: 22,
+                                            child: Lottie.asset(
+                                              'assets/icone/Fire.json',
+                                              repeat: true,
+                                              animate: true,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                             ],
                           ),
@@ -275,24 +359,77 @@ class _DnsListPageState extends State<DnsListPage> {
                               ),
                               const SizedBox(width: 12),
                               if (ping2 != null)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.speed,
-                                      size: 18,
-                                      color: pingColor2,
+                                Listener(
+                                  behavior: HitTestBehavior.opaque,
+                                  onPointerDown: (event) {
+                                    if (Theme.of(context).platform ==
+                                        TargetPlatform.windows) {
+                                      if (event.kind ==
+                                          PointerDeviceKind.mouse) {
+                                        _rePingBoth();
+                                      }
+                                    }
+                                  },
+                                  child: GestureDetector(
+                                    onTap: _rePingBoth,
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.speed,
+                                          size: 18,
+                                          color: pingColor2,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        ping2 == -2
+                                            ? const SizedBox(
+                                                width: 18,
+                                                height: 18,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                            : (ping2 == -1 ||
+                                                  ping2 < 0 ||
+                                                  ping2 >= 1000)
+                                            ? Text(
+                                                '---',
+                                                style: TextStyle(
+                                                  color: pingColor2,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  decoration:
+                                                      TextDecoration.underline,
+                                                ),
+                                              )
+                                            : Text(
+                                                '$ping2 ms',
+                                                style: TextStyle(
+                                                  color: pingColor2,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  decoration:
+                                                      TextDecoration.underline,
+                                                ),
+                                              ),
+                                        if (ping2 > 0 && ping2 < 80)
+                                          Container(
+                                            margin: const EdgeInsets.only(
+                                              left: 2,
+                                            ),
+                                            width: 22,
+                                            height: 22,
+                                            child: Lottie.asset(
+                                              'assets/icone/Fire.json',
+                                              repeat: true,
+                                              animate: true,
+                                            ),
+                                          ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      ping2 > 0 ? '$ping2 ms' : '---',
-                                      style: TextStyle(
-                                        color: pingColor2,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
                             ],
                           ),
@@ -364,17 +501,18 @@ class _DnsListPageState extends State<DnsListPage> {
           int pingA2 = _pingCache['${a.id}_2'] ?? 999999;
           int pingB1 = _pingCache['${b.id}_1'] ?? _pingCache[b.id] ?? 999999;
           int pingB2 = _pingCache['${b.id}_2'] ?? 999999;
-          int minA = (pingA1 < 0 && pingA2 < 0)
-              ? 999999
-              : [pingA1, pingA2]
-                    .where((p) => p >= 0)
-                    .fold(999999, (prev, p) => p < prev ? p : prev);
-          int minB = (pingB1 < 0 && pingB2 < 0)
-              ? 999999
-              : [pingB1, pingB2]
-                    .where((p) => p >= 0)
-                    .fold(999999, (prev, p) => p < prev ? p : prev);
-          return minA.compareTo(minB);
+
+          int sortA = pingA1 >= 0
+              ? pingA1
+              : pingA2 >= 0
+              ? pingA2
+              : 999999;
+          int sortB = pingB1 >= 0
+              ? pingB1
+              : pingB2 >= 0
+              ? pingB2
+              : 999999;
+          return sortA.compareTo(sortB);
         } else if (_sortType == 'name') {
           return a.label.compareTo(b.label);
         } else {
@@ -384,6 +522,8 @@ class _DnsListPageState extends State<DnsListPage> {
     });
   }
 
+  DateTime? _lastAutoPing;
+
   @override
   void initState() {
     super.initState();
@@ -391,12 +531,28 @@ class _DnsListPageState extends State<DnsListPage> {
       await DnsService.stopVpn();
       await _loadLikedDns();
       await _loadCachedDnsList();
+      await _loadUserDnsIds();
       await fetchDnsListWithTimer();
-      _pingCache.clear();
+      _pingCache = await DnsPingHelper.loadPingCache();
       if (_sortType == 'ping') {
         _sortDnsRecords();
       }
-      await _testAllDns(auto: true);
+      // زمان آخرین پینگ خودکار را از SharedPreferences بخوان
+      final prefs = await SharedPreferences.getInstance();
+      final lastPingStr = prefs.getString('last_auto_ping');
+      if (lastPingStr != null) {
+        try {
+          _lastAutoPing = DateTime.parse(lastPingStr);
+        } catch (_) {}
+      }
+      final now = DateTime.now();
+      // اگر اولین ورود یا بیش از ۱ ساعت گذشته بود، پینگ خودکار انجام بده
+      if (_lastAutoPing == null ||
+          now.difference(_lastAutoPing!).inHours >= 1) {
+        await _testAllDns(auto: true);
+        _lastAutoPing = now;
+        await prefs.setString('last_auto_ping', now.toIso8601String());
+      }
     });
   }
 
@@ -497,9 +653,8 @@ class _DnsListPageState extends State<DnsListPage> {
   Future<void> _loadCachedDnsList() async {
     final prefs = await SharedPreferences.getInstance();
     final cached = prefs.getString('cached_dns_list');
-    final cachedOrder = prefs.getStringList('cached_dns_order');
+    final cachedOrder = await DnsPingHelper.loadDnsOrder();
     final cachedSelected = prefs.getString('cached_selected_dns');
-    final cachedPing = prefs.getString('cached_ping_cache');
     final userDnsJson = prefs.getString('user_dns_list');
     List<DnsRecord> userDnsRecords = [];
     if (userDnsJson != null) {
@@ -525,7 +680,7 @@ class _DnsListPageState extends State<DnsListPage> {
           return true;
         }).toList();
         // Restore order if available
-        if (cachedOrder != null && cachedOrder.isNotEmpty) {
+        if (cachedOrder.isNotEmpty) {
           records.sort((a, b) {
             int ia = cachedOrder.indexOf(a.id);
             int ib = cachedOrder.indexOf(b.id);
@@ -534,24 +689,20 @@ class _DnsListPageState extends State<DnsListPage> {
             return ia.compareTo(ib);
           });
         }
+        final pingCache = await DnsPingHelper.loadPingCache();
         setState(() {
           _dnsRecords = records;
           if (cachedSelected != null) _selectedDnsId = cachedSelected;
-          if (cachedPing != null) {
-            final Map<String, dynamic> map = jsonDecode(cachedPing);
-            _pingCache = map.map((k, v) => MapEntry(k, v as int));
-          }
+          _pingCache = pingCache;
         });
       } catch (_) {}
     } else if (userDnsRecords.isNotEmpty) {
       // If no cached list, but user DNS exists
+      final pingCache = await DnsPingHelper.loadPingCache();
       setState(() {
         _dnsRecords = userDnsRecords;
         if (cachedSelected != null) _selectedDnsId = cachedSelected;
-        if (cachedPing != null) {
-          final Map<String, dynamic> map = jsonDecode(cachedPing);
-          _pingCache = map.map((k, v) => MapEntry(k, v as int));
-        }
+        _pingCache = pingCache;
       });
     }
   }
@@ -625,9 +776,22 @@ class _DnsListPageState extends State<DnsListPage> {
   bool _testDialogOpen = false;
 
   Future<void> _connectToDns(DnsRecord record) async {
-    // اگر تست در حال اجراست، متوقف شود
+    // اگر تست پینگ در حال اجراست، اجازه انتخاب نده و اسنک‌بار نمایش بده
     if (_testDialogOpen) {
-      Navigator.of(context, rootNavigator: true).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('لطفا تا اتمام تست پینگ صبر کنید.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    // توقف تست پینگ هنگام انتخاب DNS فقط روی اندروید و iOS
+    // جلوگیری از کرش روی ویندوز
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      DnsPingHelper.cancelPingTest();
     }
     setState(() {
       _selectedDnsId = record.id;
@@ -653,6 +817,7 @@ class _DnsListPageState extends State<DnsListPage> {
       auto: auto,
       mounted: mounted,
       showDialogCallback: (List<String> results) {
+        if (!mounted) return;
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -673,11 +838,16 @@ class _DnsListPageState extends State<DnsListPage> {
           ),
         );
       },
-      setTestDialogOpen: (v) => setState(() => _testDialogOpen = v),
+      setTestDialogOpen: (v) {
+        if (!mounted) return;
+        setState(() => _testDialogOpen = v);
+      },
       // setCancelTest: (v) => setState(() => _cancelTest = v),
     );
+    if (!mounted) return;
     setState(() {
       _pingCache = pingCache;
+      _sortDnsRecords();
     });
   }
 
@@ -726,10 +896,10 @@ class _DnsListPageState extends State<DnsListPage> {
   }
 
   Future<void> _editUserDns(DnsRecord record) async {
-    // For now, just show add dialog with onAdd, since initialRecord is not supported in AddDnsDialog
     await showDialog(
       context: context,
       builder: (context) => AddDnsDialog(
+        initialRecord: record,
         onAdd: (editedRecord) async {
           // Replace in user_dns_list
           final prefs = await SharedPreferences.getInstance();
@@ -740,7 +910,16 @@ class _DnsListPageState extends State<DnsListPage> {
               userDnsList = List.from(jsonDecode(userDnsJson));
             } catch (_) {}
           }
-          userDnsList.removeWhere((e) => e['id'] == record.id);
+          // Remove all previous versions by id and by ip1+ip2
+          userDnsList.removeWhere((e) {
+            final key = (e['ip1'] + '_' + e['ip2'])
+                .replaceAll(' ', '')
+                .toLowerCase();
+            final editedKey = (editedRecord.ip1 + '_' + editedRecord.ip2)
+                .replaceAll(' ', '')
+                .toLowerCase();
+            return e['id'] == record.id || key == editedKey;
+          });
           userDnsList.add(editedRecord.toJson());
           await prefs.setString('user_dns_list', jsonEncode(userDnsList));
 
@@ -752,6 +931,7 @@ class _DnsListPageState extends State<DnsListPage> {
           }
 
           await _loadCachedDnsList();
+          await _loadUserDnsIds();
           setState(() {
             _sortDnsRecords();
           });
@@ -762,318 +942,336 @@ class _DnsListPageState extends State<DnsListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'انتخاب DNS',
-          style: TextStyle(
-            color: Color(0xFF222B45),
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-            letterSpacing: 0.5,
+    return WillPopScope(
+      onWillPop: () async {
+        if (_testDialogOpen) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('لطفا تا اتمام تست پینگ صبر کنید.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7F8FA),
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          title: const Text(
+            'انتخاب DNS',
+            style: TextStyle(
+              color: Color(0xFF222B45),
+              fontWeight: FontWeight.bold,
+              fontSize: 22,
+              letterSpacing: 0.5,
+            ),
           ),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFF222B45)),
-        actions: [
-          _testDialogOpen
-              ? IconButton(
-                  icon: const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Color(0xFF5A9CFF),
+          iconTheme: const IconThemeData(color: Color(0xFF222B45)),
+          actions: [
+            _testDialogOpen
+                ? IconButton(
+                    icon: const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF5A9CFF),
+                      ),
+                    ),
+                    tooltip: 'لغو تست همه DNSها',
+                    onPressed: () {
+                      setState(() {
+                        // _cancelTest = true;
+                        _testDialogOpen = false;
+                      });
+                    },
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.wifi_tethering),
+                    tooltip: 'تست همه DNSها',
+                    onPressed: _loadingList || _dnsRecords.isEmpty
+                        ? null
+                        : _testAllDns,
+                  ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.sort),
+              tooltip: 'مرتب‌سازی',
+              color: Colors.white,
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'default',
+                  child: SizedBox(
+                    width: 160,
+                    child: Text(
+                      'پیش‌فرض',
+                      style: TextStyle(color: Color(0xFF222B45)),
                     ),
                   ),
-                  tooltip: 'لغو تست همه DNSها',
-                  onPressed: () {
-                    setState(() {
-                      // _cancelTest = true;
-                      _testDialogOpen = false;
-                    });
-                  },
-                )
-              : IconButton(
-                  icon: const Icon(Icons.wifi_tethering),
-                  tooltip: 'تست همه DNSها',
-                  onPressed: _loadingList || _dnsRecords.isEmpty
-                      ? null
-                      : _testAllDns,
                 ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.sort),
-            tooltip: 'مرتب‌سازی',
-            color: Colors.white,
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'default',
-                child: SizedBox(
-                  width: 160,
-                  child: Text(
-                    'پیش‌فرض',
-                    style: TextStyle(color: Color(0xFF222B45)),
-                  ),
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'ping',
-                child: SizedBox(
-                  width: 160,
-                  child: Text(
-                    'کمترین پینگ',
-                    style: TextStyle(color: Color(0xFF222B45)),
-                  ),
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'name',
-                child: SizedBox(
-                  width: 160,
-                  child: Text(
-                    'مرتب‌سازی بر اساس نام',
-                    style: TextStyle(color: Color(0xFF222B45)),
-                  ),
-                ),
-              ),
-            ],
-            onSelected: (value) {
-              setState(() {
-                _sortType = value;
-                _sortDnsRecords();
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: 'جستجو',
-            onPressed: () {
-              setState(() {
-                _showSearch = !_showSearch;
-                if (_showSearch) {
-                  _searchController.text = _searchQuery;
-                }
-              });
-            },
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            tooltip: 'بیشتر',
-            color: Colors.white,
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'customTest',
-                child: SizedBox(
-                  width: 180,
-                  child: Text(
-                    'تست دامنه با همه DNSها',
-                    style: TextStyle(color: Color(0xFF222B45)),
-                  ),
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'refreshDns',
-                child: SizedBox(
-                  width: 180,
-                  child: Text(
-                    'دریافت لیست جدید از سرور',
-                    style: TextStyle(color: Color(0xFF222B45)),
-                  ),
-                ),
-              ),
-            ],
-            onSelected: (value) async {
-              if (value == 'customTest') {
-                final controller = TextEditingController();
-                String? domain = await showDialog<String>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('تست پینگ دامنه با همه DNSها'),
-                    content: TextField(
-                      controller: controller,
-                      autofocus: true,
-                      decoration: const InputDecoration(
-                        hintText: 'دامنه یا آی‌پی را وارد کنید',
-                      ),
-                      onSubmitted: (v) => Navigator.of(context).pop(v),
+                const PopupMenuItem(
+                  value: 'ping',
+                  child: SizedBox(
+                    width: 160,
+                    child: Text(
+                      'کمترین پینگ',
+                      style: TextStyle(color: Color(0xFF222B45)),
                     ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('انصراف'),
-                      ),
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.of(context).pop(controller.text),
-                        child: const Text('تست'),
-                      ),
-                    ],
                   ),
-                );
-                if (domain != null && domain.trim().isNotEmpty) {
+                ),
+                const PopupMenuItem(
+                  value: 'name',
+                  child: SizedBox(
+                    width: 160,
+                    child: Text(
+                      'مرتب‌سازی بر اساس نام',
+                      style: TextStyle(color: Color(0xFF222B45)),
+                    ),
+                  ),
+                ),
+              ],
+              onSelected: (value) {
+                setState(() {
+                  _sortType = value;
+                  _sortDnsRecords();
+                });
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: 'جستجو',
+              onPressed: () {
+                setState(() {
+                  _showSearch = !_showSearch;
+                  if (_showSearch) {
+                    _searchController.text = _searchQuery;
+                  }
+                });
+              },
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'بیشتر',
+              color: Colors.white,
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'customTest',
+                  child: SizedBox(
+                    width: 180,
+                    child: Text(
+                      'تست دامنه با همه DNSها',
+                      style: TextStyle(color: Color(0xFF222B45)),
+                    ),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'refreshDns',
+                  child: SizedBox(
+                    width: 180,
+                    child: Text(
+                      'دریافت لیست جدید از سرور',
+                      style: TextStyle(color: Color(0xFF222B45)),
+                    ),
+                  ),
+                ),
+              ],
+              onSelected: (value) async {
+                if (value == 'customTest') {
                   showDialog(
                     context: context,
-                    barrierDismissible: false,
-                    builder: (context) => _TestDomainWithAllDnsDialog(
-                      domain: domain.trim(),
-                      dnsRecords: _dnsRecords,
+                    builder: (context) => AlertDialog(
+                      title: const Text('تست دامنه با همه DNSها'),
+                      content: const Text('این قابلیت بزودی فعال خواهد شد.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('بستن'),
+                        ),
+                      ],
+                    ),
+                  );
+                } else if (value == 'refreshDns') {
+                  await fetchDnsListWithTimer(force: true);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('لیست DNS با موفقیت بروزرسانی شد.'),
+                      duration: Duration(seconds: 2),
                     ),
                   );
                 }
-              } else if (value == 'refreshDns') {
-                await fetchDnsListWithTimer(force: true);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('لیست DNS با موفقیت بروزرسانی شد.'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          _loadingList
-              ? const Center(child: CircularProgressIndicator())
-              : _loadError != null
-              ? Center(child: Text(_loadError!))
-              : RefreshIndicator(
-                  onRefresh: _fetchDnsList,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isWide =
-                                constraints.maxWidth > 700 &&
-                                Theme.of(context).platform ==
-                                    TargetPlatform.windows;
-                            if (isWide) {
-                              // دو ستونه کنار هم با ارتفاع ثابت
-                              return GridView.builder(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      crossAxisSpacing: 8,
-                                      mainAxisSpacing: 8,
-                                      mainAxisExtent:
-                                          140, // ارتفاع ثابت برای هر آیتم
-                                    ),
-                                itemCount: _filteredDnsRecords.length,
-                                itemBuilder: (context, index) => _buildDnsCard(
-                                  context,
-                                  _filteredDnsRecords[index],
-                                  index,
-                                ),
-                              );
-                            } else {
-                              // حالت معمول لیست
-                              return ListView.separated(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                itemCount: _filteredDnsRecords.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 8),
-                                itemBuilder: (context, index) => _buildDnsCard(
-                                  context,
-                                  _filteredDnsRecords[index],
-                                  index,
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                      // ...existing code...
-                      // ...existing code...
-                      // Move this method inside _DnsListPageState class:
-                    ],
-                  ),
-                ),
-          if (_showSearch)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showSearch = false;
-                  });
-                },
-                child: Container(
-                  color: Colors.black.withOpacity(0.2),
-                  alignment: Alignment.topCenter,
-                  child: SafeArea(
-                    child: Container(
-                      margin: const EdgeInsets.all(24),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
+              },
+            ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            _loadingList
+                ? const Center(child: CircularProgressIndicator())
+                : _loadError != null
+                ? Center(child: Text(_loadError!))
+                : RefreshIndicator(
+                    onRefresh: _fetchDnsList,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isWide =
+                                  constraints.maxWidth > 600 &&
+                                  Theme.of(context).platform ==
+                                      TargetPlatform.windows;
+                              if (isWide) {
+                                // اگر خیلی عریض بود سه ستونه، اگر فقط عریض بود دو ستونه
+                                int columns = constraints.maxWidth > 1050
+                                    ? 3
+                                    : 2;
+                                return GridView.builder(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: columns,
+                                        crossAxisSpacing: 8,
+                                        mainAxisSpacing: 8,
+                                        mainAxisExtent:
+                                            140, // ارتفاع ثابت برای هر آیتم
+                                      ),
+                                  itemCount: _filteredDnsRecords.length,
+                                  itemBuilder: (context, index) =>
+                                      _buildDnsCard(
+                                        context,
+                                        _filteredDnsRecords[index],
+                                        index,
+                                      ),
+                                );
+                              } else {
+                                // حالت معمول لیست
+                                return ListView.separated(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  itemCount: _filteredDnsRecords.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 8),
+                                  itemBuilder: (context, index) =>
+                                      _buildDnsCard(
+                                        context,
+                                        _filteredDnsRecords[index],
+                                        index,
+                                      ),
+                                );
+                              }
+                            },
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              autofocus: true,
-                              decoration: const InputDecoration(
-                                hintText: 'جستجو بر اساس نام یا آی‌پی',
-                                border: InputBorder.none,
+                        ),
+                      ],
+                    ),
+                  ),
+            if (_showSearch)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _showSearch = false;
+                    });
+                  },
+                  child: Container(
+                    color: Colors.black.withOpacity(0.2),
+                    alignment: Alignment.topCenter,
+                    child: SafeArea(
+                      child: Container(
+                        margin: const EdgeInsets.all(24),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                autofocus: true,
+                                decoration: const InputDecoration(
+                                  hintText: 'جستجو بر اساس نام یا آی‌پی',
+                                  border: InputBorder.none,
+                                ),
+                                onChanged: (v) {
+                                  setState(() {
+                                    _searchQuery = v;
+                                  });
+                                },
+                                onSubmitted: (v) {
+                                  setState(() {
+                                    _searchQuery = v;
+                                    _showSearch = false;
+                                  });
+                                },
                               ),
-                              onChanged: (v) {
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () {
                                 setState(() {
-                                  _searchQuery = v;
-                                });
-                              },
-                              onSubmitted: (v) {
-                                setState(() {
-                                  _searchQuery = v;
                                   _showSearch = false;
                                 });
                               },
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () {
-                              setState(() {
-                                _showSearch = false;
-                              });
-                            },
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () async {
-          await showDialog(
-            context: context,
-            builder: (context) => AddDnsDialog(
-              onAdd: (newRecord) async {
-                await fetchDnsListWithTimer(force: true);
-              },
-            ),
-          );
-        },
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          child: const Icon(Icons.add),
+          onPressed: () async {
+            if (_testDialogOpen) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('لطفا تا اتمام تست پینگ صبر کنید.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              return;
+            }
+            final result = await showDialog(
+              context: context,
+              builder: (context) => AddDnsDialog(
+                onAdd: (newRecord) async {
+                  // Like the DNS if not already liked
+                  final prefs = await SharedPreferences.getInstance();
+                  final liked = prefs.getStringList('liked_dns_ids') ?? [];
+                  if (!liked.contains(newRecord.id)) {
+                    liked.add(newRecord.id);
+                    await prefs.setStringList('liked_dns_ids', liked);
+                    setState(() {
+                      _likedDnsIds = liked.toSet();
+                    });
+                  }
+                  await fetchDnsListWithTimer(force: true);
+                },
+              ),
+            );
+            // اگر رکوردی از دیالوگ برگشت (در حالت وصل شدن به DNS موجود)
+            if (result is DnsRecord) {
+              _connectToDns(result);
+            }
+          },
+        ),
       ),
     );
   }
@@ -1094,119 +1292,24 @@ class _TestDomainWithAllDnsDialog extends StatefulWidget {
 
 class _TestDomainWithAllDnsDialogState
     extends State<_TestDomainWithAllDnsDialog> {
-  late List<_DnsPingResult> _results;
-  // bool _isTesting = true; // Removed unused field
-
-  @override
-  void initState() {
-    super.initState();
-    _results = List.generate(
-      widget.dnsRecords.length,
-      (i) => _DnsPingResult(widget.dnsRecords[i], null),
-    );
-    _testAll();
-  }
-
-  String _sanitizeDomain(String input) {
-    var d = input.trim();
-    if (d.startsWith('http://')) d = d.substring(7);
-    if (d.startsWith('https://')) d = d.substring(8);
-    d = d.replaceAll(RegExp(r'^/+'), '');
-    d = d.replaceAll(RegExp(r'/+$'), ''); // حذف همه اسلش‌های انتهایی
-    return d;
-  }
-
-  Future<void> _testAll() async {
-    final sanitizedDomain = _sanitizeDomain(widget.domain);
-    for (int i = 0; i < widget.dnsRecords.length; i++) {
-      final record = widget.dnsRecords[i];
-      final result = await DnsService.testDnsWithDns(
-        sanitizedDomain,
-        record.ip1,
-      );
-      setState(() {
-        _results[i] = _DnsPingResult(record, result);
-      });
-    }
-    setState(() {
-      // _isTesting = false; // Removed unused field and assignment
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('تست دسترسی ${widget.domain} با همه DNSها'),
+      title: Text('تست دامنه "${widget.domain}" با همه DNSها'),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView.builder(
           shrinkWrap: true,
-          itemCount: _results.length,
-          itemBuilder: (context, i) {
-            final r = _results[i];
-            if (r.status == null) {
-              return ListTile(
-                title: Text(r.record.label),
-                subtitle: Text('DNS: ${r.record.ip1}'),
-                trailing: const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              );
-            }
-            final s = r.status!;
-            // پشتیبانی از هر دو حالت Map و DnsStatus
-            bool dnsReach;
-            int? dnsPing;
-            bool httpReach = false;
-            int? httpPing;
-            int? httpStatus;
-            if (s is Map) {
-              dnsReach = s['dnsReachable'] == true;
-              dnsPing = s['dnsPing'];
-              httpStatus = s['httpStatus'];
-              httpPing = s['httpPing'];
-              httpReach =
-                  httpStatus != null && httpStatus >= 200 && httpStatus < 400;
-            } else {
-              // فرض بر این که DnsStatus فقط پینگ و دسترسی DNS را دارد
-              dnsReach = s.isReachable == true;
-              dnsPing = s.ping;
-              httpStatus = null;
-              httpPing = null;
-              httpReach = dnsReach;
-            }
-            return ListTile(
-              title: Text(r.record.label),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('DNS: ${r.record.ip1}'),
-                  Text(
-                    'پینگ DNS: ${dnsReach ? (dnsPing != null && dnsPing > 0 ? '$dnsPing ms' : 'موفق') : 'ناموفق'}',
-                  ),
-                  Text(
-                    httpStatus != null
-                        ? 'HTTP: ${httpReach ? '✅ ($httpStatus, ${httpPing != null && httpPing > 0 ? '$httpPing ms' : '-'})' : '❌ ($httpStatus)'}'
-                        : '',
-                  ),
-                ],
-              ),
-              trailing: httpStatus != null
-                  ? (httpReach
-                        ? const Icon(Icons.check_circle, color: Colors.green)
-                        : const Icon(Icons.cancel, color: Colors.red))
-                  : (dnsReach
-                        ? const Icon(Icons.check_circle, color: Colors.green)
-                        : const Icon(Icons.cancel, color: Colors.red)),
-            );
+          itemCount: widget.dnsRecords.length,
+          itemBuilder: (context, index) {
+            final record = widget.dnsRecords[index];
+            return _DnsTestTile(domain: widget.domain, record: record);
           },
         ),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
           child: const Text('بستن'),
         ),
       ],
@@ -1214,8 +1317,54 @@ class _TestDomainWithAllDnsDialogState
   }
 }
 
-class _DnsPingResult {
+class _DnsTestTile extends StatefulWidget {
+  final String domain;
   final DnsRecord record;
-  final dynamic status; // Map or null
-  _DnsPingResult(this.record, this.status);
+  const _DnsTestTile({required this.domain, required this.record});
+
+  @override
+  State<_DnsTestTile> createState() => _DnsTestTileState();
+}
+
+class _DnsTestTileState extends State<_DnsTestTile> {
+  dynamic status;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _runTest();
+  }
+
+  Future<void> _runTest() async {
+    final result = await DnsService.testDnsWithDns(
+      widget.domain,
+      widget.record.ip1,
+    );
+    if (!mounted) return;
+    setState(() {
+      status = result;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(widget.record.label),
+      subtitle: Text(widget.record.ip1),
+      trailing: _loading
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : status != null
+          ? Text(
+              status.toString(),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            )
+          : const Text('خطا', style: TextStyle(color: Colors.red)),
+    );
+  }
 }
