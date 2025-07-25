@@ -23,7 +23,6 @@ export '../screens/homepage.dart';
 export '../screens/speed_test_page.dart';
 
 // services
-export '../services/auto_ping_service.dart';
 export '../services/dns_service.dart';
 export '../services/vpn_status_service.dart';
 
@@ -38,6 +37,7 @@ export '../styles/theme_manager.dart';
 // utils
 export '../utils/dns_validator.dart';
 export '../utils/format_utils.dart';
+export '../widgets/add_dns_dialog.dart';
 
 
 export '../widgets/dns_info_popup.dart';

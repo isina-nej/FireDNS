@@ -123,21 +123,26 @@ Win32Window::~Win32Window() {
 bool Win32Window::Create(const std::wstring& title,
                          const Point& origin,
                          const Size& size) {
-  Destroy();
+  // Set default window size and position (top-right corner, 10px margin)
+  RECT screen_rect;
+  SystemParametersInfo(SPI_GETWORKAREA, 0, &screen_rect, 0);
+  const int default_width = 440;
+  const int default_height = 750;
+  const int margin_x = 120;
+  const int margin_y = 20;
+  const int default_x = screen_rect.right - default_width - margin_x;
+  const int default_y = screen_rect.top + margin_y;
 
-  const wchar_t* window_class =
-      WindowClassRegistrar::GetInstance()->GetWindowClass();
+  const wchar_t* window_class = WindowClassRegistrar::GetInstance()->GetWindowClass();
 
-  const POINT target_point = {static_cast<LONG>(origin.x),
-                              static_cast<LONG>(origin.y)};
-  HMONITOR monitor = MonitorFromPoint(target_point, MONITOR_DEFAULTTONEAREST);
+  HMONITOR monitor = MonitorFromPoint({0, 0}, MONITOR_DEFAULTTONEAREST);
   UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
   double scale_factor = dpi / 96.0;
 
   HWND window = CreateWindow(
       window_class, title.c_str(), WS_OVERLAPPEDWINDOW,
-      Scale(origin.x, scale_factor), Scale(origin.y, scale_factor),
-      Scale(size.width, scale_factor), Scale(size.height, scale_factor),
+      default_x, default_y,
+      Scale(default_width, scale_factor), Scale(default_height, scale_factor),
       nullptr, nullptr, GetModuleHandle(nullptr), this);
 
   if (!window) {
@@ -184,7 +189,7 @@ Win32Window::MessageHandler(HWND hwnd,
       RECT rect;
       SystemParametersInfo(SPI_GETWORKAREA, 0, &rect, 0);
       int minWidth = static_cast<int>((rect.right - rect.left) * 0.25); // 25% of screen width
-      int minHeight = static_cast<int>((rect.bottom - rect.top) * 0.45); // 43% of screen height
+      int minHeight = static_cast<int>((rect.bottom - rect.top) * 0.50); // 43% of screen height
       mmi->ptMinTrackSize.x = minWidth;
       mmi->ptMinTrackSize.y = minHeight;
       // حالا هم عرض و هم ارتفاع محدود شد

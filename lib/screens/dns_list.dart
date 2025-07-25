@@ -3,7 +3,8 @@ import 'package:lottie/lottie.dart';
 import 'dart:convert';
 import '../path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../widgets/add_dns_dialog.dart';
+import '../utils/dns_ping_helper.dart';
+import '../widgets/animated_overflow_label.dart';
 
 class DnsListPage extends StatefulWidget {
   const DnsListPage({Key? key}) : super(key: key);
@@ -13,6 +14,310 @@ class DnsListPage extends StatefulWidget {
 }
 
 class _DnsListPageState extends State<DnsListPage> {
+  Widget _buildDnsCard(BuildContext context, DnsRecord record, int index) {
+    final isSelected = _selectedDnsId == record.id;
+    final ping = _pingCache['${record.id}_1'] ?? _pingCache[record.id];
+    final ping2 = _pingCache['${record.id}_2'] ?? _pingCache[record.id];
+    Color pingColor;
+    if (ping == null || ping < 0) {
+      pingColor = Colors.grey.shade400;
+    } else if (ping < 50) {
+      pingColor = const Color(0xFF4CAF50);
+    } else if (ping < 120) {
+      pingColor = const Color(0xFF8BC34A);
+    } else if (ping < 250) {
+      pingColor = const Color(0xFFFFC107);
+    } else if (ping < 500) {
+      pingColor = const Color(0xFFFF9800);
+    } else {
+      pingColor = const Color(0xFFF44336);
+    }
+    Color pingColor2;
+    if (ping2 == null || ping2 < 0) {
+      pingColor2 = Colors.grey.shade400;
+    } else if (ping2 < 50) {
+      pingColor2 = const Color(0xFF4CAF50);
+    } else if (ping2 < 120) {
+      pingColor2 = const Color(0xFF8BC34A);
+    } else if (ping2 < 250) {
+      pingColor2 = const Color(0xFFFFC107);
+    } else if (ping2 < 500) {
+      pingColor2 = const Color(0xFFFF9800);
+    } else {
+      pingColor2 = const Color(0xFFF44336);
+    }
+    final isUserDns = record.id.length > 8;
+    return ClipRect(
+      child: SizedBox(
+        height: 140,
+        child: Card(
+          elevation: isSelected ? 4 : 1,
+          color: isSelected ? const Color(0xFFE3F2FD) : Colors.white,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: _isLoading ? null : () => _connectToDns(record),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5A9CFF).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFF5A9CFF),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final text = record.label;
+                                    final textStyle = const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                      color: Color(0xFF222B45),
+                                    );
+                                    final textPainter = TextPainter(
+                                      text: TextSpan(
+                                        text: text,
+                                        style: textStyle,
+                                      ),
+                                      maxLines: 1,
+                                      textDirection: TextDirection.ltr,
+                                    )..layout(maxWidth: constraints.maxWidth);
+                                    final isOverflow =
+                                        textPainter.width >
+                                        constraints.maxWidth;
+                                    if (isOverflow) {
+                                      return AnimatedOverflowLabel(
+                                        label: text,
+                                        width: constraints.maxWidth,
+                                        style: textStyle,
+                                      );
+                                    } else {
+                                      return Text(text, style: textStyle);
+                                    }
+                                  },
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  _likedDnsIds.contains(record.id)
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: _likedDnsIds.contains(record.id)
+                                      ? Colors.red
+                                      : Colors.grey.shade400,
+                                ),
+                                tooltip: _likedDnsIds.contains(record.id)
+                                    ? 'حذف از علاقه‌مندی'
+                                    : 'افزودن به علاقه‌مندی',
+                                onPressed: () => _toggleLikeDns(record.id),
+                              ),
+                              if (isUserDns) ...[
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: Colors.blue,
+                                  ),
+                                  tooltip: 'ویرایش',
+                                  onPressed: () => _editUserDns(record),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  tooltip: 'حذف',
+                                  onPressed: () => _deleteUserDns(record),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.dns,
+                                size: 18,
+                                color: Color(0xFF5A9CFF),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final text = record.ip1;
+                                    final textStyle = const TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF607D8B),
+                                    );
+                                    final textPainter = TextPainter(
+                                      text: TextSpan(
+                                        text: text,
+                                        style: textStyle,
+                                      ),
+                                      maxLines: 1,
+                                      textDirection: TextDirection.ltr,
+                                    )..layout(maxWidth: constraints.maxWidth);
+                                    final isOverflow =
+                                        textPainter.width >
+                                        constraints.maxWidth;
+                                    if (isOverflow) {
+                                      return AnimatedOverflowLabel(
+                                        label: text,
+                                        width: constraints.maxWidth,
+                                        style: textStyle,
+                                      );
+                                    } else {
+                                      return Text(text, style: textStyle);
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              if (ping != null)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.speed,
+                                      size: 18,
+                                      color: pingColor,
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      ping > 0 ? '$ping ms' : '---',
+                                      style: TextStyle(
+                                        color: pingColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    if (ping > 0 && ping < 80)
+                                      Container(
+                                        margin: const EdgeInsets.only(left: 2),
+                                        width: 22,
+                                        height: 22,
+                                        child: Lottie.asset(
+                                          'assets/icone/Fire.json',
+                                          repeat: true,
+                                          animate: true,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.dns_outlined,
+                                size: 18,
+                                color: Color(0xFFB0BEC5),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final text = record.ip2;
+                                    final textStyle = const TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF90A4AE),
+                                    );
+                                    final textPainter = TextPainter(
+                                      text: TextSpan(
+                                        text: text,
+                                        style: textStyle,
+                                      ),
+                                      maxLines: 1,
+                                      textDirection: TextDirection.ltr,
+                                    )..layout(maxWidth: constraints.maxWidth);
+                                    final isOverflow =
+                                        textPainter.width >
+                                        constraints.maxWidth;
+                                    if (isOverflow) {
+                                      return AnimatedOverflowLabel(
+                                        label: text,
+                                        width: constraints.maxWidth,
+                                        style: textStyle,
+                                      );
+                                    } else {
+                                      return Text(text, style: textStyle);
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              if (ping2 != null)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.speed,
+                                      size: 18,
+                                      color: pingColor2,
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      ping2 > 0 ? '$ping2 ms' : '---',
+                                      style: TextStyle(
+                                        color: pingColor2,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (isSelected && _isLoading)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8, top: 8),
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Set<String> _likedDnsIds = {};
   Future<void> _loadLikedDns() async {
     final prefs = await SharedPreferences.getInstance();
@@ -55,12 +360,21 @@ class _DnsListPageState extends State<DnsListPage> {
         if (aLiked && !bLiked) return -1;
         if (!aLiked && bLiked) return 1;
         if (_sortType == 'ping') {
-          int pingA = _pingCache[a.id] ?? 999999;
-          int pingB = _pingCache[b.id] ?? 999999;
-          if (pingA < 0 && pingB < 0) return 0;
-          if (pingA < 0) return 1;
-          if (pingB < 0) return -1;
-          return pingA.compareTo(pingB);
+          int pingA1 = _pingCache['${a.id}_1'] ?? _pingCache[a.id] ?? 999999;
+          int pingA2 = _pingCache['${a.id}_2'] ?? 999999;
+          int pingB1 = _pingCache['${b.id}_1'] ?? _pingCache[b.id] ?? 999999;
+          int pingB2 = _pingCache['${b.id}_2'] ?? 999999;
+          int minA = (pingA1 < 0 && pingA2 < 0)
+              ? 999999
+              : [pingA1, pingA2]
+                    .where((p) => p >= 0)
+                    .fold(999999, (prev, p) => p < prev ? p : prev);
+          int minB = (pingB1 < 0 && pingB2 < 0)
+              ? 999999
+              : [pingB1, pingB2]
+                    .where((p) => p >= 0)
+                    .fold(999999, (prev, p) => p < prev ? p : prev);
+          return minA.compareTo(minB);
         } else if (_sortType == 'name') {
           return a.label.compareTo(b.label);
         } else {
@@ -73,17 +387,111 @@ class _DnsListPageState extends State<DnsListPage> {
   @override
   void initState() {
     super.initState();
-    // خاموش کردن DNS هنگام ورود به صفحه لیست
     Future.microtask(() async {
       await DnsService.stopVpn();
       await _loadLikedDns();
       await _loadCachedDnsList();
-      await _fetchDnsList();
+      await fetchDnsListWithTimer();
+      _pingCache.clear();
       if (_sortType == 'ping') {
         _sortDnsRecords();
       }
       await _testAllDns(auto: true);
     });
+  }
+
+  // --- Place fetchDnsListWithTimer after initState and after class variables ---
+  /// دریافت لیست از API فقط هر ۶ ساعت یکبار (مگر اینکه کش خالی باشد یا force=true)
+  Future<void> fetchDnsListWithTimer({bool force = false}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastFetchStr = prefs.getString('last_dns_api_fetch');
+    DateTime? lastFetch;
+    if (lastFetchStr != null) {
+      try {
+        lastFetch = DateTime.parse(lastFetchStr);
+      } catch (_) {}
+    }
+    final now = DateTime.now();
+    final cachedJson = prefs.getString('cached_dns_list');
+    bool shouldFetch = force;
+    if (cachedJson == null) {
+      shouldFetch = true;
+    } else if (lastFetch == null || now.difference(lastFetch).inHours >= 6) {
+      shouldFetch = true;
+    }
+    if (shouldFetch) {
+      // دریافت لیست جدید از API
+      final response = await _dnsApiService.getAllDnsRecords();
+      List<DnsRecord> apiRecords = [];
+      if (response.status && response.data != null) {
+        apiRecords = response.data!;
+      }
+      // دریافت DNSهای دستی
+      final userDnsJson = prefs.getString('user_dns_list');
+      List<DnsRecord> userDnsRecords = [];
+      if (userDnsJson != null) {
+        try {
+          final List<dynamic> userList = List.from(jsonDecode(userDnsJson));
+          userDnsRecords = userList.map((e) => DnsRecord.fromJson(e)).toList();
+        } catch (_) {}
+      }
+      // لیست جدید = API + DNSهای دستی
+      List<DnsRecord> newRecords = [...apiRecords, ...userDnsRecords];
+      // حذف موارد تکراری بر اساس ip1+ip2
+      final seen = <String>{};
+      newRecords = newRecords.where((r) {
+        final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
+        if (seen.contains(key)) return false;
+        seen.add(key);
+        return true;
+      }).toList();
+      setState(() {
+        _dnsRecords = newRecords;
+        _loadingList = false;
+        _sortDnsRecords();
+      });
+      // بروزرسانی کش و زمان آخرین دریافت
+      prefs.setString(
+        'cached_dns_list',
+        jsonEncode(newRecords.map((e) => e.toJson()).toList()),
+      );
+      prefs.setStringList(
+        'cached_dns_order',
+        newRecords.map((e) => e.id).toList(),
+      );
+      prefs.setString('last_dns_api_fetch', now.toIso8601String());
+    } else {
+      // فقط کش و DNSهای دستی را نمایش بده
+      List<DnsRecord> cachedRecords = [];
+      if (cachedJson != null) {
+        try {
+          final List<dynamic> jsonList = List.from(jsonDecode(cachedJson));
+          cachedRecords = jsonList.map((e) => DnsRecord.fromJson(e)).toList();
+        } catch (_) {}
+      }
+      final userDnsJson = prefs.getString('user_dns_list');
+      List<DnsRecord> userDnsRecords = [];
+      if (userDnsJson != null) {
+        try {
+          final List<dynamic> userList = List.from(jsonDecode(userDnsJson));
+          userDnsRecords = userList.map((e) => DnsRecord.fromJson(e)).toList();
+        } catch (_) {}
+      }
+      List<DnsRecord> allRecords = [...cachedRecords, ...userDnsRecords];
+      // حذف موارد تکراری بر اساس ip1+ip2
+      final seen = <String>{};
+      allRecords = allRecords.where((r) {
+        final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
+        if (seen.contains(key)) return false;
+        seen.add(key);
+        return true;
+      }).toList();
+      setState(() {
+        _dnsRecords = allRecords;
+        _loadingList = false;
+        _sortDnsRecords();
+      });
+    }
   }
 
   Future<void> _loadCachedDnsList() async {
@@ -159,25 +567,41 @@ class _DnsListPageState extends State<DnsListPage> {
     setState(() {
       _loadingList = true;
       _loadError = null;
+      _pingCache.clear();
     });
     final response = await _dnsApiService.getAllDnsRecords();
+    List<DnsRecord> records = [];
     if (response.status && response.data != null) {
-      // Remove duplicates by ip1+ip2
-      List<DnsRecord> records = response.data!;
-      final seen = <String>{};
-      records = records.where((r) {
-        final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
-        if (seen.contains(key)) return false;
-        seen.add(key);
-        return true;
-      }).toList();
+      // دریافت لیست از API
+      records = response.data!;
+    }
+    // دریافت DNSهای کاربر از کش
+    final prefs = await SharedPreferences.getInstance();
+    final userDnsJson = prefs.getString('user_dns_list');
+    List<DnsRecord> userDnsRecords = [];
+    if (userDnsJson != null) {
+      try {
+        final List<dynamic> userList = List.from(jsonDecode(userDnsJson));
+        userDnsRecords = userList.map((e) => DnsRecord.fromJson(e)).toList();
+      } catch (_) {}
+    }
+    // اضافه کردن DNSهای کاربر به لیست اصلی
+    records.addAll(userDnsRecords);
+    // حذف موارد تکراری بر اساس ip1+ip2
+    final seen = <String>{};
+    records = records.where((r) {
+      final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
+      if (seen.contains(key)) return false;
+      seen.add(key);
+      return true;
+    }).toList();
+    if (records.isNotEmpty) {
       setState(() {
         _dnsRecords = records;
         _loadingList = false;
         _sortDnsRecords();
       });
-      // Save to cache
-      final prefs = await SharedPreferences.getInstance();
+      // ذخیره لیست ترکیبی در کش
       prefs.setString(
         'cached_dns_list',
         jsonEncode(records.map((e) => e.toJson()).toList()),
@@ -199,104 +623,62 @@ class _DnsListPageState extends State<DnsListPage> {
   }
 
   bool _testDialogOpen = false;
-  bool _cancelTest = false;
 
   Future<void> _connectToDns(DnsRecord record) async {
     // اگر تست در حال اجراست، متوقف شود
     if (_testDialogOpen) {
-      _cancelTest = true;
       Navigator.of(context, rootNavigator: true).pop();
     }
     setState(() {
-      _isLoading = true;
       _selectedDnsId = record.id;
     });
     // Persist selected DNS
     final prefs = await SharedPreferences.getInstance();
     prefs.setString('cached_selected_dns', record.id);
-    final success = await DnsService.changeDns(record.ip1, record.ip2);
-    setState(() {
-      _isLoading = false;
-    });
-    if (success && mounted) {
+
+    // فقط انتخاب و بازگشت به صفحه قبلی، روند اتصال در صفحه قبلی انجام شود
+    if (mounted) {
       Navigator.pop(context, record);
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('خطا در تغییر DNS'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 
   // Map<String, int> _pingCache = {}; // Removed duplicate declaration
 
   Future<void> _testAllDns({bool auto = false}) async {
-    if (_dnsRecords.isEmpty) return;
-    if (!auto) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('در حال تست همه DNSها...'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-    }
-    _testDialogOpen = true;
-    _cancelTest = false;
-    final List<String> results = [];
-    _pingCache.clear();
-    for (int i = 0; i < _dnsRecords.length; i++) {
-      if (_cancelTest) break;
-      final record = _dnsRecords[i];
-      final status = await DnsService.testDns(record.ip1);
-      _pingCache[record.id] = status.ping;
-      results.add(
-        '${i + 1}. ${record.label}: ${status.isReachable ? '✅' : '❌'}  (پینگ: ${status.ping > 0 ? status.ping : '---'} ms)',
-      );
-      if (_sortType == 'ping') {
-        _sortDnsRecords();
-      }
-    }
-    // Persist ping cache and order
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setString('cached_ping_cache', jsonEncode(_pingCache));
-    prefs.setStringList(
-      'cached_dns_order',
-      _dnsRecords.map((e) => e.id).toList(),
-    );
-    if (!mounted || _cancelTest) {
-      _testDialogOpen = false;
-      _cancelTest = false;
-      return;
-    }
-    if (!auto) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('نتیجه تست همه DNSها'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView(
-              shrinkWrap: true,
-              children: results.map((e) => Text(e)).toList(),
+    final pingCache = await DnsPingHelper.testAllDns(
+      context: context,
+      dnsRecords: _dnsRecords,
+      sortType: _sortType,
+      sortDnsRecords: _sortDnsRecords,
+      auto: auto,
+      mounted: mounted,
+      showDialogCallback: (List<String> results) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('نتیجه تست همه DNSها'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView(
+                shrinkWrap: true,
+                children: results.map((e) => Text(e)).toList(),
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('بستن'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('بستن'),
-            ),
-          ],
-        ),
-      ).then((_) {
-        _testDialogOpen = false;
-        _cancelTest = false;
-      });
-    } else {
-      _testDialogOpen = false;
-      _cancelTest = false;
-    }
+        );
+      },
+      setTestDialogOpen: (v) => setState(() => _testDialogOpen = v),
+      // setCancelTest: (v) => setState(() => _cancelTest = v),
+    );
+    setState(() {
+      _pingCache = pingCache;
+    });
   }
 
   String _searchQuery = '';
@@ -361,6 +743,14 @@ class _DnsListPageState extends State<DnsListPage> {
           userDnsList.removeWhere((e) => e['id'] == record.id);
           userDnsList.add(editedRecord.toJson());
           await prefs.setString('user_dns_list', jsonEncode(userDnsList));
+
+          // Add to liked_dns_ids if not already present
+          final liked = prefs.getStringList('liked_dns_ids') ?? [];
+          if (!liked.contains(editedRecord.id)) {
+            liked.add(editedRecord.id);
+            await prefs.setStringList('liked_dns_ids', liked);
+          }
+
           await _loadCachedDnsList();
           setState(() {
             _sortDnsRecords();
@@ -389,12 +779,8 @@ class _DnsListPageState extends State<DnsListPage> {
         iconTheme: const IconThemeData(color: Color(0xFF222B45)),
         actions: [
           _testDialogOpen
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: SizedBox(
+              ? IconButton(
+                  icon: const SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(
@@ -402,6 +788,13 @@ class _DnsListPageState extends State<DnsListPage> {
                       color: Color(0xFF5A9CFF),
                     ),
                   ),
+                  tooltip: 'لغو تست همه DNSها',
+                  onPressed: () {
+                    setState(() {
+                      // _cancelTest = true;
+                      _testDialogOpen = false;
+                    });
+                  },
                 )
               : IconButton(
                   icon: const Icon(Icons.wifi_tethering),
@@ -415,11 +808,35 @@ class _DnsListPageState extends State<DnsListPage> {
             tooltip: 'مرتب‌سازی',
             color: Colors.white,
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'default', child: Text('پیش‌فرض')),
-              const PopupMenuItem(value: 'ping', child: Text('کمترین پینگ')),
+              const PopupMenuItem(
+                value: 'default',
+                child: SizedBox(
+                  width: 160,
+                  child: Text(
+                    'پیش‌فرض',
+                    style: TextStyle(color: Color(0xFF222B45)),
+                  ),
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'ping',
+                child: SizedBox(
+                  width: 160,
+                  child: Text(
+                    'کمترین پینگ',
+                    style: TextStyle(color: Color(0xFF222B45)),
+                  ),
+                ),
+              ),
               const PopupMenuItem(
                 value: 'name',
-                child: Text('مرتب‌سازی بر اساس نام'),
+                child: SizedBox(
+                  width: 160,
+                  child: Text(
+                    'مرتب‌سازی بر اساس نام',
+                    style: TextStyle(color: Color(0xFF222B45)),
+                  ),
+                ),
               ),
             ],
             onSelected: (value) {
@@ -448,7 +865,23 @@ class _DnsListPageState extends State<DnsListPage> {
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'customTest',
-                child: Text('تست دامنه با همه DNSها'),
+                child: SizedBox(
+                  width: 180,
+                  child: Text(
+                    'تست دامنه با همه DNSها',
+                    style: TextStyle(color: Color(0xFF222B45)),
+                  ),
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'refreshDns',
+                child: SizedBox(
+                  width: 180,
+                  child: Text(
+                    'دریافت لیست جدید از سرور',
+                    style: TextStyle(color: Color(0xFF222B45)),
+                  ),
+                ),
               ),
             ],
             onSelected: (value) async {
@@ -489,6 +922,14 @@ class _DnsListPageState extends State<DnsListPage> {
                     ),
                   );
                 }
+              } else if (value == 'refreshDns') {
+                await fetchDnsListWithTimer(force: true);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('لیست DNS با موفقیت بروزرسانی شد.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
               }
             },
           ),
@@ -505,241 +946,51 @@ class _DnsListPageState extends State<DnsListPage> {
                   child: Column(
                     children: [
                       Expanded(
-                        child: ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: _filteredDnsRecords.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 8),
-                          itemBuilder: (context, index) {
-                            final record = _filteredDnsRecords[index];
-                            final isSelected = _selectedDnsId == record.id;
-                            final ping = _pingCache[record.id];
-                            Color pingColor;
-                            if (ping == null || ping < 0) {
-                              pingColor = Colors.grey.shade400;
-                            } else if (ping < 50) {
-                              pingColor = const Color(0xFF4CAF50);
-                            } else if (ping < 120) {
-                              pingColor = const Color(0xFF8BC34A);
-                            } else if (ping < 250) {
-                              pingColor = const Color(0xFFFFC107);
-                            } else if (ping < 500) {
-                              pingColor = const Color(0xFFFF9800);
-                            } else {
-                              pingColor = const Color(0xFFF44336);
-                            }
-                            final isUserDns = record.id.length > 8;
-                            return Card(
-                              elevation: isSelected ? 4 : 1,
-                              color: isSelected
-                                  ? const Color(0xFFE3F2FD)
-                                  : Colors.white,
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 4,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(16),
-                                onTap: _isLoading
-                                    ? null
-                                    : () => _connectToDns(record),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 36,
-                                        height: 36,
-                                        decoration: BoxDecoration(
-                                          color: const Color(
-                                            0xFF5A9CFF,
-                                          ).withOpacity(0.08),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          '${index + 1}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            color: Color(0xFF5A9CFF),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    record.label,
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontSize: 16,
-                                                      color: Color(0xFF222B45),
-                                                    ),
-                                                  ),
-                                                ),
-                                                IconButton(
-                                                  icon: Icon(
-                                                    _likedDnsIds.contains(
-                                                          record.id,
-                                                        )
-                                                        ? Icons.favorite
-                                                        : Icons.favorite_border,
-                                                    color:
-                                                        _likedDnsIds.contains(
-                                                          record.id,
-                                                        )
-                                                        ? Colors.red
-                                                        : Colors.grey.shade400,
-                                                  ),
-                                                  tooltip:
-                                                      _likedDnsIds.contains(
-                                                        record.id,
-                                                      )
-                                                      ? 'حذف از علاقه‌مندی'
-                                                      : 'افزودن به علاقه‌مندی',
-                                                  onPressed: () =>
-                                                      _toggleLikeDns(record.id),
-                                                ),
-                                                if (isUserDns) ...[
-                                                  IconButton(
-                                                    icon: const Icon(
-                                                      Icons.edit,
-                                                      color: Colors.blue,
-                                                    ),
-                                                    tooltip: 'ویرایش',
-                                                    onPressed: () =>
-                                                        _editUserDns(record),
-                                                  ),
-                                                  IconButton(
-                                                    icon: const Icon(
-                                                      Icons.delete,
-                                                      color: Colors.red,
-                                                    ),
-                                                    tooltip: 'حذف',
-                                                    onPressed: () =>
-                                                        _deleteUserDns(record),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                const Icon(
-                                                  Icons.dns,
-                                                  size: 18,
-                                                  color: Color(0xFF5A9CFF),
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  record.ip1,
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                    color: Color(0xFF607D8B),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 12),
-                                                if (ping != null)
-                                                  Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        Icons.speed,
-                                                        size: 18,
-                                                        color: pingColor,
-                                                      ),
-                                                      const SizedBox(width: 2),
-                                                      Text(
-                                                        ping > 0
-                                                            ? '$ping ms'
-                                                            : '---',
-                                                        style: TextStyle(
-                                                          color: pingColor,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 13,
-                                                        ),
-                                                      ),
-                                                      if (ping > 0 && ping < 80)
-                                                        Container(
-                                                          margin:
-                                                              const EdgeInsets.only(
-                                                                left: 2,
-                                                              ),
-                                                          width: 22,
-                                                          height: 22,
-                                                          child: Lottie.asset(
-                                                            'assets/icone/Fire.json',
-                                                            repeat: true,
-                                                            animate: true,
-                                                          ),
-                                                        ),
-                                                    ],
-                                                  ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Row(
-                                              children: [
-                                                const Icon(
-                                                  Icons.dns_outlined,
-                                                  size: 18,
-                                                  color: Color(0xFFB0BEC5),
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  record.ip2,
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                    color: Color(0xFF90A4AE),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (isSelected && _isLoading)
-                                        const Padding(
-                                          padding: EdgeInsets.only(
-                                            left: 8,
-                                            top: 8,
-                                          ),
-                                          child: SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isWide =
+                                constraints.maxWidth > 700 &&
+                                Theme.of(context).platform ==
+                                    TargetPlatform.windows;
+                            if (isWide) {
+                              // دو ستونه کنار هم با ارتفاع ثابت
+                              return GridView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2,
+                                      crossAxisSpacing: 8,
+                                      mainAxisSpacing: 8,
+                                      mainAxisExtent:
+                                          140, // ارتفاع ثابت برای هر آیتم
+                                    ),
+                                itemCount: _filteredDnsRecords.length,
+                                itemBuilder: (context, index) => _buildDnsCard(
+                                  context,
+                                  _filteredDnsRecords[index],
+                                  index,
                                 ),
-                              ),
-                            );
+                              );
+                            } else {
+                              // حالت معمول لیست
+                              return ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                itemCount: _filteredDnsRecords.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 8),
+                                itemBuilder: (context, index) => _buildDnsCard(
+                                  context,
+                                  _filteredDnsRecords[index],
+                                  index,
+                                ),
+                              );
+                            }
                           },
                         ),
                       ),
+                      // ...existing code...
+                      // ...existing code...
+                      // Move this method inside _DnsListPageState class:
                     ],
                   ),
                 ),
@@ -818,10 +1069,7 @@ class _DnsListPageState extends State<DnsListPage> {
             context: context,
             builder: (context) => AddDnsDialog(
               onAdd: (newRecord) async {
-                await _loadCachedDnsList();
-                setState(() {
-                  _sortDnsRecords();
-                });
+                await fetchDnsListWithTimer(force: true);
               },
             ),
           );

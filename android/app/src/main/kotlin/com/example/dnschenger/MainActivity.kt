@@ -215,6 +215,25 @@ class MainActivity : FlutterActivity() {
                         }
                     }
                 }
+                "testDnsIPv6" -> {
+                    val dns = call.argument<String>("dns") ?: ""
+                    if (dns.isEmpty()) {
+                        result.error("INVALID_DNS", "DNS address cannot be empty", null)
+                        return@setMethodCallHandler
+                    }
+                    CoroutineScope(Dispatchers.Main).launch {
+                        try {
+                            val pingResult = withContext(Dispatchers.IO) {
+                                pingDnsIPv6(dns)
+                            }
+                            Log.d("FireDNS", "Ping to IPv6 $dns completed with result: $pingResult")
+                            result.success(pingResult)
+                        } catch (e: Exception) {
+                            Log.e("FireDNS", "Error in testDnsIPv6: ${e.message}", e)
+                            result.error("PING_ERROR", "Error pinging IPv6 DNS server", e.message)
+                        }
+                    }
+                }
                 else -> {
                     Log.d("FireDNS", "notImplemented: ${call.method}")
                     result.notImplemented()
@@ -395,6 +414,39 @@ class MainActivity : FlutterActivity() {
                 "isReachable" to false,
                 "ping" to -1
             )
+        }
+    }
+
+    private fun pingDnsIPv6(dns: String): Map<String, Any> {
+        return try {
+            Log.d("FireDNS", "Starting ping test for IPv6 DNS: $dns")
+            val process = Runtime.getRuntime().exec("/system/bin/ping -6 -W 1 -c 2 $dns")
+            val reader = process.inputStream.bufferedReader()
+            var pingTime = -1
+            var isReachable = false
+            var packetLoss = 100
+            val output = StringBuilder()
+            reader.forEachLine { line ->
+                output.append(line).append("\n")
+                if (line.contains("time=")) {
+                    val timeMatch = Regex("time=([0-9.]+)").find(line)
+                    if (timeMatch != null) {
+                        pingTime = timeMatch.groupValues[1].toFloat().toInt()
+                    }
+                }
+                if (line.contains("packet loss")) {
+                    val lossMatch = Regex("([0-9]+)% packet loss").find(line)
+                    if (lossMatch != null) {
+                        packetLoss = lossMatch.groupValues[1].toInt()
+                    }
+                }
+            }
+            process.waitFor()
+            isReachable = packetLoss < 100
+            mapOf("ping" to pingTime, "isReachable" to isReachable)
+        } catch (e: Exception) {
+            Log.e("FireDNS", "Error in pingDnsIPv6: ${e.message}", e)
+            mapOf("ping" to -1, "isReachable" to false)
         }
     }
 }

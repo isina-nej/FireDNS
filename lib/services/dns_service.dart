@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import '../models/dns_status.dart';
 import '../models/google_connectivity_result.dart';
 import '../constants/dns_constants.dart';
@@ -7,6 +8,21 @@ import '../utils/dns_validator.dart';
 
 /// سرویس مدیریت DNS
 class DnsService {
+  static Future<DnsStatus> testDnsIPv6(String dns) async {
+    try {
+      final result = await _platform.invokeMethod('testDnsIPv6', {'dns': dns});
+      debugPrint('Raw ping result (IPv6): $result');
+      if (result is Map) {
+        final ping = (result['ping'] as int?) ?? -1;
+        final isReachable = result['isReachable'] == true;
+        return DnsStatus(ping, isReachable);
+      }
+    } catch (e) {
+      debugPrint('Error in testDnsIPv6: $e');
+    }
+    return DnsStatus(-1, false);
+  }
+
   static const _platform = MethodChannel(DnsConstants.methodChannel);
 
   /// تست پینگ یک DNS
@@ -18,20 +34,41 @@ class DnsService {
       }
 
       debugPrint('Testing DNS: $dns');
-      final result = await _platform.invokeMethod('testDns', {'dns': dns});
-      debugPrint('Raw ping result: $result');
-
-      if (result is Map) {
-        final ping = (result['ping'] as int?) ?? -1;
-        final isReachable = (result['isReachable'] as bool?) ?? false;
-        debugPrint(
-          'Parsed ping result - ping: $ping, isReachable: $isReachable',
-        );
-        return DnsStatus(ping, isReachable);
+      // جدا کردن اندروید و ویندوز
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        final result = await _platform.invokeMethod('testDns', {'dns': dns});
+        debugPrint('Raw ping result: $result');
+        if (result is Map) {
+          final ping = (result['ping'] as int?) ?? -1;
+          final isReachable = (result['isReachable'] as bool?) ?? false;
+          debugPrint(
+            'Parsed ping result - ping: $ping, isReachable: $isReachable',
+          );
+          return DnsStatus(ping, isReachable);
+        }
+        debugPrint('Invalid result format: $result');
+        return const DnsStatus(-1, false);
+      } else if (defaultTargetPlatform == TargetPlatform.windows) {
+        // اجرای دستور ping در ویندوز
+        try {
+          final result = await Process.run('ping', ['-n', '1', dns]);
+          final output = result.stdout.toString();
+          final reachable = output.contains('TTL=') || output.contains('ttl=');
+          final pingMatch = RegExp(
+            r'Time[=<]\s*(\d+)ms',
+            caseSensitive: false,
+          ).firstMatch(output);
+          final ping = pingMatch != null ? int.parse(pingMatch.group(1)!) : -1;
+          debugPrint('Windows ping output: $output');
+          return DnsStatus(ping, reachable);
+        } catch (e) {
+          debugPrint('Windows ping error: $e');
+          return const DnsStatus(-1, false);
+        }
+      } else {
+        // سایر پلتفرم‌ها
+        return const DnsStatus(-1, false);
       }
-
-      debugPrint('Invalid result format: $result');
-      return const DnsStatus(-1, false);
     } catch (e) {
       debugPrint('Error testing DNS: $e');
       return const DnsStatus(-1, false);
