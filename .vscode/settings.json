@@ -1,3 +1,5 @@
 {
-    "cmake.sourceDirectory": "E:/project/FireDNS/firedns/linux"
+    "cmake.sourceDirectory": "E:/project/FireDNS/firedns/linux",
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": []
 }

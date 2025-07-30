@@ -108,7 +108,7 @@ Categories=Utility;
         f.write(desktop_content)
 
 # مسیر فایل لوگوی اصلی
-logo_path = r"assets/logo/logo.png"
+logo_path = r"assets/logo/logo2.png"
 
 # تنظیمات آیکون‌های اندروید
 android_icons = {

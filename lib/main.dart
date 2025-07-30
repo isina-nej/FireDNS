@@ -3,6 +3,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../path/path.dart';
+import 'dart:io' show Platform;
+import 'screens/homepage_android.dart' as android;
+import 'screens/homepage_windows.dart' as windows;
 import 'utils/update_checker.dart';
 import 'screens/force_update_page.dart';
 
@@ -76,7 +79,9 @@ class FireDNSApp extends StatelessWidget {
 
             home: forceUpdate
                 ? const ForceUpdatePage(updateUrl: UpdateChecker.updateUrl)
-                : const FireDNSHomePage(title: 'Fire DNS'),
+                : (Platform.isWindows
+                      ? const windows.FireDNSHomePage(title: 'Fire DNS')
+                      : const android.FireDNSHomePage(title: 'Fire DNS')),
             debugShowCheckedModeBanner: false,
           );
         },

@@ -172,6 +172,27 @@ class MyVpnService : VpnService() {
     }
 
     private fun createNotification(): Notification {
+        // آیکون برنامه باید در پوشه res/drawable/ic_launcher.png قرار داشته باشد
+        val iconRes = resources.getIdentifier("ic_launcher", "drawable", packageName)
+        val smallIcon = if (iconRes != 0) iconRes else android.R.drawable.ic_menu_manage
+        val title = "فایر دی‌ان‌اس فعال است"
+        val text = "سرویس DNS در حال اجراست"
+
+        // Intent برای باز کردن برنامه
+        val mainIntent = Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val mainPendingIntent = android.app.PendingIntent.getActivity(
+            this, 0, mainIntent, android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Intent برای خاموش کردن VPN
+        val stopIntent = Intent(this, MyVpnService::class.java).apply { action = "FORCE_STOP" }
+        val stopPendingIntent = android.app.PendingIntent.getService(
+            this, 1, stopIntent, android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val actionIcon = android.R.drawable.ic_menu_close_clear_cancel
+        val actionTitle = "خاموش کردن VPN"
+
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channelId = "fire_dns_vpn"
             val channelName = "Fire DNS VPN"
@@ -181,16 +202,22 @@ class MyVpnService : VpnService() {
                 manager.createNotificationChannel(channel)
             }
             Notification.Builder(this, channelId)
-                .setContentTitle("Fire DNS Active")
-                .setContentText("DNS VPN Service is running")
-                .setSmallIcon(android.R.drawable.ic_menu_manage)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setSmallIcon(smallIcon)
+                .setOngoing(true)
+                .setContentIntent(mainPendingIntent)
+                .addAction(actionIcon, actionTitle, stopPendingIntent)
                 .build()
         } else {
             @Suppress("DEPRECATION")
             Notification.Builder(this)
-                .setContentTitle("Fire DNS Active")
-                .setContentText("DNS VPN Service is running")
-                .setSmallIcon(android.R.drawable.ic_menu_manage)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setSmallIcon(smallIcon)
+                .setOngoing(true)
+                .setContentIntent(mainPendingIntent)
+                .addAction(actionIcon, actionTitle, stopPendingIntent)
                 .build()
         }
     }

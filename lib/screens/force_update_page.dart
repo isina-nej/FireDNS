@@ -32,11 +32,27 @@ class ForceUpdatePage extends StatelessWidget {
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('دریافت نسخه جدید'),
                 onPressed: () async {
-                  if (await canLaunchUrl(Uri.parse(updateUrl))) {
-                    launchUrl(
-                      Uri.parse(updateUrl),
+                  final uri = Uri.parse(updateUrl);
+                  try {
+                    final launched = await launchUrl(
+                      uri,
                       mode: LaunchMode.externalApplication,
                     );
+                    if (!launched && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('امکان باز کردن وبسایت وجود ندارد!'),
+                        ),
+                      );
+                    }
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('خطا در باز کردن وبسایت!'),
+                        ),
+                      );
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(

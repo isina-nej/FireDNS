@@ -6,6 +6,9 @@ import 'dns_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
+import '../utils/windows_dns_helper.dart';
+import '../components/set_dns_button.dart';
+import '../utils/windows_dns_setter.dart';
 
 /// صفحه اصلی برنامه Fire DNS
 class FireDNSHomePage extends StatefulWidget {
@@ -19,6 +22,9 @@ class FireDNSHomePage extends StatefulWidget {
 
 class _FireDNSHomePageState extends State<FireDNSHomePage>
     with WidgetsBindingObserver {
+  // وضعیت موفقیت ست شدن DNS برای انیمیشن دکمه
+  bool _dnsSetSuccess = false;
+  bool _dnsSetLoading = false;
   // تابع سایز ریسپانسیو فقط برای ویندوز
   double responsiveSize(
     double base,
@@ -213,7 +219,11 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   }
 
   Future<void> _activateVpnWindows() async {
-    // عملیات مخصوص ویندوز
+    // فراخوانی تابع عملیاتی ویندوز
+    await WindowsDnsHelper.setDns(
+      _dns1Controller.text.trim(),
+      _dns2Controller.text.trim(),
+    );
     _showMessage('فعالسازی VPN فقط برای اندروید فعال است.', Colors.orange);
   }
 
@@ -279,30 +289,38 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
             final double totalSpacing = 24;
             final double availableHeight = constraints.maxHeight - totalSpacing;
             double cardHeight = availableHeight / 3;
-          if (cardHeight < minCardHeight) cardHeight = minCardHeight;
-          return Padding(
-            padding: EdgeInsets.all(
-              responsiveSize(12, context, min: 4, max: 16, scaleByHeight: true),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Expanded(
-                  flex: 12,
-                  child: _buildConnectionStatusCard(cardHeight),
+            if (cardHeight < minCardHeight) cardHeight = minCardHeight;
+            return Padding(
+              padding: EdgeInsets.all(
+                responsiveSize(
+                  12,
+                  context,
+                  min: 4,
+                  max: 16,
+                  scaleByHeight: true,
                 ),
-                SizedBox(height: 8),
-                Expanded(flex: 10, child: _buildSpeedTestCard(cardHeight)),
-                SizedBox(height: 8),
-                Expanded(flex: 10, child: _buildConfigurationCard(cardHeight)),
-              ],
-            ),
-          );
-        },
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Expanded(
+                    flex: 12,
+                    child: _buildConnectionStatusCard(cardHeight),
+                  ),
+                  SizedBox(height: 8),
+                  Expanded(flex: 10, child: _buildSpeedTestCard(cardHeight)),
+                  SizedBox(height: 8),
+                  Expanded(
+                    flex: 10,
+                    child: _buildConfigurationCard(cardHeight),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
-      )
     );
-
   }
 
   /// کارت وضعیت اتصال DNS
@@ -437,6 +455,123 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                               ),
                       ),
                     ),
+                    // دکمه ست کردن DNS فقط برای ویندوز
+                    if (Platform.isWindows)
+                      Container(
+                        margin: EdgeInsets.only(
+                          left: responsiveSize(
+                            8,
+                            context,
+                            min: 2,
+                            max: 16,
+                            scaleByHeight: true,
+                          ),
+                        ),
+                        decoration: BoxDecoration(
+                          color: _dnsSetSuccess
+                              ? Colors.green.shade100
+                              : Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 400),
+                          transitionBuilder: (child, anim) =>
+                              ScaleTransition(scale: anim, child: child),
+                          child: _dnsSetSuccess
+                              ? InkWell(
+                                  key: const ValueKey('success'),
+                                  onTap: () async {
+                                    setState(() {
+                                      _dnsSetLoading = true;
+                                    });
+                                    final result =
+                                        await WindowsDnsSetter.unsetDns();
+                                    setState(() {
+                                      _dnsSetLoading = false;
+                                      if (result) _dnsSetSuccess = false;
+                                    });
+                                    if (result) {
+                                      _showMessage(
+                                        'DNS به حالت خودکار برگشت.',
+                                        Colors.orange,
+                                      );
+                                    } else {
+                                      _showMessage(
+                                        'خطا در بازگردانی DNS به حالت خودکار!',
+                                        Colors.red,
+                                      );
+                                    }
+                                  },
+                                  child: Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                    size: responsiveSize(
+                                      48,
+                                      context,
+                                      min: 32,
+                                      max: 64,
+                                      scaleByHeight: true,
+                                    ),
+                                  ),
+                                )
+                              : _dnsSetLoading
+                              ? Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: SizedBox(
+                                    width: responsiveSize(
+                                      32,
+                                      context,
+                                      min: 20,
+                                      max: 40,
+                                      scaleByHeight: true,
+                                    ),
+                                    height: responsiveSize(
+                                      32,
+                                      context,
+                                      min: 20,
+                                      max: 40,
+                                      scaleByHeight: true,
+                                    ),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              : SetDnsButton(
+                                  key: const ValueKey('button'),
+                                  onPressed: () async {
+                                    setState(() {
+                                      _dnsSetLoading = true;
+                                    });
+                                    final result =
+                                        await WindowsDnsSetter.setDns(
+                                          _dns1Controller.text.trim(),
+                                          _dns2Controller.text.trim(),
+                                        );
+                                    setState(() {
+                                      _dnsSetLoading = false;
+                                      _dnsSetSuccess = result;
+                                    });
+                                    if (result) {
+                                      _showMessage(
+                                        'DNS با موفقیت روی ویندوز ست شد.',
+                                        Colors.green,
+                                      );
+                                    } else {
+                                      _showMessage(
+                                        'خطا در ست کردن DNS ویندوز! (دسترسی ادمین یا خطای سیستم)',
+                                        Colors.red,
+                                      );
+                                    }
+                                  },
+                                ),
+                        ),
+                      ),
                   ],
                 ),
                 SizedBox(
