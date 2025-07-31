@@ -41,7 +41,7 @@ class DnsPingHelper {
       final status = isIPv6
           ? await DnsService.testDnsIPv6(ip)
           : await DnsService.testDns(ip);
-      if (status != null && status.isReachable == true && status.ping > 0) {
+      if (status.isReachable == true && status.ping > 0) {
         return status.ping;
       }
       return -1;
@@ -100,7 +100,7 @@ class DnsPingHelper {
       }
       futures.add(
         (() async {
-          if (cancelRequested)
+          if (cancelRequested) {
             return {
               'id': record.id,
               'label': record.label,
@@ -109,6 +109,7 @@ class DnsPingHelper {
               'ping2': -1,
               'isReachable2': false,
             };
+          }
           final status1 = await DnsService.testDns(ip1);
           final status2 = await DnsService.testDns(ip2);
           return {
