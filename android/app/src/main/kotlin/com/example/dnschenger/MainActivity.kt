@@ -62,7 +62,6 @@ class MainActivity : FlutterActivity() {
                 lines.forEach { line ->
                     output.append(line).append("\n")
                     Log.d("FireDNS", "Ping output line: $line")
-                    
                     when {
                         line.contains("time=") -> {
                             try {

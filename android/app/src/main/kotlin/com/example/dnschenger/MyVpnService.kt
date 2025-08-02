@@ -4,19 +4,56 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
 
+/**
+ * سرویس VPN برای تغییر DNS سیستم
+ * این کلاس مسئول مدیریت اتصال VPN و تنظیم DNS های سفارشی است
+ */
 class MyVpnService : VpnService() {
+    companion object {
+        // متغیر نشان‌دهنده وضعیت اجرای سرویس
+        var isRunning: Boolean = false
+        
+        // شنونده برای اطلاع‌رسانی تغییرات وضعیت سرویس
+        var statusListener: ((String) -> Unit)? = null
+        
+        // ثابت‌های مربوط به نوتیفیکیشن
+        private const val NOTIFICATION_CHANNEL_ID = "FireDNS_VPN"
+        private const val NOTIFICATION_ID = 1
+        
+        // تنظیمات پایه VPN
+        private const val DNS_VPN_CONNECTION_NAME = "FireDNS VPN"
+        // آدرس داخلی غیر رایج برای جلوگیری از تداخل با شبکه‌های محلی
+        private const val VPN_ADDRESS = "10.88.229.2"
+        
+        // سرورهای DNS پیش‌فرض گوگل
+        const val DEFAULT_PRIMARY_DNS = "8.8.8.8"      // Google DNS Primary
+        const val DEFAULT_SECONDARY_DNS = "8.8.4.4"    // Google DNS Secondary
+    }
+
+    // رابط VPN که برای اتصال استفاده می‌شود
     private var vpnInterface: ParcelFileDescriptor? = null
 
+    /**
+     * بررسی معتبر بودن آدرس IP
+     * @param ip آدرس IP برای بررسی
+     * @return true اگر آدرس IP معتبر باشد، false در غیر این صورت
+     */
     private fun isValidIpAddress(ip: String): Boolean {
         return try {
+            // بررسی آدرس 0.0.0.0
             if (ip == "0.0.0.0") return false
+            
+            // تقسیم آدرس به بخش‌های جداگانه
             val parts = ip.split(".")
             if (parts.size != 4) return false
+            
+            // بررسی محدوده اعداد در هر بخش (0-255)
             parts.all { part ->
                 part.toInt() in 0..255
             }
@@ -25,11 +62,18 @@ class MyVpnService : VpnService() {
         }
     }
 
+    /**
+     * تست اتصال اینترنت و عملکرد DNS
+     * این تابع سه تست انجام می‌دهد:
+     * 1. تست اتصال پایه با پینگ به 8.8.8.8
+     * 2. تست اتصال به گوگل
+     * 3. تست عملکرد DNS با nslookup
+     */
     private fun testInternetConnectivity() {
         try {
             Log.d("FireDNS", "Testing internet connectivity after VPN setup...")
             
-            // Test basic connectivity
+            // تست اتصال پایه با پینگ
             val pingProcess = Runtime.getRuntime().exec("/system/bin/ping -c 1 -W 3 8.8.8.8")
             val pingExitCode = pingProcess.waitFor()
             if (pingExitCode == 0) {
@@ -38,7 +82,7 @@ class MyVpnService : VpnService() {
                 Log.e("FireDNS", "❌ Basic internet connectivity test FAILED")
             }
             
-            // Test Google connectivity specifically
+            // تست اتصال به گوگل برای اطمینان از کارکرد DNS
             Log.d("FireDNS", "Testing Google connectivity...")
             val googlePingProcess = Runtime.getRuntime().exec("/system/bin/ping -c 1 -W 3 google.com")
             val googleExitCode = googlePingProcess.waitFor()
@@ -48,7 +92,7 @@ class MyVpnService : VpnService() {
                 Log.e("FireDNS", "❌ Google connectivity test FAILED - DNS resolution issue")
             }
             
-            // Test DNS resolution specifically
+            // تست مستقیم عملکرد DNS
             Log.d("FireDNS", "Testing DNS resolution...")
             val nslookupProcess = Runtime.getRuntime().exec("nslookup google.com")
             val nslookupExitCode = nslookupProcess.waitFor()
@@ -63,31 +107,41 @@ class MyVpnService : VpnService() {
         }
     }
 
-    companion object {
-        var isRunning: Boolean = false
-        var statusListener: ((String) -> Unit)? = null
-        
-        // DNS servers
-        const val DEFAULT_PRIMARY_DNS = "178.22.122.100"    // Shecan
-        const val DEFAULT_SECONDARY_DNS = "1.1.1.1"         // Cloudflare
-    }
 
+
+    /**
+     * توقف اجباری سرویس VPN
+     * این تابع تمام منابع را آزاد کرده و سرویس را متوقف می‌کند
+     */
     private fun forceStop() {
         try {
+            // ثبت شروع عملیات توقف
             Log.d("FireDNS", "Force stopping VPN service...")
+            
+            // بستن رابط VPN
             vpnInterface?.close()
             vpnInterface = null
+            
+            // به‌روزرسانی وضعیت
             isRunning = false
             statusListener?.invoke("DNS_STOPPED")
+            
+            // حذف نوتیفیکیشن با توجه به نسخه اندروید
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager?.cancel(NOTIFICATION_ID)
+            
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 stopForeground(STOP_FOREGROUND_REMOVE)
             } else {
                 @Suppress("DEPRECATION")
                 stopForeground(true)
             }
+            
+            // توقف کامل سرویس
             stopSelf()
             Log.d("FireDNS", "VPN service force stopped successfully")
         } catch (e: Exception) {
+            // مدیریت خطاها در زمان توقف سرویس
             Log.e("FireDNS", "Error in force stop: ${e.message}")
             isRunning = false
             statusListener?.invoke("DNS_STOPPED")
@@ -95,13 +149,19 @@ class MyVpnService : VpnService() {
         }
     }
 
+    /**
+     * شروع سرویس VPN
+     * این تابع مسئول راه‌اندازی سرویس VPN و تنظیم DNS های سفارشی است
+     */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // بررسی درخواست توقف اجباری
         if (intent?.action == "FORCE_STOP") {
             Log.d("FireDNS", "Force stop requested")
             forceStop()
             return START_NOT_STICKY
         }
         
+        // دریافت آدرس‌های DNS از intent
         var dns1 = intent?.getStringExtra("dns1") ?: DEFAULT_PRIMARY_DNS
         var dns2 = intent?.getStringExtra("dns2") ?: DEFAULT_SECONDARY_DNS
 
@@ -120,7 +180,11 @@ class MyVpnService : VpnService() {
         // ساخت notification برای سرویس foreground
         val notificationId = 1
         val notification = createNotification()
-        startForeground(notificationId, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(notificationId, notification)
+        }
 
         try {
             // ایجاد VPN با تنظیمات ساده مانند NetShift
@@ -223,8 +287,17 @@ class MyVpnService : VpnService() {
     }
 
     override fun onDestroy() {
+        // آزادسازی منابع
+        // بستن اتصال VPN
+        // متوقف کردن سرویس foreground
+        // اعلام وضعیت توقف
         Log.d("FireDNS", "MyVpnService onDestroy called")
         Log.d("FireDNS", "Stopping VPN service, releasing resources.")
+        
+        // حذف نوتیفیکیشن
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        notificationManager?.cancel(NOTIFICATION_ID)
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             stopForeground(STOP_FOREGROUND_REMOVE)
         } else {
