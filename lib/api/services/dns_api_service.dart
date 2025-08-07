@@ -197,6 +197,7 @@ class DnsApiService {
 
   /// ایجاد DNS کاربر
   Future<ApiResponse<DnsRecord>> createUserDns({
+    required String label,
     required String ip1,
     required String ip2,
     required DnsType type,
@@ -204,7 +205,12 @@ class DnsApiService {
     try {
       final response = await _apiClient.post<DnsRecord>(
         '/api/dns',
-        body: {'ip1': ip1, 'ip2': ip2, 'type': dnsTypeToString(type)},
+        body: {
+          'label': label,
+          'ip1': ip1,
+          'ip2': ip2,
+          'type': dnsTypeToString(type)
+        },
         fromJson: (data) => DnsRecord.fromJson(data),
       );
 

@@ -11,7 +11,7 @@ class AddDnsDialog extends StatefulWidget {
   final void Function(DnsRecord) onAdd;
   final DnsRecord? initialRecord;
   const AddDnsDialog({Key? key, required this.onAdd, this.initialRecord})
-    : super(key: key);
+      : super(key: key);
 
   @override
   State<AddDnsDialog> createState() => _AddDnsDialogState();
@@ -68,6 +68,17 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
     super.dispose();
   }
 
+  Future<bool> _isUserLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id');
+    final authToken = prefs.getString(
+        'auth_token'); // یا هر کلید دیگری که برای توکن استفاده می‌کنید
+    return userId != null &&
+        userId != 'unknown' &&
+        authToken != null &&
+        authToken.isNotEmpty;
+  }
+
   Future<String> _getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('user_id') ?? 'unknown';
@@ -111,9 +122,8 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
     String currentIp1 = widget.initialRecord?.ip1.trim() ?? '';
     String currentIp2 = widget.initialRecord?.ip2.trim() ?? '';
     allNames = allNames.where((n) => n != currentName).toList();
-    allIps = allIps
-        .where((ip) => ip != currentIp1 && ip != currentIp2)
-        .toList();
+    allIps =
+        allIps.where((ip) => ip != currentIp1 && ip != currentIp2).toList();
 
     String newName = _labelController.text.trim().toLowerCase();
     String newIp1 = _ip1Controller.text.trim();
@@ -222,9 +232,8 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
       );
     }
     // Prevent duplicate by ip1+ip2 (except for edit mode, already removed old)
-    final newKey = (newRecord.ip1 + '_' + newRecord.ip2)
-        .replaceAll(' ', '')
-        .toLowerCase();
+    final newKey =
+        (newRecord.ip1 + '_' + newRecord.ip2).replaceAll(' ', '').toLowerCase();
     jsonList.removeWhere((e) {
       final key = (e['ip1'] + '_' + e['ip2']).replaceAll(' ', '').toLowerCase();
       return key == newKey;
@@ -241,6 +250,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
     try {
       // اول DNS را در سرور ثبت می‌کنیم
       final dnsResponse = await _dnsApiService.createUserDns(
+        label: newRecord.label,
         ip1: newRecord.ip1,
         ip2: newRecord.ip2,
         type: newRecord.type,
@@ -252,16 +262,22 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
       }
 
       // سپس استفاده از DNS را ثبت می‌کنیم
-      final userId = await _getUserId();
-      final usageResponse = await _dnsUsageApiService.recordDnsUsage(
-        userDnsId: dnsResponse.data!.id, // از ID برگشتی از سرور استفاده می‌کنیم
-        internetTag: await _getInternetConnectionType(), // تشخیص نوع اینترنت
-        destination: 'GENERAL', // یا هر مقدار مناسب دیگر
-        userId: userId,
-      );
+      if (await _isUserLoggedIn()) {
+        // فقط برای کاربران لاگین شده ثبت می‌کنیم
+        final userId = await _getUserId();
+        final usageResponse = await _dnsUsageApiService.recordDnsUsage(
+          userDnsId:
+              dnsResponse.data!.id, // از ID برگشتی از سرور استفاده می‌کنیم
+          internetTag: await _getInternetConnectionType(), // تشخیص نوع اینترنت
+          destination: 'GENERAL', // یا هر مقدار مناسب دیگر
+          userId: userId,
+        );
 
-      if (!usageResponse.status) {
-        debugPrint('Error recording DNS usage: ${usageResponse.message}');
+        if (!usageResponse.status) {
+          debugPrint('Error recording DNS usage: ${usageResponse.message}');
+        }
+      } else {
+        debugPrint('DNS usage not recorded: User not logged in');
       }
     } catch (e) {
       debugPrint('Error in DNS operations: $e');
@@ -359,14 +375,14 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                     minimumSize: const Size.fromHeight(48),
                     disabledBackgroundColor:
                         Theme.of(context).brightness == Brightness.dark
-                        ? Color.alphaBlend(
-                            AppColors.textLight.withAlpha(77),
-                            AppColors.darkNavy,
-                          )
-                        : Color.alphaBlend(
-                            AppColors.textSecondary.withAlpha(77),
-                            AppColors.pureWhite,
-                          ),
+                            ? Color.alphaBlend(
+                                AppColors.textLight.withAlpha(77),
+                                AppColors.darkNavy,
+                              )
+                            : Color.alphaBlend(
+                                AppColors.textSecondary.withAlpha(77),
+                                AppColors.pureWhite,
+                              ),
                   ),
                   child: _saving
                       ? SizedBox(
