@@ -8,6 +8,9 @@ import 'package:flutter_speed_test_plus/flutter_speed_test_plus.dart';
 import 'package:http/http.dart' as http;
 import '../services/dns_service.dart';
 import '../models/dns_status.dart';
+import 'package:provider/provider.dart';
+import '../styles/app_colors.dart';
+import '../styles/theme_manager.dart';
 
 class SpeedTestPage extends StatefulWidget {
   const SpeedTestPage({super.key});
@@ -173,19 +176,29 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeManager = Provider.of<ThemeManager>(context);
+    final isDark = themeManager.isDarkModeActive(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : const Color(0xFFF7F8FA),
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'اسپید تست',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.darkTextPrimary : Colors.black,
+          ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,
         elevation: 0.5,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black),
-        titleTextStyle: const TextStyle(
-          color: Colors.black,
+        iconTheme: IconThemeData(
+          color: isDark ? AppColors.darkIconPrimary : Colors.black,
+        ),
+        titleTextStyle: TextStyle(
+          color: isDark ? AppColors.darkTextPrimary : Colors.black,
           fontSize: 22,
           fontWeight: FontWeight.bold,
         ),
@@ -203,7 +216,7 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(32),
                   ),
-                  color: Colors.white,
+                  color: isDark ? AppColors.darkCardBackground : Colors.white,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       vertical: 32,
@@ -227,14 +240,20 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                       progressBarColor: isTesting
                                           ? Colors.blue
                                           : Colors.green,
-                                      trackColor: Colors.grey.shade200,
-                                      dotColor: Colors.white,
+                                      trackColor: isDark
+                                          ? Colors.grey.shade800
+                                          : Colors.grey.shade200,
+                                      dotColor: isDark
+                                          ? AppColors.darkCardBackground
+                                          : Colors.white,
                                     ),
                                     infoProperties: InfoProperties(
-                                      mainLabelStyle: const TextStyle(
+                                      mainLabelStyle: TextStyle(
                                         fontSize: 38,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.black,
+                                        color: isDark
+                                            ? AppColors.darkTextPrimary
+                                            : Colors.black,
                                       ),
                                       modifier: (double value) {
                                         return '${value.toStringAsFixed(1)} Mbps';
@@ -242,7 +261,9 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                       bottomLabelText: 'سرعت دانلود',
                                       bottomLabelStyle: TextStyle(
                                         fontSize: 18,
-                                        color: Colors.grey.shade600,
+                                        color: isDark
+                                            ? AppColors.darkTextSecondary
+                                            : Colors.grey.shade600,
                                       ),
                                     ),
                                     startAngle: 150,
@@ -263,14 +284,20 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                       progressBarColor: isTesting
                                           ? Colors.orange
                                           : Colors.green,
-                                      trackColor: Colors.grey.shade200,
-                                      dotColor: Colors.white,
+                                      trackColor: isDark
+                                          ? Colors.grey.shade800
+                                          : Colors.grey.shade200,
+                                      dotColor: isDark
+                                          ? AppColors.darkCardBackground
+                                          : Colors.white,
                                     ),
                                     infoProperties: InfoProperties(
-                                      mainLabelStyle: const TextStyle(
+                                      mainLabelStyle: TextStyle(
                                         fontSize: 38,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.black,
+                                        color: isDark
+                                            ? AppColors.darkTextPrimary
+                                            : Colors.black,
                                       ),
                                       modifier: (double value) {
                                         return '${value.toStringAsFixed(1)} Mbps';
@@ -278,7 +305,9 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                       bottomLabelText: 'سرعت آپلود',
                                       bottomLabelStyle: TextStyle(
                                         fontSize: 18,
-                                        color: Colors.grey.shade600,
+                                        color: isDark
+                                            ? AppColors.darkTextSecondary
+                                            : Colors.grey.shade600,
                                       ),
                                     ),
                                     startAngle: 150,
@@ -316,10 +345,12 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                         const SizedBox(height: 16),
                         Text(
                           'آپلود: ${uploadSpeed.toStringAsFixed(2)} Mbps',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black87,
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -331,9 +362,11 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                   child: Text(
                                     status,
                                     key: ValueKey(status),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
-                                      color: Colors.blueGrey,
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : Colors.blueGrey,
                                     ),
                                   ),
                                 )
@@ -350,7 +383,7 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    color: Colors.white,
+                    color: isDark ? AppColors.darkCardBackground : Colors.white,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         vertical: 20,
@@ -358,12 +391,14 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                       ),
                       child: Column(
                         children: [
-                          const Text(
+                          Text(
                             'نتایج نهایی',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -445,22 +480,32 @@ class InfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeManager = Provider.of<ThemeManager>(context);
+    final isDark = themeManager.isDarkModeActive(context);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 28, color: Colors.blueAccent),
+        Icon(
+          icon,
+          size: 28,
+          color: isDark ? AppColors.brightBlue : Colors.blueAccent,
+        ),
         const SizedBox(height: 8),
         Text(
           label,
-          style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+          style: TextStyle(
+            fontSize: 16,
+            color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade700,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: isDark ? AppColors.darkTextPrimary : Colors.black87,
           ),
         ),
       ],
@@ -476,20 +521,26 @@ class ResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeManager = Provider.of<ThemeManager>(context);
+    final isDark = themeManager.isDarkModeActive(context);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+          style: TextStyle(
+            fontSize: 16,
+            color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade700,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: isDark ? AppColors.darkTextPrimary : Colors.black87,
           ),
         ),
       ],

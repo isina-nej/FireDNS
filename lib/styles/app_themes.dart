@@ -3,6 +3,43 @@ import '../path/path.dart';
 
 /// کلاس مدیریت تم‌های اپلیکیشن
 class AppThemes {
+  // تم روشن (Light Theme)
+  static ThemeData lightTheme = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+
+    // رنگ‌های اصلی
+    colorScheme: const ColorScheme.light(
+      primary: AppColors.fireRed,
+      secondary: AppColors.gradientOrange,
+      surface: AppColors.pureWhite,
+      background: AppColors.pureWhite,
+      error: AppColors.fireRed,
+      onPrimary: AppColors.pureWhite,
+      onSecondary: AppColors.pureWhite,
+      onSurface: AppColors.textPrimary,
+      onBackground: AppColors.textPrimary,
+      onError: AppColors.pureWhite,
+    ),
+
+    // رنگ اصلی اپ
+    primaryColor: AppColors.fireRed,
+    scaffoldBackgroundColor: AppColors.pureWhite,
+
+    // تم AppBar
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.pureWhite,
+      foregroundColor: AppColors.textPrimary,
+      elevation: AppSizes.elevationNone,
+      centerTitle: true,
+      titleTextStyle: AppTextStyles.appBarTitle,
+      iconTheme: IconThemeData(
+        color: AppColors.textPrimary,
+        size: AppSizes.iconL,
+      ),
+    ),
+  );
+
   // تم تاریک (Dark Theme)
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,

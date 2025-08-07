@@ -2,16 +2,43 @@ import 'package:flutter/material.dart';
 
 /// کلاس مدیریت تمام رنگ‌های اپلیکیشن
 class AppColors {
+  // رنگ‌های اصلی
+  static const primaryBlue = Color(0xFF5A9CFF);
+  static const primaryText = Color(0xFF222B45);
+
+  // رنگ‌های پس‌زمینه
+  static const selectedLight = Color(0xFFE3F2FD);
+  // static const backgroundLight = Color(0xFFF7F8FA);
+
+  // رنگ‌های وضعیت پینگ
+  static const pingExcellent = Color(0xFF4CAF50);
+  static const pingGood = Color(0xFF8BC34A);
+  static const pingMedium = Color(0xFFFFC107);
+  static const pingPoor = Color(0xFFFF9800);
+  static const pingBad = Color(0xFFF44336);
+
+  // رنگ‌های متن و آیکن خاکستری
+  static const textGrey = Color(0xFF607D8B);
+  static const iconGrey = Color(0xFFB0BEC5);
+  static const textLightGrey = Color(0xFF90A4AE);
+
+  // رنگ‌های دارک مود (موجود)
   // رنگ‌های اصلی (Primary Colors)
   static const Color fireRed = Color(0xFFE63946);
-  static const Color gradientOrange = Color(0xFFF4A261);
-  static const Color brightBlue = Color(0xFF457B9D);
-  static const Color darkNavy = Color(0xFF1D3557);
+  static const Color gradientOrange = Color(
+    0xFFFF9800,
+  ); // بهینه‌شده برای خوانایی و انرژی
+  static const Color brightBlue = Color(
+    0xFF3D5AFE,
+  ); // آبی روشن‌تر برای تاکید بهتر
+  static const Color darkNavy = Color(0xFF1E1E1E); // تیره‌تر برای دارک مود بهتر
 
   // رنگ‌های خنثی (Neutral Colors)
   static const Color pureWhite = Color(0xFFFFFFFF);
-  static const Color lightGray = Color(0xFFF1FAEE);
-  static const Color softGray = Color(0xFFA8A8A8);
+  static const Color lightGray = Color(0xFFE0E0E0); // بهبود خوانایی در دارک مود
+  static const Color softGray = Color(
+    0xFF9E9E9E,
+  ); // کنتراست بهتر برای متون ثانویه
 
   // رنگ‌های پس‌زمینه
   static const Color backgroundLight = lightGray;
@@ -62,9 +89,9 @@ class AppColors {
   static const Color dnsDisconnected = statusDisconnected;
   static const Color vpnActive = brightBlue;
   static const Color vpnInactive = statusUnknown;
-  static const Color pingGood = gradientOrange;
-  static const Color pingMedium = brightBlue;
-  static const Color pingBad = fireRed;
+  // static const Color pingGood = gradientOrange;
+  // static const Color pingMedium = brightBlue;
+  // static const Color pingBad = fireRed;
 
   // رنگ‌های آیکون
   static const Color iconPrimary = pureWhite;
@@ -79,24 +106,55 @@ class AppColors {
     return color.withValues(alpha: opacity);
   }
 
-  // رنگ‌های تم تاریک
-  static const Color darkBackground = darkNavy;
-  static const Color darkSurface = darkNavy;
-  static const Color darkSurfaceVariant = brightBlue;
-  static const Color darkCardBackground = darkNavy;
-  static const Color darkTextPrimary = pureWhite;
-  static const Color darkTextSecondary = lightGray;
-  static const Color darkTextLight = softGray;
-  static const Color darkBorder = brightBlue;
-  static const Color darkShadow = Color(0x33000000);
+  // رنگ‌های تم تاریک - بهینه‌شده برای خوانایی و کاهش خستگی چشم
+  static const Color darkBackground = Color(
+    0xFF121212,
+  ); // پس‌زمینه تیره‌تر برای کاهش خستگی چشم
+  static const Color darkSurface = Color(
+    0xFF1E1E1E,
+  ); // سطوح با کمی روشنایی برای عمق
+  static const Color darkSurfaceVariant = Color(
+    0xFF242424,
+  ); // واریانت برای لایه‌بندی بصری
+  static const Color darkCardBackground = Color(
+    0xFF1E1E1E,
+  ); // کارت‌ها با عمق مناسب
+  static const Color darkTextPrimary = Color(
+    0xFFE0E0E0,
+  ); // متن اصلی با خوانایی بالا
+  static const Color darkTextSecondary = Color(
+    0xFF9E9E9E,
+  ); // متن ثانویه با کنتراست مناسب
+  static const Color darkTextLight = Color(0xFF757575); // متن کم‌اهمیت
+  static const Color darkBorder = Color(0xFF3D5AFE); // حاشیه با تاکید مناسب
+  static const Color darkShadow = Color(0x40000000); // سایه نرم‌تر
 
-  // رنگ‌های دارک مود برای کامپوننت‌ها
-  static const Color darkDrawerBackground = darkNavy;
-  static const Color darkPersonalBackground = darkNavy;
-  static const Color darkConfigBackground = darkNavy;
-  static const Color darkRedSettingsBackground = fireRed;
+  // رنگ‌های دارک مود برای کامپوننت‌ها - طراحی شده برای تجربه کاربری بهتر
+  static const Color darkDrawerBackground = Color(
+    0xFF1A1A1A,
+  ); // کشو کمی روشن‌تر از پس‌زمینه
+  static const Color darkPersonalBackground = Color(0xFF242424); // تنوع در عمق
+  static const Color darkConfigBackground = Color(
+    0xFF1E1E1E,
+  ); // همخوانی با سایر المان‌ها
+  static const Color darkRedSettingsBackground = Color(
+    0xFF2C2C2C,
+  ); // تیره‌تر برای تنظیمات
 
-  // رنگ‌های آیکون در دارک مود
-  static const Color darkIconPrimary = pureWhite;
-  static const Color darkIconSecondary = lightGray;
+  // رنگ‌های آیکون در دارک مود - بهینه‌شده برای وضوح
+  static const Color darkIconPrimary = Color(
+    0xFFE0E0E0,
+  ); // آیکون‌های اصلی با وضوح بالا
+  static const Color darkIconSecondary = Color(
+    0xFF9E9E9E,
+  ); // آیکون‌های ثانویه با کنتراست مناسب
+
+  // رنگ‌های اکسنت برای دارک مود - برای نمایش وضعیت‌ها
+  static const Color darkAccentSuccess = Color(
+    0xFF81C784,
+  ); // سبز ملایم برای موفقیت
+  static const Color darkAccentWarning = Color(
+    0xFFFFB74D,
+  ); // نارنجی ملایم برای هشدار
+  static const Color darkAccentError = Color(0xFFE57373); // قرمز ملایم برای خطا
 }

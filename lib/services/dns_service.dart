@@ -177,17 +177,17 @@ class DnsService {
   }
 
   /// دریافت لیست DNS های محبوب
-  static List<Map<String, String>> getPopularDnsServers() {
-    return DnsConstants.popularDnsServers.entries
-        .map(
-          (entry) => {
-            'name': entry.key,
-            'primary': entry.value['primary']!,
-            'secondary': entry.value['secondary']!,
-          },
-        )
-        .toList();
-  }
+  // static List<Map<String, String>> getPopularDnsServers() {
+    // return DnsConstants.popularDnsServers.entries
+  //       .map(
+  //         (entry) => {
+  //           'name': entry.key,
+  //           'primary': entry.value['primary']!,
+  //           'secondary': entry.value['secondary']!,
+  //         },
+  //       )
+  //       .toList();
+  // }
 
   /// بررسی آماده بودن سرویس
   static Future<bool> isServiceReady() async {

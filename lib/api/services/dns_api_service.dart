@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../path/path.dart';
 
-
 /// سرویس API برای مدیریت DNS
 class DnsApiService {
   late final ApiClient _apiClient;
@@ -74,70 +73,6 @@ class DnsApiService {
         status: false,
         message: 'خطا در دریافت رکورد DNS: ${e.toString()}',
         errorCode: 'GET_BY_ID_ERROR',
-      );
-    }
-  }
-
-  /// ایجاد رکورد DNS جدید
-  Future<ApiResponse<DnsRecord>> createDnsRecord(
-    DnsRecordRequest request,
-  ) async {
-    try {
-      final response = await _apiClient.post<DnsRecord>(
-        '/api/dns',
-        body: request.toJson(),
-        fromJson: (data) => DnsRecord.fromJson(data),
-      );
-
-      return response;
-    } catch (e) {
-      debugPrint('Error creating DNS record: $e');
-      return ApiResponse<DnsRecord>(
-        status: false,
-        message: 'خطا در ایجاد رکورد DNS: ${e.toString()}',
-        errorCode: 'CREATE_ERROR',
-      );
-    }
-  }
-
-  /// ویرایش رکورد DNS
-  Future<ApiResponse<DnsRecord>> updateDnsRecord(
-    String id,
-    DnsRecordRequest request,
-  ) async {
-    try {
-      final response = await _apiClient.patch<DnsRecord>(
-        '/api/dns/$id',
-        body: request.toJson(),
-        fromJson: (data) => DnsRecord.fromJson(data),
-      );
-
-      return response;
-    } catch (e) {
-      debugPrint('Error updating DNS record: $e');
-      return ApiResponse<DnsRecord>(
-        status: false,
-        message: 'خطا در ویرایش رکورد DNS: ${e.toString()}',
-        errorCode: 'UPDATE_ERROR',
-      );
-    }
-  }
-
-  /// حذف رکورد DNS
-  Future<ApiResponse<bool>> deleteDnsRecord(String id) async {
-    try {
-      final response = await _apiClient.delete<bool>(
-        '/api/dns/$id',
-        fromJson: (data) => true,
-      );
-
-      return response;
-    } catch (e) {
-      debugPrint('Error deleting DNS record: $e');
-      return ApiResponse<bool>(
-        status: false,
-        message: 'خطا در حذف رکورد DNS: ${e.toString()}',
-        errorCode: 'DELETE_ERROR',
       );
     }
   }
@@ -256,6 +191,30 @@ class DnsApiService {
         status: false,
         message: 'خطا در دریافت آمار: ${e.toString()}',
         errorCode: 'GET_STATS_ERROR',
+      );
+    }
+  }
+
+  /// ایجاد DNS کاربر
+  Future<ApiResponse<DnsRecord>> createUserDns({
+    required String ip1,
+    required String ip2,
+    required DnsType type,
+  }) async {
+    try {
+      final response = await _apiClient.post<DnsRecord>(
+        '/api/dns',
+        body: {'ip1': ip1, 'ip2': ip2, 'type': dnsTypeToString(type)},
+        fromJson: (data) => DnsRecord.fromJson(data),
+      );
+
+      return response;
+    } catch (e) {
+      debugPrint('Error creating user DNS: $e');
+      return ApiResponse<DnsRecord>(
+        status: false,
+        message: 'خطا در ایجاد DNS: ${e.toString()}',
+        errorCode: 'CREATE_DNS_ERROR',
       );
     }
   }

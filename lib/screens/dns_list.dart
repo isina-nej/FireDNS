@@ -5,6 +5,9 @@ import 'dart:convert';
 import '../path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/dns_ping_helper.dart';
+import 'package:provider/provider.dart';
+import '../styles/theme_manager.dart';
+import '../styles/app_colors.dart';
 import '../widgets/animated_overflow_label.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -38,6 +41,8 @@ class _DnsListPageState extends State<DnsListPage> {
 
   bool _isUserDns(DnsRecord record) => _userDnsIds.contains(record.id);
   Widget _buildDnsCard(BuildContext context, DnsRecord record, int index) {
+    final themeManager = Provider.of<ThemeManager>(context);
+    final isDark = themeManager.isDarkModeActive(context);
     final isSelected = _selectedDnsId == record.id;
     final ping = _pingCache['${record.id}_1'] ?? _pingCache[record.id];
     final ping2 = _pingCache['${record.id}_2'] ?? _pingCache[record.id];
@@ -64,29 +69,29 @@ class _DnsListPageState extends State<DnsListPage> {
     if (ping == null || ping < 0) {
       pingColor = Colors.grey.shade400;
     } else if (ping < 50) {
-      pingColor = const Color(0xFF4CAF50);
+      pingColor = AppColors.pingExcellent;
     } else if (ping < 120) {
-      pingColor = const Color(0xFF8BC34A);
+      pingColor = AppColors.pingGood;
     } else if (ping < 250) {
-      pingColor = const Color(0xFFFFC107);
+      pingColor = AppColors.pingMedium;
     } else if (ping < 500) {
-      pingColor = const Color(0xFFFF9800);
+      pingColor = AppColors.pingPoor;
     } else {
-      pingColor = const Color(0xFFF44336);
+      pingColor = AppColors.pingBad;
     }
     Color pingColor2;
     if (ping2 == null || ping2 < 0) {
       pingColor2 = Colors.grey.shade400;
     } else if (ping2 < 50) {
-      pingColor2 = const Color(0xFF4CAF50);
+      pingColor2 = AppColors.pingExcellent;
     } else if (ping2 < 120) {
-      pingColor2 = const Color(0xFF8BC34A);
+      pingColor2 = AppColors.pingGood;
     } else if (ping2 < 250) {
-      pingColor2 = const Color(0xFFFFC107);
+      pingColor2 = AppColors.pingMedium;
     } else if (ping2 < 500) {
-      pingColor2 = const Color(0xFFFF9800);
+      pingColor2 = AppColors.pingPoor;
     } else {
-      pingColor2 = const Color(0xFFF44336);
+      pingColor2 = AppColors.pingBad;
     }
     final isUserDns = _isUserDns(record);
     return ClipRect(
@@ -94,7 +99,11 @@ class _DnsListPageState extends State<DnsListPage> {
         height: 140,
         child: Card(
           elevation: isSelected ? 4 : 1,
-          color: isSelected ? const Color(0xFFE3F2FD) : Colors.white,
+          color: isDark
+              ? (isSelected
+                    ? AppColors.darkCardBackground.withOpacity(0.8)
+                    : AppColors.darkCardBackground)
+              : (isSelected ? AppColors.selectedLight : Colors.white),
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -112,16 +121,18 @@ class _DnsListPageState extends State<DnsListPage> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5A9CFF).withOpacity(0.08),
+                      color: AppColors.primaryBlue.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       '${index + 1}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Color(0xFF5A9CFF),
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : const Color(0xFF5A9CFF),
                       ),
                     ),
                   ),
@@ -139,10 +150,12 @@ class _DnsListPageState extends State<DnsListPage> {
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
                                     final text = record.label;
-                                    final textStyle = const TextStyle(
+                                    final textStyle = TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 16,
-                                      color: Color(0xFF222B45),
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : const Color(0xFF222B45),
                                     );
                                     final textPainter = TextPainter(
                                       text: TextSpan(
@@ -204,10 +217,12 @@ class _DnsListPageState extends State<DnsListPage> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.dns,
                                 size: 18,
-                                color: Color(0xFF5A9CFF),
+                                color: isDark
+                                    ? AppColors.darkIconPrimary
+                                    : const Color(0xFF5A9CFF),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -320,10 +335,12 @@ class _DnsListPageState extends State<DnsListPage> {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.dns_outlined,
                                 size: 18,
-                                color: Color(0xFFB0BEC5),
+                                color: isDark
+                                    ? AppColors.darkIconSecondary
+                                    : const Color(0xFFB0BEC5),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -962,6 +979,9 @@ class _DnsListPageState extends State<DnsListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeManager = Provider.of<ThemeManager>(context);
+    final isDark = themeManager.isDarkModeActive(context);
+
     return WillPopScope(
       onWillPop: () async {
         if (_testDialogOpen) {
@@ -976,20 +996,24 @@ class _DnsListPageState extends State<DnsListPage> {
         return true;
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF7F8FA),
+        backgroundColor: isDark
+            ? AppColors.darkBackground
+            : const Color(0xFFF7F8FA),
         appBar: AppBar(
           elevation: 0,
-          backgroundColor: Colors.white,
-          title: const Text(
+          backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,
+          title: Text(
             'انتخاب DNS',
             style: TextStyle(
-              color: Color(0xFF222B45),
+              color: isDark ? AppColors.darkTextPrimary : AppColors.primaryText,
               fontWeight: FontWeight.bold,
               fontSize: 22,
               letterSpacing: 0.5,
             ),
           ),
-          iconTheme: const IconThemeData(color: Color(0xFF222B45)),
+          iconTheme: IconThemeData(
+            color: isDark ? AppColors.darkIconPrimary : const Color(0xFF222B45),
+          ),
           actions: [
             _testDialogOpen
                 ? IconButton(
@@ -1019,35 +1043,47 @@ class _DnsListPageState extends State<DnsListPage> {
             PopupMenuButton<String>(
               icon: const Icon(Icons.sort),
               tooltip: 'مرتب‌سازی',
-              color: Colors.white,
+              color: isDark ? AppColors.darkCardBackground : Colors.white,
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'default',
                   child: SizedBox(
                     width: 160,
                     child: Text(
                       'پیش‌فرض',
-                      style: TextStyle(color: Color(0xFF222B45)),
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : const Color(0xFF222B45),
+                      ),
                     ),
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'ping',
                   child: SizedBox(
                     width: 160,
                     child: Text(
                       'کمترین پینگ',
-                      style: TextStyle(color: Color(0xFF222B45)),
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : const Color(0xFF222B45),
+                      ),
                     ),
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'name',
                   child: SizedBox(
                     width: 160,
                     child: Text(
                       'مرتب‌سازی بر اساس نام',
-                      style: TextStyle(color: Color(0xFF222B45)),
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : const Color(0xFF222B45),
+                      ),
                     ),
                   ),
                 ),
@@ -1074,25 +1110,33 @@ class _DnsListPageState extends State<DnsListPage> {
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               tooltip: 'بیشتر',
-              color: Colors.white,
+              color: isDark ? AppColors.darkCardBackground : Colors.white,
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'customTest',
                   child: SizedBox(
                     width: 180,
                     child: Text(
                       'تست دامنه با همه DNSها',
-                      style: TextStyle(color: Color(0xFF222B45)),
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : const Color(0xFF222B45),
+                      ),
                     ),
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'refreshDns',
                   child: SizedBox(
                     width: 180,
                     child: Text(
                       'دریافت لیست جدید از سرور',
-                      style: TextStyle(color: Color(0xFF222B45)),
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : const Color(0xFF222B45),
+                      ),
                     ),
                   ),
                 ),
@@ -1209,7 +1253,9 @@ class _DnsListPageState extends State<DnsListPage> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: isDark
+                                ? AppColors.darkCardBackground
+                                : AppColors.pureWhite,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
@@ -1224,9 +1270,23 @@ class _DnsListPageState extends State<DnsListPage> {
                                 child: TextField(
                                   controller: _searchController,
                                   autofocus: true,
-                                  decoration: const InputDecoration(
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? AppColors.textWhite
+                                        : AppColors.textPrimary,
+                                  ),
+                                  decoration: InputDecoration(
                                     hintText: 'جستجو بر اساس نام یا آی‌پی',
+                                    hintStyle: TextStyle(
+                                      color: isDark
+                                          ? AppColors.textLight
+                                          : AppColors.textSecondary,
+                                    ),
                                     border: InputBorder.none,
+                                    fillColor: isDark
+                                        ? AppColors.darkNavy
+                                        : AppColors.pureWhite,
+                                    filled: true,
                                   ),
                                   onChanged: (v) {
                                     setState(() {
@@ -1317,8 +1377,17 @@ class _TestDomainWithAllDnsDialogState
     extends State<_TestDomainWithAllDnsDialog> {
   @override
   Widget build(BuildContext context) {
+    final themeManager = Provider.of<ThemeManager>(context);
+    final isDark = themeManager.isDarkModeActive(context);
+
     return AlertDialog(
-      title: Text('تست دامنه "${widget.domain}" با همه DNSها'),
+      backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,
+      title: Text(
+        'تست دامنه "${widget.domain}" با همه DNSها',
+        style: TextStyle(
+          color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45),
+        ),
+      ),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView.builder(
@@ -1333,7 +1402,14 @@ class _TestDomainWithAllDnsDialogState
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('بستن'),
+          child: Text(
+            'بستن',
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.darkTextPrimary
+                  : const Color(0xFF222B45),
+            ),
+          ),
         ),
       ],
     );
@@ -1353,8 +1429,13 @@ class _DnsTestTileState extends State<_DnsTestTile> {
   dynamic status;
   bool _loading = true;
 
+  late final ThemeManager themeManager;
+  late final bool isDark;
+
   @override
   void initState() {
+    themeManager = Provider.of<ThemeManager>(context, listen: false);
+    isDark = themeManager.isDarkModeActive(context);
     super.initState();
     _runTest();
   }
@@ -1374,8 +1455,18 @@ class _DnsTestTileState extends State<_DnsTestTile> {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      title: Text(widget.record.label),
-      subtitle: Text(widget.record.ip1),
+      title: Text(
+        widget.record.label,
+        style: TextStyle(
+          color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45),
+        ),
+      ),
+      subtitle: Text(
+        widget.record.ip1,
+        style: TextStyle(
+          color: isDark ? AppColors.darkTextSecondary : Colors.grey[600],
+        ),
+      ),
       trailing: _loading
           ? const SizedBox(
               width: 24,

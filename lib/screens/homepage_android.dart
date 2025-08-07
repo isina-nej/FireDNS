@@ -5,6 +5,10 @@ import '../path/path.dart';
 import 'dns_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'notifications_page.dart';
+
+import 'package:provider/provider.dart';
+import '../widgets/custom_drawer.dart';
 
 // Responsive size utility for Android
 double responsiveSize(
@@ -17,7 +21,6 @@ double responsiveSize(
   // On Android, just return base (no scaling), but keep API for consistency
   return base;
 }
-// ...existing code...
 
 /// صفحه اصلی برنامه Fire DNS
 class FireDNSHomePage extends StatefulWidget {
@@ -31,9 +34,7 @@ class FireDNSHomePage extends StatefulWidget {
 
 class _FireDNSHomePageState extends State<FireDNSHomePage>
     with WidgetsBindingObserver {
-  // وضعیت موفقیت ست شدن DNS برای انیمیشن دکمه
-  // ...existing code...
-  // ...existing code...
+  late ThemeManager _themeManager;
 
   String? _selectedDnsLabel;
   String? _selectedDnsIp;
@@ -55,9 +56,11 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   @override
   void initState() {
     super.initState();
+    _themeManager = Provider.of<ThemeManager>(context, listen: false);
     _initializeControllers();
     _initializeObserver();
     _initializeServices();
+    _themeManager.loadThemeMode();
     setState(() {
       _vpnLoading = true;
     });
@@ -105,6 +108,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     _disposeControllers();
     _disposeObserver();
     _disposeServices();
+    _themeManager.dispose();
     super.dispose();
   }
 
@@ -196,14 +200,12 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         success
             ? DnsConstants.errorMessages['vpnActivated']!
             : DnsConstants.errorMessages['vpnActivationError']!,
-        success ? Colors.green : Colors.red,
+        success ? AppColors.textSuccess : AppColors.textError,
       );
     } catch (e) {
-      _showMessage('خطا در فعال‌سازی VPN: $e', Colors.red);
+      _showMessage('خطا در فعال‌سازی VPN: $e', AppColors.textError);
     }
   }
-
-  // ...existing code...
 
   Future<void> _deactivateVpn() async {
     try {
@@ -212,10 +214,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         success
             ? DnsConstants.errorMessages['vpnDisabled']!
             : DnsConstants.errorMessages['vpnDisableError']!,
-        success ? Colors.green : Colors.red,
+        success ? AppColors.textSuccess : AppColors.textError,
       );
     } catch (e) {
-      _showMessage('خطا در غیرفعال‌سازی VPN: $e', Colors.red);
+      _showMessage('خطا در غیرفعال‌سازی VPN: $e', AppColors.textError);
     }
   }
 
@@ -236,53 +238,110 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'Fire DNS',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+    final themeManager = Provider.of<ThemeManager>(context);
+    final isDark = themeManager.isDarkModeActive(context);
+    return ListenableBuilder(
+      listenable: themeManager,
+      builder: (context, _) => Scaffold(
+        key: _scaffoldKey,
+        drawer: const CustomDrawer(),
+        backgroundColor: isDark
+            ? AppColors.darkBackground
+            : AppColors.backgroundLight,
+        appBar: AppBar(
+          backgroundColor: isDark
+              ? AppColors.darkBackground
+              : AppColors.backgroundLight,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.menu,
+              color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
+            ),
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           ),
-        ),
-        centerTitle: true,
-        toolbarHeight: kToolbarHeight,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            const minCardHeight = 170.0;
-            const totalSpacing = 24.0;
-            final availableHeight = constraints.maxHeight - totalSpacing;
-            double cardHeight = availableHeight / 3;
-            if (cardHeight < minCardHeight) cardHeight = minCardHeight;
-            const cardPadding = EdgeInsets.all(12);
-            return Padding(
-              padding: cardPadding,
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
+          title: Text(
+            'Fire DNS',
+            style: TextStyle(
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
+          toolbarHeight: kToolbarHeight,
+          actions: [
+            IconButton(
+              padding: EdgeInsets.zero,
+              icon: Stack(
                 children: [
-                  Expanded(
-                    flex: 12,
-                    child: _buildConnectionStatusCard(cardHeight),
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(flex: 10, child: _buildSpeedTestCard(cardHeight)),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    flex: 10,
-                    child: _buildConfigurationCard(cardHeight),
+                  const Icon(
+                    Icons.notifications_outlined,
+                    color: AppColors.textSecondary,
                   ),
                 ],
               ),
-            );
-          },
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsPage(),
+                  ),
+                );
+              },
+            ),
+            IconButton(
+              icon: CircleAvatar(
+                backgroundColor: AppColors.backgroundGrey,
+                child: Icon(
+                  Icons.person_outline,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+              ),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('پروفایل کاربری به زودی اضافه خواهد شد'),
+                    duration: Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const minCardHeight = 170.0;
+              const totalSpacing = 24.0;
+              final availableHeight = constraints.maxHeight - totalSpacing;
+              double cardHeight = availableHeight / 3;
+              if (cardHeight < minCardHeight) cardHeight = minCardHeight;
+              const cardPadding = EdgeInsets.all(12);
+              return Padding(
+                padding: cardPadding,
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Expanded(
+                      flex: 12,
+                      child: _buildConnectionStatusCard(cardHeight),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(flex: 10, child: _buildSpeedTestCard(cardHeight)),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      flex: 10,
+                      child: _buildConfigurationCard(cardHeight),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -290,16 +349,27 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
   /// کارت وضعیت اتصال DNS
   Widget _buildConnectionStatusCard(double height) {
+    final isDark = _themeManager.isDarkModeActive(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(
         responsiveSize(24, context, min: 10, max: 28, scaleByHeight: true),
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8E8E8),
+        color: isDark
+            ? AppColors.darkCardBackground
+            : AppColors.backgroundWhite,
         borderRadius: BorderRadius.circular(
           responsiveSize(14, context, min: 6, max: 20, scaleByHeight: true),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow,
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Stack(
         children: [
@@ -308,7 +378,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
               builder: (context, constraints) {
                 final double factor = 1.55;
                 return Opacity(
-                  opacity: 0.88,
+                  opacity: 0.58,
                   child: Center(
                     child: OverflowBox(
                       maxWidth: constraints.maxWidth * factor,
@@ -379,7 +449,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                           scaleByHeight: true,
                         ),
                         decoration: BoxDecoration(
-                          color: _vpnActive ? Colors.green : Colors.red,
+                          color: _vpnActive
+                              ? AppColors.textSuccess
+                              : AppColors.textError,
                           shape: BoxShape.circle,
                         ),
                         child: _vpnLoading
@@ -401,7 +473,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                                   ),
                                   child: CircularProgressIndicator(
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
+                                      AppColors.pureWhite,
                                     ),
                                     strokeWidth: 4,
                                   ),
@@ -409,7 +481,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                               )
                             : Icon(
                                 Icons.power_settings_new,
-                                color: Colors.white,
+                                color: AppColors.pureWhite,
                                 size: responsiveSize(
                                   40,
                                   context,
@@ -463,8 +535,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                             (_selectedDnsLabel != null &&
                                 _selectedDnsIp != null &&
                                 _selectedDnsIp!.isNotEmpty)
-                            ? Colors.blue
-                            : Colors.grey,
+                            ? AppColors.brightBlue
+                            : AppColors.textLight,
                       ),
                     ),
                     SizedBox(
@@ -487,7 +559,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                           scaleByHeight: true,
                         ),
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
                       ),
                     ),
                   ],
@@ -513,7 +587,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                           max: 28,
                           scaleByHeight: true,
                         ),
-                        color: _vpnActive ? Colors.green : Colors.blue,
+                        color: _vpnActive
+                            ? AppColors.textSuccess
+                            : AppColors.brightBlue,
                       ),
                       SizedBox(
                         width: responsiveSize(
@@ -539,7 +615,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                               max: 30,
                               scaleByHeight: true,
                             ),
-                            color: _vpnActive ? Colors.green : Colors.blue,
+                            color: _vpnActive
+                                ? AppColors.textSuccess
+                                : AppColors.brightBlue,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -559,7 +637,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                             max: 28,
                             scaleByHeight: true,
                           ),
-                          color: _vpnActive ? Colors.green : Colors.blue,
+                          color: _vpnActive
+                              ? AppColors.textSuccess
+                              : AppColors.brightBlue,
                         ),
                         SizedBox(
                           width: responsiveSize(
@@ -585,7 +665,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                                 max: 30,
                                 scaleByHeight: true,
                               ),
-                              color: _vpnActive ? Colors.green : Colors.blue,
+                              color: _vpnActive
+                                  ? AppColors.textSuccess
+                                  : AppColors.brightBlue,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -603,19 +685,22 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
   /// کارت تست سرعت
   Widget _buildSpeedTestCard(double height) {
+    final isDark = _themeManager.isDarkModeActive(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(
         responsiveSize(12, context, min: 6, max: 18, scaleByHeight: true),
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark
+            ? AppColors.darkCardBackground
+            : AppColors.backgroundWhite,
         borderRadius: BorderRadius.circular(
           responsiveSize(12, context, min: 6, max: 16, scaleByHeight: true),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppColors.shadow,
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -656,7 +741,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1976D2), // Strong blue
+                    color: AppColors.brightBlue,
                     borderRadius: BorderRadius.circular(
                       responsiveSize(
                         16,
@@ -668,7 +753,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.withOpacity(0.08),
+                        color: AppColors.brightBlue.withOpacity(0.08),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -685,7 +770,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                         scaleByHeight: true,
                       ),
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                     ),
                   ),
                 ),
@@ -707,12 +792,12 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                   scaleByHeight: true,
                 ),
                 decoration: const BoxDecoration(
-                  color: Colors.green,
+                  color: AppColors.textSuccess,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.speed,
-                  color: Colors.white,
+                  color: AppColors.pureWhite,
                   size: responsiveSize(
                     18,
                     context,
@@ -746,7 +831,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                 scaleByHeight: true,
               ),
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
             ),
           ),
 
@@ -770,25 +855,44 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                   max: 30,
                   scaleByHeight: true,
                 ),
-                color: Colors.grey,
+                color: AppColors.textSecondary,
                 height: 1.5,
               ),
               children: [
                 TextSpan(
                   text: 'تست سرعت',
                   style: TextStyle(
-                    color: Colors.green,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textSuccess,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                TextSpan(text: ' سرعت اینترنت شما را بین '),
+                TextSpan(
+                  text: ' سرعت اینترنت شما را بین ',
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                  ),
+                ),
                 TextSpan(
                   text: 'دستگاه',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                  ),
                 ),
                 TextSpan(
                   text:
                       ' و سرور تست اندازه‌گیری می‌کند و از اتصال اینترنت فعلی شما استفاده می‌کند.',
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -800,19 +904,22 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
   /// کارت پیکربندی
   Widget _buildConfigurationCard(double height) {
+    final isDark = _themeManager.isDarkModeActive(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(
         responsiveSize(12, context, min: 6, max: 18, scaleByHeight: true),
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark
+            ? AppColors.darkCardBackground
+            : AppColors.backgroundWhite,
         borderRadius: BorderRadius.circular(
           responsiveSize(12, context, min: 6, max: 16, scaleByHeight: true),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppColors.shadow,
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -855,7 +962,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1976D2), // Strong blue
+                    color: AppColors.brightBlue,
                     borderRadius: BorderRadius.circular(
                       responsiveSize(
                         16,
@@ -867,7 +974,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.withOpacity(0.08),
+                        color: AppColors.brightBlue.withOpacity(0.08),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -884,7 +991,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                         scaleByHeight: true,
                       ),
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                     ),
                   ),
                 ),
@@ -906,7 +1013,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                   scaleByHeight: true,
                 ),
                 decoration: const BoxDecoration(
-                  color: Colors.green,
+                  color: AppColors.textSuccess,
                   shape: BoxShape.circle,
                 ),
                 child: Stack(
@@ -914,7 +1021,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                   children: [
                     Icon(
                       Icons.settings,
-                      color: Colors.white,
+                      color: AppColors.pureWhite,
                       size: responsiveSize(
                         16,
                         context,
@@ -942,7 +1049,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                           scaleByHeight: true,
                         ),
                         decoration: const BoxDecoration(
-                          color: Colors.green,
+                          color: AppColors.textSuccess,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -974,7 +1081,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                 scaleByHeight: true,
               ),
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
             ),
           ),
 
@@ -998,24 +1105,52 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                   max: 30,
                   scaleByHeight: true,
                 ),
-                color: Colors.grey,
+                color: AppColors.textSecondary,
                 height: 1.5,
               ),
               children: [
-                TextSpan(text: 'در این بخش می‌توانید '),
+                TextSpan(
+                  text: 'در این بخش می‌توانید ',
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                  ),
+                ),
                 TextSpan(
                   text: 'تنظیمات شبکه',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                  ),
                 ),
-                TextSpan(text: ' خود را شخصی‌سازی کنید و '),
+                TextSpan(
+                  text: ' خود را شخصی‌سازی کنید و ',
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                  ),
+                ),
                 TextSpan(
                   text: 'پیکربندی',
                   style: TextStyle(
-                    color: Colors.green,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textSuccess,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                TextSpan(text: ' مناسب با نیاز اتصال خود را انتخاب نمایید.'),
+                TextSpan(
+                  text: ' مناسب با نیاز اتصال خود را انتخاب نمایید.',
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),

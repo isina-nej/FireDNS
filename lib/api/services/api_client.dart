@@ -98,6 +98,33 @@ class ApiClient {
     }
   }
 
+  /// درخواست PUT
+  Future<ApiResponse<T>> put<T>(
+    String endpoint, {
+    dynamic body,
+    Map<String, String>? headers,
+    T Function(dynamic)? fromJson,
+  }) async {
+    try {
+      final uri = _buildUri(endpoint);
+      final mergedHeaders = {..._defaultHeaders, ...?headers};
+      final jsonBody = body != null ? jsonEncode(body) : null;
+
+      debugPrint('PUT Request: $uri');
+      debugPrint('Headers: $mergedHeaders');
+      debugPrint('Body: $jsonBody');
+
+      final response = await _client
+          .put(uri, headers: mergedHeaders, body: jsonBody)
+          .timeout(_timeout);
+
+      return _handleResponse<T>(response, fromJson);
+    } catch (e) {
+      debugPrint('PUT Error: $e');
+      return _handleError<T>(e);
+    }
+  }
+
   /// درخواست DELETE
   Future<ApiResponse<T>> delete<T>(
     String endpoint, {

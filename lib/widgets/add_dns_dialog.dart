@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../path/path.dart';
+import '../api/services/dns_usage_api_service.dart';
+import '../api/services/dns_api_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'ip_input_field.dart';
 
 class AddDnsDialog extends StatefulWidget {
   final void Function(DnsRecord) onAdd;
@@ -19,6 +23,55 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
   late final TextEditingController _ip1Controller;
   late final TextEditingController _ip2Controller;
   bool _saving = false;
+  final _dnsUsageApiService = DnsUsageApiService();
+  final _dnsApiService = DnsApiService();
+  final _connectivity = Connectivity();
+
+  /// تشخیص نوع اتصال اینترنت
+  Future<String> _getInternetConnectionType() async {
+    final connectivityResult = await _connectivity.checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.mobile)) {
+      // تشخیص نوع اپراتور موبایل
+      try {
+        // این قسمت نیاز به پیاده‌سازی دقیق‌تر برای تشخیص اپراتور دارد
+        return 'HAMRAHAVAL'; // یا IRANCELL یا سایر اپراتورها
+      } catch (_) {
+        return 'MOBILE';
+      }
+    } else if (connectivityResult.contains(ConnectivityResult.wifi)) {
+      return 'TELECOM'; // یا تشخیص ISP دقیق‌تر
+    } else {
+      return 'OTHER';
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _labelController = TextEditingController(
+      text: widget.initialRecord?.label ?? '',
+    );
+    _ip1Controller = TextEditingController(
+      text: widget.initialRecord?.ip1 ?? '',
+    );
+    _ip2Controller = TextEditingController(
+      text: widget.initialRecord?.ip2 ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _labelController.dispose();
+    _ip1Controller.dispose();
+    _ip2Controller.dispose();
+    _dnsUsageApiService.dispose();
+    super.dispose();
+  }
+
+  Future<String> _getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_id') ?? 'unknown';
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -164,7 +217,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
         label: _labelController.text.trim(),
         ip1: _ip1Controller.text.trim(),
         ip2: _ip2Controller.text.trim(),
-        type: DnsType.other,
+        type: DnsType.general, // نوع پیش‌فرض برای DNSهای دستی
         createdAt: DateTime.now(),
       );
     }
@@ -184,30 +237,56 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
       cachedOrder.add(newRecord.id);
       await prefs.setStringList('cached_dns_order', cachedOrder);
     }
+    // ثبت DNS و استفاده از آن در سرور
+    try {
+      // اول DNS را در سرور ثبت می‌کنیم
+      final dnsResponse = await _dnsApiService.createUserDns(
+        ip1: newRecord.ip1,
+        ip2: newRecord.ip2,
+        type: newRecord.type,
+      );
+
+      if (!dnsResponse.status) {
+        debugPrint('Error creating DNS record: ${dnsResponse.message}');
+        return;
+      }
+
+      // سپس استفاده از DNS را ثبت می‌کنیم
+      final userId = await _getUserId();
+      final usageResponse = await _dnsUsageApiService.recordDnsUsage(
+        userDnsId: dnsResponse.data!.id, // از ID برگشتی از سرور استفاده می‌کنیم
+        internetTag: await _getInternetConnectionType(), // تشخیص نوع اینترنت
+        destination: 'GENERAL', // یا هر مقدار مناسب دیگر
+        userId: userId,
+      );
+
+      if (!usageResponse.status) {
+        debugPrint('Error recording DNS usage: ${usageResponse.message}');
+      }
+    } catch (e) {
+      debugPrint('Error in DNS operations: $e');
+    }
+
     setState(() => _saving = false);
     widget.onAdd(newRecord);
     if (mounted) Navigator.pop(context);
   }
 
   @override
-  void initState() {
-    super.initState();
-    _labelController = TextEditingController(
-      text: widget.initialRecord?.label ?? '',
-    );
-    _ip1Controller = TextEditingController(
-      text: widget.initialRecord?.ip1 ?? '',
-    );
-    _ip2Controller = TextEditingController(
-      text: widget.initialRecord?.ip2 ?? '',
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     final isEdit = widget.initialRecord != null;
     return AlertDialog(
-      title: Text(isEdit ? 'ویرایش DNS' : 'افزودن DNS جدید'),
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.darkNavy
+          : AppColors.pureWhite,
+      title: Text(
+        isEdit ? 'ویرایش DNS' : 'افزودن DNS جدید',
+        style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.textWhite
+              : AppColors.textPrimary,
+        ),
+      ),
       content: Form(
         key: _formKey,
         child: Column(
@@ -215,41 +294,110 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
           children: [
             TextFormField(
               controller: _labelController,
-              decoration: const InputDecoration(labelText: 'نام'),
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textWhite
+                    : AppColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                labelText: 'نام',
+                filled: true,
+                fillColor: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.darkNavy
+                    : AppColors.pureWhite,
+                labelStyle: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textLight
+                      : AppColors.textSecondary,
+                ),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textLight
+                        : AppColors.textSecondary,
+                  ),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primaryBlue),
+                ),
+              ),
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'نام را وارد کنید' : null,
             ),
-            TextFormField(
-              controller: _ip1Controller,
-              decoration: const InputDecoration(labelText: 'DNS1'),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'DNS1 را وارد کنید' : null,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+            IpInputField(
+              label: 'DNS1',
+              initialValue: widget.initialRecord?.ip1,
+              isDarkMode: Theme.of(context).brightness == Brightness.dark,
+              onComplete: (value) {
+                _ip1Controller.text = value;
+              },
             ),
-            TextFormField(
-              controller: _ip2Controller,
-              decoration: const InputDecoration(labelText: 'DNS2'),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'DNS2 را وارد کنید' : null,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+            const SizedBox(height: 16),
+            IpInputField(
+              label: 'DNS2',
+              initialValue: widget.initialRecord?.ip2,
+              isDarkMode: Theme.of(context).brightness == Brightness.dark,
+              onComplete: (value) {
+                _ip2Controller.text = value;
+              },
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.pop(context),
-          child: const Text('انصراف'),
-        ),
-        ElevatedButton(
-          onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(isEdit ? 'ثبت ویرایش' : 'افزودن'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryBlue,
+                    foregroundColor: AppColors.textWhite,
+                    minimumSize: const Size.fromHeight(48),
+                    disabledBackgroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                        ? Color.alphaBlend(
+                            AppColors.textLight.withAlpha(77),
+                            AppColors.darkNavy,
+                          )
+                        : Color.alphaBlend(
+                            AppColors.textSecondary.withAlpha(77),
+                            AppColors.pureWhite,
+                          ),
+                  ),
+                  child: _saving
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? AppColors.textWhite
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        )
+                      : Text(isEdit ? 'ثبت ویرایش' : 'افزودن'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 1,
+                child: TextButton(
+                  onPressed: _saving ? null : () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  child: const Text('انصراف'),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

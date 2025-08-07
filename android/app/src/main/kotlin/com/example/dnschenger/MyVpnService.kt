@@ -34,10 +34,30 @@ class MyVpnService : VpnService() {
         // سرورهای DNS پیش‌فرض گوگل
         const val DEFAULT_PRIMARY_DNS = "8.8.8.8"      // Google DNS Primary
         const val DEFAULT_SECONDARY_DNS = "8.8.4.4"    // Google DNS Secondary
+        // متغیر برای تشخیص خاموش شدن دستی توسط کاربر
+        var userStoppedService: Boolean = false
     }
 
     // رابط VPN که برای اتصال استفاده می‌شود
     private var vpnInterface: ParcelFileDescriptor? = null
+
+    // BroadcastReceiver برای تشخیص وصل شدن اینترنت
+    private val networkReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            val cm = context?.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+            val activeNetwork = cm?.activeNetworkInfo
+            val isConnected = activeNetwork?.isConnectedOrConnecting == true
+            if (isConnected && !isRunning && !userStoppedService) {
+                Log.d("FireDNS", "Network connected, restarting VPN service...")
+                val restartIntent = Intent(context, MyVpnService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context?.startForegroundService(restartIntent)
+                } else {
+                    context?.startService(restartIntent)
+                }
+            }
+        }
+    }
 
     /**
      * بررسی معتبر بودن آدرس IP
@@ -147,6 +167,9 @@ class MyVpnService : VpnService() {
             statusListener?.invoke("DNS_STOPPED")
             stopSelf()
         }
+
+            // ثبت خاموش شدن دستی توسط کاربر
+            userStoppedService = true
     }
 
     /**
@@ -164,6 +187,7 @@ class MyVpnService : VpnService() {
         // دریافت آدرس‌های DNS از intent
         var dns1 = intent?.getStringExtra("dns1") ?: DEFAULT_PRIMARY_DNS
         var dns2 = intent?.getStringExtra("dns2") ?: DEFAULT_SECONDARY_DNS
+            userStoppedService = true
 
         // اعتبارسنجی DNS ها
         if (!isValidIpAddress(dns1)) {
@@ -188,6 +212,8 @@ class MyVpnService : VpnService() {
 
         try {
             // ایجاد VPN با تنظیمات ساده مانند NetShift
+        // اگر سرویس به صورت خودکار استارت شده، مقدار userStoppedService را false کن
+        userStoppedService = false
             Log.d("FireDNS", "Setting up VPN configuration (NetShift style)")
             val builder = Builder()
                 .setSession("FireDNSVPN")
@@ -313,6 +339,22 @@ class MyVpnService : VpnService() {
         vpnInterface = null
         isRunning = false
         statusListener?.invoke("DNS_STOPPED")
+
+        // حذف ثبت خاموش شدن دستی اگر سرویس destroy شد (مثلاً توسط سیستم)
+        if (!userStoppedService) {
+            userStoppedService = false
+        }
+
+        // حذف ثبت BroadcastReceiver
+        try {
+            unregisterReceiver(networkReceiver)
+        } catch (_: Exception) {}
         super.onDestroy()
+    }
+    override fun onCreate() {
+        super.onCreate()
+        // ثبت BroadcastReceiver برای تغییرات شبکه
+        val filter = android.content.IntentFilter(android.net.ConnectivityManager.CONNECTIVITY_ACTION)
+        registerReceiver(networkReceiver, filter)
     }
 }

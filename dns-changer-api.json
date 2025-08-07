@@ -1,0 +1,619 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Fire DNS API",
+    "description": "API documentation for Fire DNS application",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://fire-dns.ir/api",
+      "description": "Production server"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "DnsRecord": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "64a8f9..." },
+          "label": { "type": "string", "example": "DNS - Shekan" },
+          "ip1": { "type": "string", "example": "178.22.122.100" },
+          "ip2": { "type": "string", "example": "185.51.200.2" },
+          "type": {
+            "type": "string",
+            "enum": [
+              "GENERAL",
+              "RADAR",
+              "SHEKAN",
+              "IRANCELL",
+              "HAMRAHAVAL",
+              "GAMING",
+              "TELECOM",
+              "OTHER",
+              "IPV6",
+              "GOOGLE"
+            ],
+            "example": "SHEKAN"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-06-01T08:15:30.000Z"
+          }
+        },
+        "required": ["id", "label", "ip1", "ip2", "type"]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean", "example": false },
+          "message": { "type": "string", "example": "Error occurred." },
+          "errorCode": {
+            "type": "string",
+            "nullable": true,
+            "example": "DB_CONN_FAIL"
+          },
+          "data": { "type": "null", "nullable": true }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "Operation successful" },
+          "errorCode": { "type": "null", "nullable": true },
+          "data": { "type": "object", "nullable": true }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/init": {
+      "post": {
+        "summary": "Create guest user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deviceId": { "type": "string", "example": "ANDROID_ID_123" }
+                },
+                "required": ["deviceId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Guest user created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "userId": { "type": "string", "example": "64a8f9..." },
+                        "sessionToken": {
+                          "type": "string",
+                          "example": "eyJhbGciOiJIUzI1NiIs..."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+    "/auth/refresh-session": {
+      "post": {
+        "summary": "Refresh or create new session",
+        "responses": {
+          "200": {
+            "description": "Session refreshed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+    "/dns": {
+      "get": {
+        "summary": "Get list of DNS records",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "GENERAL",
+                "RADAR",
+                "SHEKAN",
+                "IRANCELL",
+                "HAMRAHAVAL",
+                "GAMING",
+                "TELECOM",
+                "OTHER",
+                "IPV6",
+                "GOOGLE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DNS records fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/DnsRecord" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      },
+      "post": {
+        "summary": "Create new DNS record",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": { "type": "string", "example": "DNS - Example" },
+                  "ip1": { "type": "string", "example": "1.1.1.1" },
+                  "ip2": { "type": "string", "example": "1.0.0.1" },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "GENERAL",
+                      "RADAR",
+                      "SHEKAN",
+                      "IRANCELL",
+                      "HAMRAHAVAL",
+                      "GAMING",
+                      "TELECOM",
+                      "OTHER",
+                      "IPV6",
+                      "GOOGLE"
+                    ],
+                    "example": "GENERAL"
+                  }
+                },
+                "required": ["label", "ip1", "ip2", "type"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "DNS record created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DnsRecord" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+    "/dns/{id}": {
+      "patch": {
+        "summary": "Update DNS record",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": { "type": "string", "example": "DNS - Updated" },
+                  "ip1": { "type": "string", "example": "1.1.1.1" },
+                  "ip2": { "type": "string", "example": "1.0.0.1" },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "GENERAL",
+                      "RADAR",
+                      "SHEKAN",
+                      "IRANCELL",
+                      "HAMRAHAVAL",
+                      "GAMING",
+                      "TELECOM",
+                      "OTHER",
+                      "IPV6",
+                      "GOOGLE"
+                    ],
+                    "example": "RADAR"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "DNS record updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DnsRecord" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      },
+      "delete": {
+        "summary": "Delete DNS record",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DNS record deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Delete failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": { "type": "string", "example": "Delete failed" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dns-tags": {
+      "get": {
+        "summary": "Get list of DNS tags",
+        "responses": {
+          "200": {
+            "description": "DNS tags fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      },
+      "post": {
+        "summary": "Create new DNS tag",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "example": "New Tag" }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "DNS tag created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+    "/dns-tags/{id}": {
+      "delete": {
+        "summary": "Delete DNS tag",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DNS tag deleted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+    "/dns/{id}/tags": {
+      "put": {
+        "summary": "Assign or update DNS tags",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "addTagIds": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "example": ["64a8f..."]
+                  },
+                  "removeTagIds": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "example": ["64b7d..."]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "DNS tags updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "added": { "type": "number", "example": 1 },
+                        "removed": { "type": "number", "example": 1 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+    "/dns-usage": {
+      "post": {
+        "summary": "Register user DNS usage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userDnsId": { "type": "string", "example": "64a8f..." },
+                  "internetTag": { "type": "string", "example": "IRANCELL" },
+                  "destination": { "type": "string", "example": "PUBG" },
+                  "userId": { "type": "string", "example": "64u9e..." }
+                },
+                "required": [
+                  "userDnsId",
+                  "internetTag",
+                  "destination",
+                  "userId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "DNS usage registered",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      },
+      "get": {
+        "summary": "Get DNS usage report for admin",
+        "responses": {
+          "200": {
+            "description": "DNS usage report fetched",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+    "/dns-usage/{userDnsId}": {
+      "get": {
+        "summary": "Get users connected to a DNS",
+        "parameters": [
+          {
+            "name": "userDnsId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users connected to DNS fetched",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+    "/fcm/register": {
+      "post": {
+        "summary": "Register FCM token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": { "type": "string", "example": "64u9e..." },
+                  "deviceId": { "type": "string", "example": "ANDROID_ID_123" },
+                  "token": { "type": "string", "example": "fcm_token_here" },
+                  "platform": { "type": "string", "example": "android" }
+                },
+                "required": ["userId", "deviceId", "token", "platform"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "FCM token registered",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+    "/fcm/unregister": {
+      "delete": {
+        "summary": "Unregister FCM token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": { "type": "string", "example": "fcm_token_here" }
+                },
+                "required": ["token"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "FCM token unregistered",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+    "/fcm/send": {
+      "post": {
+        "summary": "Send FCM notification (admin)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "New DNS Available!"
+                  },
+                  "body": {
+                    "type": "string",
+                    "example": "Click to update your DNS."
+                  },
+                  "tokens": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "example": ["fcm_token1", "fcm_token2"]
+                  }
+                },
+                "required": ["title", "body", "tokens"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "FCM notification sent",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    }
+  }
+}

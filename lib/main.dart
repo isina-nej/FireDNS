@@ -3,6 +3,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../path/path.dart';
+// TODO: Firebase imports will be added later
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
+// import 'package:device_info_plus/device_info_plus.dart';
+// import 'firebase_options.dart';
+// import 'services/notification_service.dart';
 import 'dart:io' show Platform;
 import 'screens/homepage_android.dart' as android;
 import 'screens/homepage_windows.dart' as windows;
@@ -12,19 +18,19 @@ import 'screens/force_update_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // راه‌اندازی Firebase
+  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   final themeManager = ThemeManager();
   await themeManager.loadThemeMode();
   final languageManager = LanguageManager();
   await languageManager.loadLanguage();
 
-  // چک کردن آپدیت
-  final isLatest = await UpdateChecker.isLatestVersion();
-
   runApp(
     FireDNSApp(
       themeManager: themeManager,
       languageManager: languageManager,
-      forceUpdate: !isLatest,
+      // forceUpdate: !isLatest,
     ),
   );
 }
@@ -49,6 +55,11 @@ class FireDNSApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<ThemeManager>.value(value: themeManager),
         ChangeNotifierProvider<LanguageManager>.value(value: languageManager),
+        // TODO: NotificationService provider will be added later
+        // Provider<NotificationService>(
+        //   create: (_) => NotificationService(),
+        //   dispose: (_, service) => service.dispose(),
+        // ),
       ],
       child: Consumer2<ThemeManager, LanguageManager>(
         builder: (context, themeManager, languageManager, child) {

@@ -6,28 +6,8 @@ class DnsConstants {
   static const String dataUsageChannel = 'com.example.firedns/dataUsage';
 
   // DNS های پیشفرض
-  static const String defaultPrimaryDns = '178.22.122.100'; // Shecan DNS
-  static const String defaultSecondaryDns = '1.1.1.1'; // Cloudflare DNS
-
-  // DNS های محبوب
-  static const Map<String, Map<String, String>> popularDnsServers = {
-    'Shecan': {'primary': '178.22.122.100', 'secondary': '185.51.200.2'},
-    'Cloudflare': {'primary': '1.1.1.1', 'secondary': '1.0.0.1'},
-    'Google': {'primary': '8.8.8.8', 'secondary': '8.8.4.4'},
-    'OpenDNS': {'primary': '208.67.222.222', 'secondary': '208.67.220.220'},
-    'Quad9': {'primary': '9.9.9.9', 'secondary': '149.112.112.112'},
-  };
-
-  // تنظیمات پینگ
-  static const int defaultPingInterval = 10; // ثانیه
-  static const int pingTimeout = 5; // ثانیه
-  static const int maxPingRetries = 3;
-
-  // حدود پینگ (میلی‌ثانیه)
-  static const int excellentPingThreshold = 50;
-  static const int goodPingThreshold = 100;
-  static const int fairPingThreshold = 200;
-  static const int poorPingThreshold = 300;
+  static const String defaultPrimaryDns = '8.8.8.8'; // Google DNS
+  static const String defaultSecondaryDns = '8.8.4.4'; // Google DNS
 
   // متن‌های رابط کاربری
   static const Map<String, String> uiTexts = {
