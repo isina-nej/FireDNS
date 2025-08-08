@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "836180314980",
+    "project_id": "dns-changer-a1046",
+    "storage_bucket": "dns-changer-a1046.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:836180314980:android:ce13be0654e509b03bc871",
+        "android_client_info": {
+          "package_name": "com.example.firedns"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0ncF2sLfbSdLPv-fc_7-yw5K28fmM4UA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

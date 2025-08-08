@@ -1,25 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../path/path.dart';
-// TODO: Firebase imports will be added later
-// import 'package:firebase_core/firebase_core.dart';
-// import 'package:firebase_messaging/firebase_messaging.dart';
-// import 'package:device_info_plus/device_info_plus.dart';
-// import 'firebase_options.dart';
-// import 'services/notification_service.dart';
+import 'services/firebase_messaging_service.dart';
 import 'dart:io' show Platform;
 import 'screens/homepage_android.dart' as android;
 import 'screens/homepage_windows.dart' as windows;
 import 'utils/update_checker.dart';
 import 'screens/force_update_page.dart';
 
+// Background message handler برای FCM
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print('Handling a background message: ${message.messageId}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // راه‌اندازی Firebase
-  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp();
+
+  // تنظیم background message handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // راه‌اندازی FCM
+  final fcmService = FirebaseMessagingService();
+  await fcmService.initialize();
 
   final themeManager = ThemeManager();
   await themeManager.loadThemeMode();
@@ -91,8 +101,8 @@ class FireDNSApp extends StatelessWidget {
             home: forceUpdate
                 ? const ForceUpdatePage(updateUrl: UpdateChecker.updateUrl)
                 : (Platform.isWindows
-                      ? const windows.FireDNSHomePage(title: 'Fire DNS')
-                      : const android.FireDNSHomePage(title: 'Fire DNS')),
+                    ? const windows.FireDNSHomePage(title: 'Fire DNS')
+                    : const android.FireDNSHomePage(title: 'Fire DNS')),
             debugShowCheckedModeBanner: false,
           );
         },
