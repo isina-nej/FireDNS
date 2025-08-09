@@ -10,7 +10,6 @@ import '../api/services/dns_usage_api_service.dart';
 import '../api/models/dns_usage_request.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-// import 'package:carrier_info/carrier_info.dart';
 import 'package:http/http.dart' as http;
 import 'notifications_page.dart';
 
@@ -240,13 +239,11 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           label: _selectedDnsLabel ?? '',
           ip1: _dns1Controller.text.trim(),
           ip2: _dns2Controller.text.trim(),
-          tags: [], // TODO: اضافه کردن تگ‌ها در صورت نیاز
         ),
         timestamp: DateTime.now(),
         connectionType: isConnected
             ? ConnectionType.connected
             : ConnectionType.disconnected,
-        deviceInfo: deviceInfoData,
         networkInfo: networkInfoData,
       );
 

@@ -3,7 +3,6 @@ class DnsUsageRequest {
   final DnsInfo dns;
   final DateTime timestamp;
   final ConnectionType connectionType;
-  final DeviceInfo deviceInfo;
   final NetworkInfo networkInfo;
 
   DnsUsageRequest({
@@ -11,7 +10,6 @@ class DnsUsageRequest {
     required this.dns,
     required this.timestamp,
     required this.connectionType,
-    required this.deviceInfo,
     required this.networkInfo,
   });
 
@@ -20,7 +18,6 @@ class DnsUsageRequest {
         'dns': dns.toJson(),
         'timestamp': timestamp.toIso8601String(),
         'connection_type': connectionType.toString().split('.').last,
-        'device_info': deviceInfo.toJson(),
         'network_info': networkInfo.toJson(),
       };
 }
@@ -29,20 +26,17 @@ class DnsInfo {
   final String label;
   final String ip1;
   final String ip2;
-  final List<String> tags;
 
   DnsInfo({
     required this.label,
     required this.ip1,
     required this.ip2,
-    required this.tags,
   });
 
   Map<String, dynamic> toJson() => {
         'label': label,
         'ip1': ip1,
         'ip2': ip2,
-        'tags': tags,
       };
 }
 
