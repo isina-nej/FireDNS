@@ -5,6 +5,13 @@ import '../path/path.dart';
 import 'dns_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import '../api/services/dns_usage_api_service.dart';
+import '../api/models/dns_usage_request.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+// import 'package:carrier_info/carrier_info.dart';
+import 'package:http/http.dart' as http;
 import 'notifications_page.dart';
 
 import 'package:provider/provider.dart';
@@ -189,6 +196,83 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     _updateVpnState(loading: true);
     value ? await _activateVpn() : await _deactivateVpn();
     _updateVpnState(loading: false);
+
+    // گزارش وضعیت اتصال به سرور
+    await _reportDnsUsage(value);
+  }
+
+  Future<void> _reportDnsUsage(bool isConnected) async {
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken() ?? '';
+      final dnsUsageService = DnsUsageApiService();
+
+      // دریافت اطلاعات دستگاه
+      final deviceInfo = await DeviceInfoPlugin().androidInfo;
+      final deviceInfoData = DeviceInfo(
+        deviceType: 'android',
+        brand: deviceInfo.brand,
+        model: deviceInfo.model,
+        osVersion: deviceInfo.version.release,
+      );
+
+      // دریافت اطلاعات شبکه
+      final connectivity = await Connectivity().checkConnectivity();
+      String? ipAddress;
+      try {
+        final response = await http.get(Uri.parse('https://api.ipify.org'));
+        ipAddress = response.statusCode == 200 ? response.body : null;
+      } catch (_) {}
+
+      final networkInfoData = NetworkInfo(
+        connectionType:
+            connectivity == ConnectivityResult.mobile ? 'mobile' : 'wifi',
+        carrierName:
+            connectivity == ConnectivityResult.mobile ? 'Unknown' : null,
+        ipAddress: ipAddress,
+        mobileNetworkType:
+            connectivity == ConnectivityResult.mobile ? 'Unknown' : null,
+      );
+
+      // ساخت درخواست
+      final request = DnsUsageRequest(
+        fcmToken: fcmToken,
+        dns: DnsInfo(
+          label: _selectedDnsLabel ?? '',
+          ip1: _dns1Controller.text.trim(),
+          ip2: _dns2Controller.text.trim(),
+          tags: [], // TODO: اضافه کردن تگ‌ها در صورت نیاز
+        ),
+        timestamp: DateTime.now(),
+        connectionType: isConnected
+            ? ConnectionType.connected
+            : ConnectionType.disconnected,
+        deviceInfo: deviceInfoData,
+        networkInfo: networkInfoData,
+      );
+
+      // ارسال به سرور
+      debugPrint('=== ارسال اطلاعات DNS به سرور ===');
+      debugPrint('Device Info: ${deviceInfoData.toJson()}');
+      debugPrint('Network Info: ${networkInfoData.toJson()}');
+      debugPrint('DNS Info: ${request.dns.toJson()}');
+      debugPrint('Connection Type: ${request.connectionType}');
+      debugPrint('Timestamp: ${request.timestamp}');
+
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id') ?? '';
+      debugPrint('User ID: $userId');
+
+      final response = await dnsUsageService.recordDnsUsage(
+        userDnsId: request.dns.label,
+        internetTag: request.networkInfo.connectionType,
+        userId: userId,
+      );
+      if (!response.status) {
+        debugPrint('خطا در ارسال وضعیت اتصال به سرور: ${response.message}');
+      }
+    } catch (e) {
+      debugPrint('خطا در ارسال وضعیت اتصال: $e');
+    }
   }
 
   Future<void> _activateVpn() async {
@@ -245,13 +329,11 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       builder: (context, _) => Scaffold(
         key: _scaffoldKey,
         drawer: const CustomDrawer(),
-        backgroundColor: isDark
-            ? AppColors.darkBackground
-            : AppColors.backgroundLight,
+        backgroundColor:
+            isDark ? AppColors.darkBackground : AppColors.backgroundLight,
         appBar: AppBar(
-          backgroundColor: isDark
-              ? AppColors.darkBackground
-              : AppColors.backgroundLight,
+          backgroundColor:
+              isDark ? AppColors.darkBackground : AppColors.backgroundLight,
           elevation: 0,
           leading: IconButton(
             icon: Icon(
@@ -356,9 +438,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         responsiveSize(24, context, min: 10, max: 28, scaleByHeight: true),
       ),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.darkCardBackground
-            : AppColors.backgroundWhite,
+        color:
+            isDark ? AppColors.darkCardBackground : AppColors.backgroundWhite,
         borderRadius: BorderRadius.circular(
           responsiveSize(14, context, min: 6, max: 20, scaleByHeight: true),
         ),
@@ -507,8 +588,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                 Row(
                   children: [
                     GestureDetector(
-                      onTap:
-                          (_selectedDnsLabel != null &&
+                      onTap: (_selectedDnsLabel != null &&
                               _selectedDnsIp != null &&
                               _selectedDnsIp!.isNotEmpty)
                           ? () {
@@ -531,8 +611,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                           max: 28,
                           scaleByHeight: true,
                         ),
-                        color:
-                            (_selectedDnsLabel != null &&
+                        color: (_selectedDnsLabel != null &&
                                 _selectedDnsIp != null &&
                                 _selectedDnsIp!.isNotEmpty)
                             ? AppColors.brightBlue
@@ -692,9 +771,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         responsiveSize(12, context, min: 6, max: 18, scaleByHeight: true),
       ),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.darkCardBackground
-            : AppColors.backgroundWhite,
+        color:
+            isDark ? AppColors.darkCardBackground : AppColors.backgroundWhite,
         borderRadius: BorderRadius.circular(
           responsiveSize(12, context, min: 6, max: 16, scaleByHeight: true),
         ),
@@ -809,7 +887,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
               ),
             ],
           ),
-
           SizedBox(
             height: responsiveSize(
               12,
@@ -819,7 +896,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
               scaleByHeight: true,
             ),
           ),
-
           Text(
             'تست سرعت اینترنت',
             style: TextStyle(
@@ -834,7 +910,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
             ),
           ),
-
           SizedBox(
             height: responsiveSize(
               8,
@@ -844,7 +919,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
               scaleByHeight: true,
             ),
           ),
-
           RichText(
             text: TextSpan(
               style: TextStyle(
@@ -911,9 +985,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         responsiveSize(12, context, min: 6, max: 18, scaleByHeight: true),
       ),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.darkCardBackground
-            : AppColors.backgroundWhite,
+        color:
+            isDark ? AppColors.darkCardBackground : AppColors.backgroundWhite,
         borderRadius: BorderRadius.circular(
           responsiveSize(12, context, min: 6, max: 16, scaleByHeight: true),
         ),
@@ -1059,7 +1132,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
               ),
             ],
           ),
-
           SizedBox(
             height: responsiveSize(
               12,
@@ -1069,7 +1141,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
               scaleByHeight: true,
             ),
           ),
-
           Text(
             'پیکربندی شبکه',
             style: TextStyle(
@@ -1084,7 +1155,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
             ),
           ),
-
           SizedBox(
             height: responsiveSize(
               8,
@@ -1094,7 +1164,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
               scaleByHeight: true,
             ),
           ),
-
           RichText(
             text: TextSpan(
               style: TextStyle(
