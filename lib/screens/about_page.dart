@@ -16,7 +16,7 @@ class AboutPage extends StatelessWidget {
         backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
         elevation: 0,
         title: Text(
-          'درباره ما',
+          context.tr('aboutUs'),
           style: TextStyle(
             color: isDark ? AppColors.darkTextPrimary : Colors.black,
             fontSize: 20,
@@ -39,7 +39,7 @@ class AboutPage extends StatelessWidget {
             radius: 50,
             backgroundColor: isDark ? AppColors.brightBlue : Colors.blue,
             child: const Text(
-              'DNS',
+              'DNS', // This is a brand name, so we keep it as is
               style: TextStyle(
                 fontSize: 24,
                 color: Colors.white,
@@ -49,7 +49,7 @@ class AboutPage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Fire DNS',
+            context.tr('appName'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 24, 
@@ -59,7 +59,7 @@ class AboutPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'نسخه 1.0.0',
+            '${context.tr('appVersion')} 1.0.0',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16, 
@@ -68,7 +68,7 @@ class AboutPage extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           Text(
-            'یک برنامه DNS برای بهبود امنیت و سرعت اتصال شما به اینترنت',
+            context.tr('appDescription'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16, 
@@ -77,9 +77,9 @@ class AboutPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          _buildInfoRow(context, Icons.email, 'ایمیل پشتیبانی', 'support@firedns.com'),
+          _buildInfoRow(context, Icons.email, context.tr('supportEmail'), context.tr('supportEmailAddress')),
           const SizedBox(height: 16),
-          _buildInfoRow(context, Icons.web, 'وب‌سایت', 'www.firedns.com'),
+          _buildInfoRow(context, Icons.web, context.tr('website'), context.tr('websiteAddress')),
           
           const SizedBox(height: 48),
           Container(
@@ -99,7 +99,7 @@ class AboutPage extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'تیم توسعه‌دهنده',
+                  context.tr('developmentTeam'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -108,7 +108,7 @@ class AboutPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'با تشکر از تمامی کاربران عزیز که با استفاده از این برنامه به ما کمک می‌کنند تا خدمات بهتری ارائه دهیم.',
+                  context.tr('thankYouMessage'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,

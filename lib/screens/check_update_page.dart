@@ -65,7 +65,7 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'خطا در بررسی بروزرسانی: $e';
+        _errorMessage = '${context.tr('updateCheckError')}: $e';
         _isLoading = false;
       });
     }
@@ -79,7 +79,7 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'بررسی بروزرسانی',
+          context.tr('checkForUpdates'),
           style: TextStyle(
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
@@ -103,7 +103,7 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'در حال بررسی بروزرسانی...',
+                      context.tr('checkingForUpdates'),
                       style: TextStyle(
                         fontSize: 18,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
@@ -133,7 +133,7 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.refresh),
-                          label: const Text('تلاش مجدد'),
+                          label: Text(context.tr('tryAgain')),
                           onPressed: _checkForUpdates,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isDark ? AppColors.brightBlue : AppColors.brightBlue,
@@ -180,7 +180,7 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                               child: Column(
                                 children: [
                                   Text(
-                                    'شما از آخرین نسخه برنامه استفاده می‌کنید',
+                                    context.tr('usingLatestVersion'),
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -190,7 +190,7 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'نسخه فعلی: ${UpdateChecker.currentVersion}',
+                                    '${context.tr('currentVersion')}: ${UpdateChecker.currentVersion}',
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -203,7 +203,7 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                             const SizedBox(height: 24),
                             ElevatedButton.icon(
                               icon: const Icon(Icons.home),
-                              label: const Text('بازگشت به صفحه اصلی'),
+                              label: Text(context.tr('returnToHome')),
                               onPressed: () {
                                 Navigator.pop(context);
                               },
