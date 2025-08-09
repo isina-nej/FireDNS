@@ -25,4 +25,13 @@ extension LocalizationExtension on BuildContext {
   /// بررسی زبان انگلیسی
   bool get isEnglish =>
       Provider.of<LanguageManager>(this, listen: false).isEnglish;
+      
+  /// بررسی زبان عربی
+  bool get isArabic => Provider.of<LanguageManager>(this, listen: false).isArabic;
+  
+  /// بررسی زبان روسی
+  bool get isRussian => Provider.of<LanguageManager>(this, listen: false).isRussian;
+  
+  /// بررسی زبان چینی
+  bool get isChinese => Provider.of<LanguageManager>(this, listen: false).isChinese;
 }

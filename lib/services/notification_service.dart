@@ -11,24 +11,74 @@ class NotificationService extends ChangeNotifier {
   bool _isLoading = false;
   String _errorMessage = '';
   Timer? _refreshTimer;
+  bool _notificationsEnabled = true; // وضعیت فعال بودن اعلان‌ها
+  
+  static const String _notificationsEnabledKey = 'notifications_enabled';
   
   // Stream برای اطلاع‌رسانی تغییرات اعلانات
   final _notificationStreamController = StreamController<List<NotificationModel>>.broadcast();
   Stream<List<NotificationModel>> get notificationStream => _notificationStreamController.stream;
   
-  NotificationService({NotificationApiService? apiService}) 
+  NotificationService({NotificationApiService? apiService})
       : _apiService = apiService ?? NotificationApiService() {
+    // بارگذاری تنظیمات اعلان‌ها
+    _loadNotificationSettings();
+    
     // بارگذاری اولیه اعلانات
     fetchNotifications();
     
     // تنظیم تایمر برای بررسی دوره‌ای اعلانات جدید (هر 5 دقیقه)
     _refreshTimer = Timer.periodic(const Duration(minutes: 5), (_) {
-      fetchNotifications();
+      if (_notificationsEnabled) {
+        fetchNotifications();
+      }
     });
   }
   
+  /// بارگذاری تنظیمات اعلان‌ها از SharedPreferences
+  Future<void> _loadNotificationSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _notificationsEnabled = prefs.getBool(_notificationsEnabledKey) ?? true;
+      notifyListeners();
+    } catch (e) {
+      print('Error loading notification settings: $e');
+      _notificationsEnabled = true;
+    }
+  }
+  
+  /// ذخیره تنظیمات اعلان‌ها در SharedPreferences
+  Future<void> _saveNotificationSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_notificationsEnabledKey, _notificationsEnabled);
+    } catch (e) {
+      print('Error saving notification settings: $e');
+    }
+  }
+  
+  /// تغییر وضعیت فعال بودن اعلان‌ها
+  Future<void> toggleNotifications() async {
+    _notificationsEnabled = !_notificationsEnabled;
+    notifyListeners();
+    await _saveNotificationSettings();
+    
+    if (_notificationsEnabled) {
+      // اگر اعلان‌ها فعال شدند، اعلانات را به‌روزرسانی کن
+      fetchNotifications();
+    }
+  }
+  
+  /// آیا اعلان‌ها فعال هستند؟
+  bool get notificationsEnabled => _notificationsEnabled;
+  
   /// دریافت اعلانات از سرور
   Future<void> fetchNotifications() async {
+    // اگر اعلان‌ها غیرفعال هستند، اعلانات را دریافت نکن
+    if (!_notificationsEnabled) {
+      return;
+    }
+    
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();

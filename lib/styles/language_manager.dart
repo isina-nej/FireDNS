@@ -12,16 +12,51 @@ class LanguageManager extends ChangeNotifier {
 
   bool get isFarsi => _locale.languageCode == 'fa';
   bool get isEnglish => _locale.languageCode == 'en';
+  bool get isArabic => _locale.languageCode == 'ar';
+  bool get isRussian => _locale.languageCode == 'ru';
+  bool get isChinese => _locale.languageCode == 'zh';
 
   /// جهت متن بر اساس زبان
   TextDirection get textDirection =>
-      _locale.languageCode == 'fa' ? TextDirection.rtl : TextDirection.ltr;
+      _locale.languageCode == 'fa' || _locale.languageCode == 'ar'
+          ? TextDirection.rtl
+          : TextDirection.ltr;
 
   /// نام زبان فعلی
-  String get languageName => _locale.languageCode == 'fa' ? 'فارسی' : 'English';
+  String get languageName {
+    switch (_locale.languageCode) {
+      case 'fa':
+        return 'فارسی';
+      case 'en':
+        return 'English';
+      case 'ar':
+        return 'العربية';
+      case 'ru':
+        return 'Русский';
+      case 'zh':
+        return '中文';
+      default:
+        return 'English';
+    }
+  }
 
   /// آیکون زبان فعلی
-  String get languageFlag => _locale.languageCode == 'fa' ? '🇮🇷' : '🇺🇸';
+  String get languageFlag {
+    switch (_locale.languageCode) {
+      case 'fa':
+        return '🇮🇷';
+      case 'en':
+        return '🇺🇸';
+      case 'ar':
+        return '🇸🇦';
+      case 'ru':
+        return '🇷🇺';
+      case 'zh':
+        return '🇨🇳';
+      default:
+        return '🇺🇸';
+    }
+  }
 
   /// بارگذاری تنظیمات زبان از SharedPreferences
   Future<void> loadLanguage() async {
@@ -63,12 +98,47 @@ class LanguageManager extends ChangeNotifier {
     await saveLanguage();
   }
 
-  /// تغییر بین زبان‌ها
+  /// تغییر به زبان عربی
+  Future<void> setArabic() async {
+    _locale = const Locale('ar', 'SA');
+    notifyListeners();
+    await saveLanguage();
+  }
+
+  /// تغییر به زبان روسی
+  Future<void> setRussian() async {
+    _locale = const Locale('ru', 'RU');
+    notifyListeners();
+    await saveLanguage();
+  }
+
+  /// تغییر به زبان چینی
+  Future<void> setChinese() async {
+    _locale = const Locale('zh', 'CN');
+    notifyListeners();
+    await saveLanguage();
+  }
+
+  /// تغییر به زبان بعدی
   Future<void> toggleLanguage() async {
-    if (_locale.languageCode == 'fa') {
-      await setEnglish();
-    } else {
-      await setFarsi();
+    switch (_locale.languageCode) {
+      case 'fa':
+        await setEnglish();
+        break;
+      case 'en':
+        await setArabic();
+        break;
+      case 'ar':
+        await setRussian();
+        break;
+      case 'ru':
+        await setChinese();
+        break;
+      case 'zh':
+        await setFarsi();
+        break;
+      default:
+        await setFarsi();
     }
   }
 
@@ -76,5 +146,8 @@ class LanguageManager extends ChangeNotifier {
   static const List<Locale> supportedLocales = [
     Locale('fa', 'IR'), // فارسی
     Locale('en', 'US'), // انگلیسی
+    Locale('ar', 'SA'), // عربی
+    Locale('ru', 'RU'), // روسی
+    Locale('zh', 'CN'), // چینی
   ];
 }

@@ -190,8 +190,8 @@ class _DnsListPageState extends State<DnsListPage> {
                                       : Colors.grey.shade400,
                                 ),
                                 tooltip: _likedDnsIds.contains(record.id)
-                                    ? 'حذف از علاقه‌مندی'
-                                    : 'افزودن به علاقه‌مندی',
+                                    ? context.tr('removeFromFavorites')
+                                    : context.tr('addToFavorites'),
                                 onPressed: () => _toggleLikeDns(record.id),
                               ),
                               if (isUserDns) ...[
@@ -200,7 +200,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                     Icons.edit,
                                     color: Colors.blue,
                                   ),
-                                  tooltip: 'ویرایش',
+                                  tooltip: context.tr('edit'),
                                   onPressed: () => _editUserDns(record),
                                 ),
                                 IconButton(
@@ -208,7 +208,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                     Icons.delete,
                                     color: Colors.red,
                                   ),
-                                  tooltip: 'حذف',
+                                  tooltip: context.tr('delete'),
                                   onPressed: () => _deleteUserDns(record),
                                 ),
                               ],
@@ -797,9 +797,9 @@ class _DnsListPageState extends State<DnsListPage> {
     if (_testDialogOpen) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('لطفا تا اتمام تست پینگ صبر کنید.'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.tr('waitForPingTest')),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -848,7 +848,7 @@ class _DnsListPageState extends State<DnsListPage> {
               Navigator.of(context).pop();
             },
             child: AlertDialog(
-              title: const Text('نتیجه تست همه DNSها'),
+              title: Text(context.tr('testResultAllDns')),
               content: SizedBox(
                 width: double.maxFinite,
                 child: ListView(
@@ -859,7 +859,7 @@ class _DnsListPageState extends State<DnsListPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('بستن'),
+                  child: Text(context.tr('close')),
                 ),
                 TextButton(
                   onPressed: () async {
@@ -868,7 +868,7 @@ class _DnsListPageState extends State<DnsListPage> {
                       Navigator.pop(context);
                     }
                   },
-                  child: const Text('دیگر نشان نده'),
+                  child: Text(context.tr('dontShowAgain')),
                 ),
               ],
             ),
@@ -884,6 +884,221 @@ class _DnsListPageState extends State<DnsListPage> {
     if (!mounted) return;
     setState(() {
       _pingCache = pingCache;
+      _sortDnsRecords();
+    });
+  }
+  
+  /// تست ترتیبی DNS ها بر اساس کمترین پینگ در تست قبلی
+  Future<void> _testSequentialDns() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // دریافت تعداد تست از کاربر
+    int? testCount = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('sequentialTest')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(context.tr('sequentialTestDescription')),
+            const SizedBox(height: 16),
+            Text(context.tr('testCount')),
+            Slider(
+              value: 5,
+              min: 1,
+              max: 20,
+              divisions: 19,
+              label: '5',
+              onChanged: (value) {},
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 5),
+            child: Text(context.tr('ok')),
+          ),
+        ],
+      ),
+    );
+    
+    if (testCount == null) return; // کاربر لغو کرده است
+    
+    final pingCache = await DnsPingHelper.testSequentialDns(
+      context: context,
+      dnsRecords: _dnsRecords,
+      sortType: _sortType,
+      sortDnsRecords: _sortDnsRecords,
+      testCount: testCount,
+      mounted: mounted,
+      showDialogCallback: (List<String> results) async {
+        if (!mounted) return;
+        // اگر کاربر قبلا گزینه دیگر نشان نده را زده بود، دیالوگ را نمایش نده
+        final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
+        if (dontShow) return;
+        await showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (context) => GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              Navigator.of(context).pop();
+            },
+            child: AlertDialog(
+              title: Text(context.tr('sequentialTest')),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: results.map((e) => Text(e)).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(context.tr('close')),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await prefs.setBool('dont_show_dns_test_dialog', true);
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: Text(context.tr('dontShowAgain')),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      setTestDialogOpen: (v) {
+        if (!mounted) return;
+        setState(() => _testDialogOpen = v);
+      },
+    );
+    
+    if (!mounted) return;
+    setState(() {
+      _pingCache = pingCache;
+      _sortDnsRecords();
+    });
+  }
+  
+  /// تست پیشرفته DNS با محاسبه میانگین پینگ، پکت از دست رفته و امتیازدهی
+  Future<void> _testAdvancedDns() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // دریافت تعداد تست از کاربر
+    int? testCount = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('advancedTest')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(context.tr('advancedTestDescription')),
+            const SizedBox(height: 16),
+            Text(context.tr('testCount')),
+            StatefulBuilder(
+              builder: (context, setState) {
+                return Column(
+                  children: [
+                    Slider(
+                      value: DnsPingHelper.testCount.toDouble(),
+                      min: 3,
+                      max: 10,
+                      divisions: 7,
+                      label: DnsPingHelper.testCount.toString(),
+                      onChanged: (value) {
+                        setState(() {
+                          DnsPingHelper.testCount = value.toInt();
+                        });
+                      },
+                    ),
+                    Text('${DnsPingHelper.testCount}'),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, DnsPingHelper.testCount),
+            child: Text(context.tr('ok')),
+          ),
+        ],
+      ),
+    );
+    
+    if (testCount == null) return; // کاربر لغو کرده است
+    
+    final result = await DnsPingHelper.testAdvancedDns(
+      context: context,
+      dnsRecords: _dnsRecords,
+      sortType: _sortType,
+      sortDnsRecords: _sortDnsRecords,
+      testCount: testCount,
+      mounted: mounted,
+      showDialogCallback: (List<String> results) async {
+        if (!mounted) return;
+        // اگر کاربر قبلا گزینه دیگر نشان نده را زده بود، دیالوگ را نمایش نده
+        final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
+        if (dontShow) return;
+        await showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (context) => GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              Navigator.of(context).pop();
+            },
+            child: AlertDialog(
+              title: Text(context.tr('advancedTest')),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: results.map((e) => Text(e)).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(context.tr('close')),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await prefs.setBool('dont_show_dns_test_dialog', true);
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: Text(context.tr('dontShowAgain')),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      setTestDialogOpen: (v) {
+        if (!mounted) return;
+        setState(() => _testDialogOpen = v);
+      },
+    );
+    
+    if (!mounted) return;
+    setState(() {
+      _pingCache = result['pingCache'];
       _sortDnsRecords();
     });
   }
@@ -986,9 +1201,9 @@ class _DnsListPageState extends State<DnsListPage> {
       onWillPop: () async {
         if (_testDialogOpen) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('لطفا تا اتمام تست پینگ صبر کنید.'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text(context.tr('waitForPingTest')),
+              duration: const Duration(seconds: 2),
             ),
           );
           return false;
@@ -1003,7 +1218,7 @@ class _DnsListPageState extends State<DnsListPage> {
           elevation: 0,
           backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,
           title: Text(
-            'انتخاب DNS',
+            context.tr('selectDns'),
             style: TextStyle(
               color: isDark ? AppColors.darkTextPrimary : AppColors.primaryText,
               fontWeight: FontWeight.bold,
@@ -1025,7 +1240,7 @@ class _DnsListPageState extends State<DnsListPage> {
                         color: Color(0xFF5A9CFF),
                       ),
                     ),
-                    tooltip: 'لغو تست همه DNSها',
+                    tooltip: context.tr('cancelAllDnsTest'),
                     onPressed: () {
                       setState(() {
                         // _cancelTest = true;
@@ -1033,16 +1248,68 @@ class _DnsListPageState extends State<DnsListPage> {
                       });
                     },
                   )
-                : IconButton(
+                : PopupMenuButton<String>(
                     icon: const Icon(Icons.wifi_tethering),
-                    tooltip: 'تست همه DNSها',
-                    onPressed: _loadingList || _dnsRecords.isEmpty
-                        ? null
-                        : _testAllDns,
+                    tooltip: context.tr('dnsTest'),
+                    color: isDark ? AppColors.darkCardBackground : Colors.white,
+                    enabled: !_loadingList && _dnsRecords.isNotEmpty,
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'simultaneous',
+                        child: SizedBox(
+                          width: 180,
+                          child: Text(
+                            context.tr('simultaneousTest'),
+                            style: TextStyle(
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : const Color(0xFF222B45),
+                            ),
+                          ),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'sequential',
+                        child: SizedBox(
+                          width: 180,
+                          child: Text(
+                            context.tr('sequentialTest'),
+                            style: TextStyle(
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : const Color(0xFF222B45),
+                            ),
+                          ),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'advanced',
+                        child: SizedBox(
+                          width: 180,
+                          child: Text(
+                            context.tr('advancedTest'),
+                            style: TextStyle(
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : const Color(0xFF222B45),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    onSelected: (value) async {
+                      if (value == 'simultaneous') {
+                        await _testAllDns();
+                      } else if (value == 'sequential') {
+                        await _testSequentialDns();
+                      } else if (value == 'advanced') {
+                        await _testAdvancedDns();
+                      }
+                    },
                   ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.sort),
-              tooltip: 'مرتب‌سازی',
+              tooltip: context.tr('sort'),
               color: isDark ? AppColors.darkCardBackground : Colors.white,
               itemBuilder: (context) => [
                 PopupMenuItem(
@@ -1050,7 +1317,7 @@ class _DnsListPageState extends State<DnsListPage> {
                   child: SizedBox(
                     width: 160,
                     child: Text(
-                      'پیش‌فرض',
+                      context.tr('default'),
                       style: TextStyle(
                         color: isDark
                             ? AppColors.darkTextPrimary
@@ -1064,7 +1331,7 @@ class _DnsListPageState extends State<DnsListPage> {
                   child: SizedBox(
                     width: 160,
                     child: Text(
-                      'کمترین پینگ',
+                      context.tr('lowestPing'),
                       style: TextStyle(
                         color: isDark
                             ? AppColors.darkTextPrimary
@@ -1078,7 +1345,7 @@ class _DnsListPageState extends State<DnsListPage> {
                   child: SizedBox(
                     width: 160,
                     child: Text(
-                      'مرتب‌سازی بر اساس نام',
+                      context.tr('sortByName'),
                       style: TextStyle(
                         color: isDark
                             ? AppColors.darkTextPrimary
@@ -1097,7 +1364,7 @@ class _DnsListPageState extends State<DnsListPage> {
             ),
             IconButton(
               icon: const Icon(Icons.search),
-              tooltip: 'جستجو',
+              tooltip: context.tr('search'),
               onPressed: () {
                 setState(() {
                   _showSearch = !_showSearch;
@@ -1109,7 +1376,7 @@ class _DnsListPageState extends State<DnsListPage> {
             ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
-              tooltip: 'بیشتر',
+              tooltip: context.tr('more'),
               color: isDark ? AppColors.darkCardBackground : Colors.white,
               itemBuilder: (context) => [
                 PopupMenuItem(
@@ -1117,7 +1384,7 @@ class _DnsListPageState extends State<DnsListPage> {
                   child: SizedBox(
                     width: 180,
                     child: Text(
-                      'تست دامنه با همه DNSها',
+                      context.tr('testDomainWithAllDns'),
                       style: TextStyle(
                         color: isDark
                             ? AppColors.darkTextPrimary
@@ -1131,7 +1398,7 @@ class _DnsListPageState extends State<DnsListPage> {
                   child: SizedBox(
                     width: 180,
                     child: Text(
-                      'دریافت لیست جدید از سرور',
+                      context.tr('getNewListFromServer'),
                       style: TextStyle(
                         color: isDark
                             ? AppColors.darkTextPrimary
@@ -1146,12 +1413,12 @@ class _DnsListPageState extends State<DnsListPage> {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('تست دامنه با همه DNSها'),
-                      content: const Text('این قابلیت بزودی فعال خواهد شد.'),
+                      title: Text(context.tr('testDomainWithAllDns')),
+                      content: Text(context.tr('comingSoon')),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('بستن'),
+                          child: Text(context.tr('close')),
                         ),
                       ],
                     ),
@@ -1159,9 +1426,9 @@ class _DnsListPageState extends State<DnsListPage> {
                 } else if (value == 'refreshDns') {
                   await fetchDnsListWithTimer(force: true);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('لیست DNS با موفقیت بروزرسانی شد.'),
-                      duration: Duration(seconds: 2),
+                    SnackBar(
+                      content: Text(context.tr('dnsListUpdated')),
+                      duration: const Duration(seconds: 2),
                     ),
                   );
                 }
@@ -1276,7 +1543,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                         : AppColors.textPrimary,
                                   ),
                                   decoration: InputDecoration(
-                                    hintText: 'جستجو بر اساس نام یا آی‌پی',
+                                    hintText: context.tr('searchByNameOrIp'),
                                     hintStyle: TextStyle(
                                       color: isDark
                                           ? AppColors.textLight
@@ -1324,9 +1591,9 @@ class _DnsListPageState extends State<DnsListPage> {
           onPressed: () async {
             if (_testDialogOpen) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('لطفا تا اتمام تست پینگ صبر کنید.'),
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: Text(context.tr('waitForPingTest')),
+                  duration: const Duration(seconds: 2),
                 ),
               );
               return;
@@ -1383,7 +1650,7 @@ class _TestDomainWithAllDnsDialogState
     return AlertDialog(
       backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,
       title: Text(
-        'تست دامنه "${widget.domain}" با همه DNSها',
+        '${context.tr('testDomainWithAllDns')}: "${widget.domain}"',
         style: TextStyle(
           color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45),
         ),
@@ -1403,7 +1670,7 @@ class _TestDomainWithAllDnsDialogState
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
-            'بستن',
+            context.tr('close'),
             style: TextStyle(
               color: isDark
                   ? AppColors.darkTextPrimary
@@ -1478,7 +1745,7 @@ class _DnsTestTileState extends State<_DnsTestTile> {
               status.toString(),
               style: const TextStyle(fontWeight: FontWeight.bold),
             )
-          : const Text('خطا', style: TextStyle(color: Colors.red)),
+          : Text(context.tr('error'), style: const TextStyle(color: Colors.red)),
     );
   }
 }

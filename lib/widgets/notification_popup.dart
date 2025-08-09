@@ -82,16 +82,16 @@ class _NotificationPopupState extends State<NotificationPopup> {
       );
       if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('امکان باز کردن لینک وجود ندارد!'),
+          SnackBar(
+            content: Text(context.tr('cannotOpenLink')),
           ),
         );
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('خطا در باز کردن لینک!'),
+          SnackBar(
+            content: Text(context.tr('errorOpeningLink')),
           ),
         );
       }
@@ -163,7 +163,7 @@ class _NotificationPopupState extends State<NotificationPopup> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'اعلان‌ها',
+                        context.tr('notifications'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -175,7 +175,7 @@ class _NotificationPopupState extends State<NotificationPopup> {
                           if (hasUnread)
                             TextButton.icon(
                               icon: const Icon(Icons.check_circle_outline, size: 18),
-                              label: const Text('خواندن همه'),
+                              label: Text(context.tr('markAllAsRead')),
                               onPressed: _markAllAsRead,
                               style: TextButton.styleFrom(
                                 foregroundColor: isDark ? AppColors.brightBlue : AppColors.brightBlue,
@@ -216,7 +216,7 @@ class _NotificationPopupState extends State<NotificationPopup> {
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
-                                    'فعلاً اعلانی وجود ندارد',
+                                    context.tr('noNotificationsYet'),
                                     style: TextStyle(
                                       fontSize: 16,
                                       color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -364,7 +364,7 @@ class _NotificationPopupState extends State<NotificationPopup> {
                       ),
                       if (notification.actionUrl != null && notification.actionUrl!.isNotEmpty)
                         Text(
-                          'مشاهده',
+                          context.tr('view'),
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark ? AppColors.brightBlue : AppColors.brightBlue,

@@ -7,6 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import '../path/path.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/notification_service.dart';
+import 'services/dns_test_settings_service.dart';
 import 'dart:io' show Platform;
 import 'screens/homepage_android.dart' as android;
 import 'screens/homepage_windows.dart' as windows;
@@ -36,11 +37,16 @@ void main() async {
   await themeManager.loadThemeMode();
   final languageManager = LanguageManager();
   await languageManager.loadLanguage();
+  
+  // Load DNS test settings
+  final dnsTestSettingsService = DnsTestSettingsService();
+  await dnsTestSettingsService.loadSettings();
 
   runApp(
     FireDNSApp(
       themeManager: themeManager,
       languageManager: languageManager,
+      dnsTestSettingsService: dnsTestSettingsService,
       // forceUpdate: !isLatest,
     ),
   );
@@ -51,12 +57,14 @@ void main() async {
 class FireDNSApp extends StatelessWidget {
   final ThemeManager themeManager;
   final LanguageManager languageManager;
+  final DnsTestSettingsService dnsTestSettingsService;
   final bool forceUpdate;
 
   const FireDNSApp({
     super.key,
     required this.themeManager,
     required this.languageManager,
+    required this.dnsTestSettingsService,
     this.forceUpdate = false,
   });
 
@@ -70,11 +78,18 @@ class FireDNSApp extends StatelessWidget {
           create: (_) => NotificationService(),
           lazy: false, // Initialize immediately
         ),
+        ChangeNotifierProvider<DnsTestSettingsService>.value(
+          value: dnsTestSettingsService,
+        ),
+        ChangeNotifierProvider<DnsTestSettingsService>(
+          create: (_) => DnsTestSettingsService(),
+          lazy: false, // Initialize immediately
+        ),
       ],
       child: Consumer2<ThemeManager, LanguageManager>(
         builder: (context, themeManager, languageManager, child) {
           return MaterialApp(
-            title: 'Fire DNS',
+            title: context.tr('appTitle'),
 
             // تنظیمات زبان و محلی‌سازی
             locale: languageManager.locale,
@@ -104,8 +119,8 @@ class FireDNSApp extends StatelessWidget {
                     currentAppVersion: UpdateChecker.currentVersion,
                   )
                 : (Platform.isWindows
-                    ? const windows.FireDNSHomePage(title: 'Fire DNS')
-                    : const android.FireDNSHomePage(title: 'Fire DNS')),
+                    ? windows.FireDNSHomePage(title: context.tr('appTitle'))
+                    : android.FireDNSHomePage(title: context.tr('appTitle'))),
             debugShowCheckedModeBanner: false,
           );
         },

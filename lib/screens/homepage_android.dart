@@ -379,7 +379,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
             onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           ),
           title: Text(
-            'Fire DNS',
+            context.tr('appTitle'),
             style: TextStyle(
               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
               fontSize: 20,
@@ -401,9 +401,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
               ),
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('پروفایل کاربری به زودی اضافه خواهد شد'),
-                    duration: Duration(seconds: 2),
+                  SnackBar(
+                    content: Text(context.tr('profileComingSoon')),
+                    duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -659,7 +659,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                       ),
                     ),
                     SemiTransparentText(
-                      text: _vpnActive ? 'متصل شد' : 'قطع اتصال',
+                      text: _vpnActive ? context.tr('connected') : context.tr('disconnected'),
                       style: TextStyle(
                         fontSize: responsiveSize(
                           24,
@@ -740,7 +740,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                             ),
                             SizedBox(height: 4),
                             SemiTransparentText(
-                              text: 'نام',
+                              text: context.tr('nameLabel'),
                               style: TextStyle(
                                 fontSize: responsiveSize(
                                   14,
@@ -878,7 +878,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ],
                   ),
                   child: Text(
-                    'شروع تست',
+                    context.tr('startTest'),
                     style: TextStyle(
                       fontSize: responsiveSize(
                         14,
@@ -945,7 +945,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
             ),
           ),
           SemiTransparentText(
-            text: 'تست سرعت اینترنت',
+            text: context.tr('internetSpeedTest'),
             style: TextStyle(
               fontSize: responsiveSize(
                 18,
@@ -992,7 +992,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                 ),
                 children: [
                   TextSpan(
-                    text: 'تست سرعت',
+                    text: context.tr('speedTest'),
                     style: TextStyle(
                       color: isDark
                           ? AppColors.darkTextPrimary
@@ -1001,7 +1001,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                   ),
                   TextSpan(
-                    text: ' سرعت اینترنت شما را بین ',
+                    text: context.tr('yourInternetSpeedBetween'),
                     style: TextStyle(
                       color: isDark
                           ? AppColors.darkTextSecondary
@@ -1009,7 +1009,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                   ),
                   TextSpan(
-                    text: 'دستگاه',
+                    text: context.tr('device'),
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: isDark
@@ -1018,8 +1018,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                   ),
                   TextSpan(
-                    text:
-                        ' و سرور تست اندازه‌گیری می‌کند و از اتصال اینترنت فعلی شما استفاده می‌کند.',
+                    text: context.tr('measuresAndUsesConnection'),
                     style: TextStyle(
                       color: isDark
                           ? AppColors.darkTextSecondary
@@ -1114,7 +1113,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ],
                   ),
                   child: Text(
-                    'تغییر DNS',
+                    context.tr('changeDns'),
                     style: TextStyle(
                       fontSize: responsiveSize(
                         14,
@@ -1210,7 +1209,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
             ),
           ),
           SemiTransparentText(
-            text: 'پیکربندی شبکه',
+            text: context.tr('networkConfiguration'),
             style: TextStyle(
               fontSize: responsiveSize(
                 18,
@@ -1257,7 +1256,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                 ),
                 children: [
                   TextSpan(
-                    text: 'در این بخش می‌توانید ',
+                    text: context.tr('inThisSection'),
                     style: TextStyle(
                       color: isDark
                           ? AppColors.darkTextSecondary
@@ -1265,7 +1264,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                   ),
                   TextSpan(
-                    text: 'تنظیمات شبکه',
+                    text: context.tr('networkSettings'),
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: isDark
@@ -1274,7 +1273,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                   ),
                   TextSpan(
-                    text: ' خود را شخصی‌سازی کنید و ',
+                    text: context.tr('customizeYour'),
                     style: TextStyle(
                       color: isDark
                           ? AppColors.darkTextSecondary
@@ -1282,7 +1281,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                   ),
                   TextSpan(
-                    text: 'پیکربندی',
+                    text: context.tr('configuration'),
                     style: TextStyle(
                       color: isDark
                           ? AppColors.darkTextPrimary
@@ -1291,7 +1290,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                   ),
                   TextSpan(
-                    text: ' مناسب با نیاز اتصال خود را انتخاب نمایید.',
+                    text: context.tr('chooseAccordingToNeeds'),
                     style: TextStyle(
                       color: isDark
                           ? AppColors.darkTextSecondary
