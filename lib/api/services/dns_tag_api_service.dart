@@ -14,7 +14,7 @@ class DnsTagApiService {
   Future<ApiResponse<List<DnsTag>>> getAllTags() async {
     try {
       final response = await _apiClient.get<List<DnsTag>>(
-        '/dns-tags',
+        '/api/dns-tags',
         fromJson: (data) {
           if (data is List) {
             return data.map((item) => DnsTag.fromJson(item)).toList();
@@ -41,7 +41,7 @@ class DnsTagApiService {
   ) async {
     try {
       final response = await _apiClient.post<DnsTag>(
-        '/dns-tags',
+        '/api/dns-tags',
         body: {
           'name': name,
           if (description != null) 'description': description,
@@ -64,7 +64,7 @@ class DnsTagApiService {
   Future<ApiResponse<bool>> deleteTag(String id) async {
     try {
       final response = await _apiClient.delete<bool>(
-        '/dns-tags/$id',
+        '/api/dns-tags/$id',
         fromJson: (data) => true,
       );
 
@@ -87,7 +87,7 @@ class DnsTagApiService {
   }) async {
     try {
       final response = await _apiClient.put<Map<String, int>>(
-        '/dns/$dnsId/tags',
+        '/api/dns/$dnsId/tags',
         body: {
           if (addTagIds != null) 'addTagIds': addTagIds,
           if (removeTagIds != null) 'removeTagIds': removeTagIds,

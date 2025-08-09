@@ -203,15 +203,19 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       final dns1 = _dns1Controller.text.trim();
       final dns2 = _dns2Controller.text.trim();
       try {
-        final success = await DnsService.changeDns(dns1, dns2);
+        final result = await DnsService.changeDns(dns1, dns2);
         _showMessage(
-          success
-              ? DnsConstants.errorMessages['vpnActivated']!
-              : DnsConstants.errorMessages['vpnActivationError']!,
-          success ? Colors.green : Colors.red,
+          result.message,
+          result.success ? Colors.green : Colors.red,
         );
+        
+        // اگر تغییر DNS موفقیت‌آمیز نبود، وضعیت VPN را به‌روز نکن
+        if (!result.success) {
+          _updateVpnState(active: false, loading: false);
+        }
       } catch (e) {
         _showMessage('خطا در فعال‌سازی VPN: $e', Colors.red);
+        _updateVpnState(active: false, loading: false);
       }
     } else if (Platform.isWindows) {
       await _activateVpnWindows();

@@ -4,6 +4,8 @@ export '../main.dart';
 // api
 export '../api/models/api_response.dart';
 export '../api/models/dns_record.dart';
+export '../api/models/update_info.dart';
+export '../api/services/update_api_service.dart';
 export '../api/services/api_client.dart';
 export '../api/services/dns_api_service.dart';
 

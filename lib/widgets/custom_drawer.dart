@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../screens/settings_page.dart';
 import '../screens/about_page.dart';
+import '../screens/check_update_page.dart';
+import '../screens/ticket_page.dart';
 import 'package:provider/provider.dart';
 import '../path/path.dart';
 
@@ -78,6 +80,48 @@ class _CustomDrawerState extends State<CustomDrawer> {
             onTap: () {
               themeManager.toggleTheme();
               // منو را نمی‌بندیم تا تغییر تم را ببینید
+            },
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.system_update_alt,
+              color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
+            ),
+            title: Text(
+              'بررسی بروزرسانی',
+              style: TextStyle(
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context); // بستن drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CheckUpdatePage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.support_agent,
+              color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
+            ),
+            title: Text(
+              'ارسال تیکت',
+              style: TextStyle(
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context); // بستن drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TicketPage()),
+              );
             },
           ),
           ListTile(

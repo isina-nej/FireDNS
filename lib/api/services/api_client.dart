@@ -6,7 +6,7 @@ import '../../path/path.dart';
 
 /// کلاس مدیریت درخواست‌های HTTP
 class ApiClient {
-  static const String _baseUrl = 'https://dns-changer-0.vercel.app';
+  static const String _baseUrl = 'https://api.fire-dns.ir';
   static const Duration _timeout = Duration(seconds: 30);
 
   final http.Client _client;

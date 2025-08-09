@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../path/path.dart';
 import 'services/firebase_messaging_service.dart';
+import 'services/notification_service.dart';
 import 'dart:io' show Platform;
 import 'screens/homepage_android.dart' as android;
 import 'screens/homepage_windows.dart' as windows;
@@ -65,11 +66,10 @@ class FireDNSApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<ThemeManager>.value(value: themeManager),
         ChangeNotifierProvider<LanguageManager>.value(value: languageManager),
-        // TODO: NotificationService provider will be added later
-        // Provider<NotificationService>(
-        //   create: (_) => NotificationService(),
-        //   dispose: (_, service) => service.dispose(),
-        // ),
+        ChangeNotifierProvider<NotificationService>(
+          create: (_) => NotificationService(),
+          lazy: false, // Initialize immediately
+        ),
       ],
       child: Consumer2<ThemeManager, LanguageManager>(
         builder: (context, themeManager, languageManager, child) {
@@ -99,7 +99,10 @@ class FireDNSApp extends StatelessWidget {
             },
 
             home: forceUpdate
-                ? const ForceUpdatePage(updateUrl: UpdateChecker.updateUrl)
+                ? const ForceUpdatePage(
+                    updateUrl: UpdateChecker.updateUrl,
+                    currentAppVersion: UpdateChecker.currentVersion,
+                  )
                 : (Platform.isWindows
                     ? const windows.FireDNSHomePage(title: 'Fire DNS')
                     : const android.FireDNSHomePage(title: 'Fire DNS')),

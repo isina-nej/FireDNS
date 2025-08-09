@@ -8,7 +8,7 @@ class UpdateChecker {
   /// آدرس API یا فایل نسخه جدید (مثلاً روی سرور یا گیت‌هاب)
   static const String versionCheckUrl =
       'https://raw.githubusercontent.com/isina-nej/Version-Fire-DNS/main/version.json';
-  static const String updateUrl = 'https://firedns.isina-nej.ir';
+  static const String updateUrl = 'https://update.fire-dns.ir';
 
   /// بررسی آپدیت بودن برنامه
   static Future<bool> isLatestVersion() async {

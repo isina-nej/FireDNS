@@ -19,7 +19,7 @@ class DnsUsageApiService {
   }) async {
     try {
       final response = await _apiClient.post<UserDnsUsage>(
-        '/dns-usage',
+        '/api/dns-usage',
         body: {
           'userDnsId': userDnsId,
           'internetTag': internetTag,
@@ -44,7 +44,7 @@ class DnsUsageApiService {
   Future<ApiResponse<List<UserDnsUsage>>> getDnsUsers(String userDnsId) async {
     try {
       final response = await _apiClient.get<List<UserDnsUsage>>(
-        '/dns-usage/$userDnsId',
+        '/api/dns-usage/$userDnsId',
         fromJson: (data) {
           if (data is List) {
             return data.map((item) => UserDnsUsage.fromJson(item)).toList();
@@ -68,7 +68,7 @@ class DnsUsageApiService {
   Future<ApiResponse<List<UserDnsUsage>>> getDnsUsageReport() async {
     try {
       final response = await _apiClient.get<List<UserDnsUsage>>(
-        '/dns-usage',
+        '/api/dns-usage',
         fromJson: (data) {
           if (data is List) {
             return data.map((item) => UserDnsUsage.fromJson(item)).toList();

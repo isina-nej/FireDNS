@@ -6,6 +6,19 @@ import '../models/google_connectivity_result.dart';
 import '../constants/dns_constants.dart';
 import '../utils/dns_validator.dart';
 
+/// نتیجه تغییر DNS
+class DnsChangeResult {
+  final bool success;
+  final String message;
+  final String errorCode;
+
+  DnsChangeResult({
+    required this.success,
+    required this.message,
+    this.errorCode = '',
+  });
+}
+
 /// سرویس مدیریت DNS
 class DnsService {
   static Future<DnsStatus> testDnsIPv6(String dns) async {
@@ -75,45 +88,74 @@ class DnsService {
     }
   }
 
+  // کلاس DnsChangeResult در بالای فایل تعریف شده است
+
   /// تغییر DNS سیستم
-  static Future<bool> changeDns(String dns1, String dns2) async {
+  static Future<DnsChangeResult> changeDns(String dns1, String dns2) async {
     try {
       // اعتبارسنجی DNS ها
       if (!DnsValidator.isValidDns(dns1)) {
         debugPrint('Invalid primary DNS: $dns1');
-        return false;
+        return DnsChangeResult(
+          success: false,
+          message: DnsConstants.errorMessages['invalidDns1']!,
+          errorCode: 'INVALID_PRIMARY_DNS',
+        );
       }
 
       if (dns2.isNotEmpty && !DnsValidator.isValidDns(dns2)) {
         debugPrint('Invalid secondary DNS: $dns2');
-        return false;
+        return DnsChangeResult(
+          success: false,
+          message: DnsConstants.errorMessages['invalidDns2']!,
+          errorCode: 'INVALID_SECONDARY_DNS',
+        );
       }
 
       // تست دسترسی DNS ها
       final dns1Status = await testDns(dns1);
       if (!dns1Status.isReachable) {
         debugPrint('Primary DNS is not reachable: $dns1');
-        return false;
+        return DnsChangeResult(
+          success: false,
+          message: DnsConstants.errorMessages['dns1Unreachable']!,
+          errorCode: 'PRIMARY_DNS_UNREACHABLE',
+        );
       }
 
       if (dns2.isNotEmpty) {
         final dns2Status = await testDns(dns2);
         if (!dns2Status.isReachable) {
           debugPrint('Secondary DNS is not reachable: $dns2');
-          return false;
+          return DnsChangeResult(
+            success: false,
+            message: DnsConstants.errorMessages['dns2Unreachable']!,
+            errorCode: 'SECONDARY_DNS_UNREACHABLE',
+          );
         }
       }
 
       // تغییر DNS
       await _platform.invokeMethod('setDns', {'dns1': dns1, 'dns2': dns2});
       debugPrint('DNS changed successfully: $dns1, $dns2');
-      return true;
+      return DnsChangeResult(
+        success: true,
+        message: DnsConstants.errorMessages['vpnActivated']!,
+      );
     } on PlatformException catch (e) {
       debugPrint('Platform error changing DNS: ${e.message}');
-      return false;
+      return DnsChangeResult(
+        success: false,
+        message: DnsConstants.errorMessages['vpnActivationError']!,
+        errorCode: 'PLATFORM_ERROR',
+      );
     } catch (e) {
       debugPrint('Error changing DNS: $e');
-      return false;
+      return DnsChangeResult(
+        success: false,
+        message: DnsConstants.errorMessages['vpnActivationError']!,
+        errorCode: 'UNKNOWN_ERROR',
+      );
     }
   }
 

@@ -191,12 +191,16 @@ class MyVpnService : VpnService() {
 
         // اعتبارسنجی DNS ها
         if (!isValidIpAddress(dns1)) {
-            Log.w("FireDNS", "Invalid primary DNS: $dns1, using default")
-            dns1 = DEFAULT_PRIMARY_DNS
+            Log.e("FireDNS", "Invalid primary DNS: $dns1, stopping service")
+            isRunning = false
+            statusListener?.invoke("DNS_ERROR_INVALID_PRIMARY")
+            return START_NOT_STICKY
         }
         if (!isValidIpAddress(dns2)) {
-            Log.w("FireDNS", "Invalid secondary DNS: $dns2, using default")
-            dns2 = DEFAULT_SECONDARY_DNS
+            Log.e("FireDNS", "Invalid secondary DNS: $dns2, stopping service")
+            isRunning = false
+            statusListener?.invoke("DNS_ERROR_INVALID_SECONDARY")
+            return START_NOT_STICKY
         }
 
         Log.d("FireDNS", "MyVpnService onStartCommand: dns1=$dns1, dns2=$dns2")

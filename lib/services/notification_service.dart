@@ -1,117 +1,130 @@
-// import 'dart:async';
-// import 'package:firebase_messaging/firebase_messaging.dart';
-// import 'package:flutter/material.dart';
-// import '../models/fcm_message.dart';
-// import '../api/services/fcm_api_service.dart';
-// import '../screens/force_update_page.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../api/models/notification_model.dart';
+import '../api/services/notification_api_service.dart';
 
-// class NotificationService {
-//   static final NotificationService _instance = NotificationService._internal();
-//   factory NotificationService() => _instance;
-
-//   final _fcmService = FcmApiService();
-//   final _messageController = StreamController<FcmMessage>.broadcast();
-
-//   Stream<FcmMessage> get messages => _messageController.stream;
-
-//   NotificationService._internal();
-
-//   Future<void> initialize(BuildContext context) async {
-//     // درخواست مجوز نوتیفیکیشن
-//     final messaging = FirebaseMessaging.instance;
-//     await messaging.requestPermission();
-
-//     // دریافت توکن FCM
-//     final token = await messaging.getToken();
-//     if (token != null) {
-//       await _fcmService.registerFcmToken(
-//         userId: 'guest', // یا از سیستم مدیریت کاربران دریافت شود
-//         deviceId: 'device_id', // از سیستم دریافت شود
-//         token: token,
-//         platform: Theme.of(context).platform.toString(),
-//       );
-//     }
-
-//     // گوش دادن به پیام‌های FCM
-//     FirebaseMessaging.onMessage.listen(_handleMessage);
-//     FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
-//     FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessage);
-
-//     // چک کردن پیام اولیه (وقتی اپ با کلیک روی نوتیفیکیشن باز شده)
-//     final initialMessage = await messaging.getInitialMessage();
-//     if (initialMessage != null) {
-//       _handleMessage(initialMessage);
-//     }
-//   }
-
-//   void _handleMessage(RemoteMessage message) {
-//     try {
-//       final fcmMessage = FcmMessage(
-//         type: message.data['type'] as String,
-//         data: message.data,
-//       );
-
-//       _messageController.add(fcmMessage);
-
-//       // اگر پیام از نوع آپدیت بود
-//       if (fcmMessage.type == FcmMessage.typeUpdateAvailable) {
-//         _showUpdateDialog(fcmMessage.data);
-//       }
-//     } catch (e) {
-//       debugPrint('Error handling FCM message: $e');
-//     }
-//   }
-
-//   static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
-//     // این متد فقط در پس‌زمینه اجرا می‌شود
-//     debugPrint('Received background message: ${message.data}');
-//   }
-
-//   void _showUpdateDialog(Map<String, dynamic> data) {
-//     // نمایش دیالوگ آپدیت در تمام صفحات اپلیکیشن
-//     for (final context in _findGlobalContexts()) {
-//       showDialog(
-//         context: context,
-//         barrierDismissible: !(data['force'] as bool? ?? false),
-//         builder: (context) => AlertDialog(
-//           title: const Text('بروزرسانی جدید'),
-//           content: const Text('نسخه جدید برنامه در دسترس است. لطفاً برنامه را بروزرسانی کنید.'),
-//           actions: [
-//             if (!(data['force'] as bool? ?? false))
-//               TextButton(
-//                 onPressed: () => Navigator.pop(context),
-//                 child: const Text('بعداً'),
-//               ),
-//             TextButton(
-//               onPressed: () {
-//                 Navigator.pushReplacement(
-//                   context,
-//                   MaterialPageRoute(
-//                     builder: (context) => ForceUpdatePage(
-//                       updateUrl: data['url'] as String? ?? UpdateChecker.updateUrl,
-//                     ),
-//                   ),
-//                 );
-//               },
-//               child: const Text('بروزرسانی'),
-//             ),
-//           ],
-//         ),
-//       );
-//     }
-//   }
-
-//   List<BuildContext> _findGlobalContexts() {
-//     // پیدا کردن تمام context های فعال در اپلیکیشن
-//     final contexts = <BuildContext>[];
-//     final navigatorState = GlobalKey<NavigatorState>().currentState;
-//     if (navigatorState != null) {
-//       contexts.add(navigatorState.context);
-//     }
-//     return contexts;
-//   }
-
-//   void dispose() {
-//     _messageController.close();
-//   }
-// }
+/// سرویس مدیریت اعلانات
+class NotificationService extends ChangeNotifier {
+  final NotificationApiService _apiService;
+  List<NotificationModel> _notifications = [];
+  bool _isLoading = false;
+  String _errorMessage = '';
+  Timer? _refreshTimer;
+  
+  // Stream برای اطلاع‌رسانی تغییرات اعلانات
+  final _notificationStreamController = StreamController<List<NotificationModel>>.broadcast();
+  Stream<List<NotificationModel>> get notificationStream => _notificationStreamController.stream;
+  
+  NotificationService({NotificationApiService? apiService}) 
+      : _apiService = apiService ?? NotificationApiService() {
+    // بارگذاری اولیه اعلانات
+    fetchNotifications();
+    
+    // تنظیم تایمر برای بررسی دوره‌ای اعلانات جدید (هر 5 دقیقه)
+    _refreshTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      fetchNotifications();
+    });
+  }
+  
+  /// دریافت اعلانات از سرور
+  Future<void> fetchNotifications() async {
+    _isLoading = true;
+    _errorMessage = '';
+    notifyListeners();
+    
+    try {
+      final response = await _apiService.getNotifications();
+      
+      if (response.isSuccess && response.data != null) {
+        _notifications = response.data!;
+        _notificationStreamController.add(_notifications);
+      } else {
+        _errorMessage = response.message;
+      }
+    } catch (e) {
+      _errorMessage = 'خطا در دریافت اعلانات';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+  
+  /// علامت‌گذاری اعلان به عنوان خوانده شده
+  Future<bool> markAsRead(String notificationId) async {
+    try {
+      final response = await _apiService.markAsRead(notificationId);
+      
+      if (response.isSuccess && response.data == true) {
+        // به‌روزرسانی لیست اعلانات محلی
+        final index = _notifications.indexWhere((n) => n.id == notificationId);
+        if (index != -1) {
+          final updatedNotification = _notifications[index].copyWith(isRead: true);
+          _notifications[index] = updatedNotification;
+          _notificationStreamController.add(_notifications);
+          notifyListeners();
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /// علامت‌گذاری همه اعلانات به عنوان خوانده شده
+  Future<bool> markAllAsRead() async {
+    try {
+      final response = await _apiService.markAllAsRead();
+      
+      if (response.isSuccess && response.data == true) {
+        // به‌روزرسانی لیست اعلانات محلی
+        _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+        _notificationStreamController.add(_notifications);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /// حذف اعلان
+  Future<bool> deleteNotification(String notificationId) async {
+    try {
+      final response = await _apiService.deleteNotification(notificationId);
+      
+      if (response.isSuccess && response.data == true) {
+        // حذف اعلان از لیست محلی
+        _notifications.removeWhere((n) => n.id == notificationId);
+        _notificationStreamController.add(_notifications);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /// دریافت تعداد اعلانات خوانده نشده
+  int get unreadCount => _notifications.where((n) => !n.isRead).length;
+  
+  /// دریافت لیست اعلانات
+  List<NotificationModel> get notifications => _notifications;
+  
+  /// آیا در حال بارگذاری است؟
+  bool get isLoading => _isLoading;
+  
+  /// پیام خطا
+  String get errorMessage => _errorMessage;
+  
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _notificationStreamController.close();
+    _apiService.dispose();
+    super.dispose();
+  }
+}
