@@ -545,14 +545,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     }
   }
 
-  void _updateVpnState({bool? active, bool? loading}) {
-    if (!mounted) return;
-    setState(() {
-      if (active != null) _vpnActive = active;
-      if (loading != null) _vpnLoading = loading;
-    });
-  }
-
   /// Enhanced SnackBar system with animations and better styling
   /// This replaces both _showMessage and _showOptimizedMessage with a unified system
   void showEnhancedSnackBar({
@@ -739,7 +731,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           icon: Icons.warning,
         );
       case SnackBarType.info:
-      default:
         return SnackBarStyle(
           backgroundColor: const Color(0xFF1976D2), // Dark blue
           borderColor: const Color(0xFF64B5F6).withOpacity(0.5),
@@ -762,10 +753,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     showEnhancedSnackBar(message: message, type: type);
   }
   
-  // Legacy method for backward compatibility - redirects to enhanced version
-  void _showOptimizedMessage(String message, Color color) {
-    _showMessage(message, color);
-  }
 
   @override
   Widget build(BuildContext context) {

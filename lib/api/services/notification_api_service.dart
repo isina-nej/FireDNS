@@ -13,7 +13,7 @@ class NotificationApiService {
   Future<ApiResponse<List<NotificationModel>>> getNotifications() async {
     try {
       final response = await _apiClient.get<List<NotificationModel>>(
-        'notifications', // endpoint
+        '/api/notifications', // endpoint
         fromJson: (data) {
           final List<dynamic> jsonList = data as List<dynamic>;
           return jsonList
@@ -37,7 +37,7 @@ class NotificationApiService {
   Future<ApiResponse<bool>> markAsRead(String notificationId) async {
     try {
       final response = await _apiClient.post<bool>(
-        'notifications/$notificationId/read', // endpoint
+        '/api/notifications/$notificationId/read', // endpoint
         fromJson: (data) => data as bool? ?? false,
       );
       return response;
@@ -56,7 +56,7 @@ class NotificationApiService {
   Future<ApiResponse<bool>> markAllAsRead() async {
     try {
       final response = await _apiClient.post<bool>(
-        'notifications/read-all', // endpoint
+        '/api/notifications/read-all', // endpoint
         fromJson: (data) => data as bool? ?? false,
       );
       return response;
@@ -75,7 +75,7 @@ class NotificationApiService {
   Future<ApiResponse<bool>> deleteNotification(String notificationId) async {
     try {
       final response = await _apiClient.delete<bool>(
-        'notifications/$notificationId', // endpoint
+        '/api/notifications/$notificationId', // endpoint
         fromJson: (data) => data as bool? ?? false,
       );
       return response;

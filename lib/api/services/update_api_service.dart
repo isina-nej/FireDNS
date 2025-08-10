@@ -13,7 +13,7 @@ class UpdateApiService {
   Future<ApiResponse<UpdateInfo>> getUpdateInfo(String currentAppVersion) async {
     try {
       final response = await _apiClient.get<UpdateInfo>(
-        'update-info', // endpoint
+        '/api/update-info', // endpoint
         queryParameters: {'currentVersion': currentAppVersion},
         fromJson: (data) => UpdateInfo.fromJson(data as Map<String, dynamic>),
       );

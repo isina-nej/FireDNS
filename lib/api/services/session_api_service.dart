@@ -14,7 +14,7 @@ class SessionApiService {
   Future<ApiResponse<SessionData>> initSession(String deviceId) async {
     try {
       final response = await _apiClient.post<SessionData>(
-        '/session/init',
+        '/api/session/init',
         body: {'deviceId': deviceId},
         fromJson: (data) => SessionData.fromJson(data),
       );
@@ -34,7 +34,7 @@ class SessionApiService {
   Future<ApiResponse<SessionData>> refreshSession() async {
     try {
       final response = await _apiClient.post<SessionData>(
-        '/session/refresh',
+        '/api/session/refresh',
         fromJson: (data) => SessionData.fromJson(data),
       );
 

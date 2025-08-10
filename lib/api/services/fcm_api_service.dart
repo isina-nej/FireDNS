@@ -30,7 +30,7 @@ class FcmApiService {
   }) async {
     try {
       final response = await _apiClient.post<bool>(
-        '/fcm/register',
+        '/api/fcm/register',
         body: {
           'userId': userId,
           'deviceId': deviceId,
@@ -57,7 +57,7 @@ class FcmApiService {
   }) async {
     try {
       final response = await _apiClient.delete<bool>(
-        '/fcm/unregister?deviceId=$deviceId',
+        '/api/fcm/unregister?deviceId=$deviceId',
         fromJson: (data) => true,
       );
       return response;
@@ -79,7 +79,7 @@ class FcmApiService {
   }) async {
     try {
       final response = await _apiClient.post<bool>(
-        '/fcm/send',
+        '/api/fcm/send',
         body: {'title': title, 'body': body, 'tokens': tokens},
         fromJson: (data) => true,
       );
