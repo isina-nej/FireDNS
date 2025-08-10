@@ -739,20 +739,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     }
   }
   
-  // Legacy method for backward compatibility - redirects to enhanced version
-  void _showMessage(String message, Color color) {
-    SnackBarType type = SnackBarType.info;
-    if (color == AppColors.textSuccess) {
-      type = SnackBarType.success;
-    } else if (color == AppColors.textError) {
-      type = SnackBarType.error;
-    } else if (color == AppColors.brightBlue) {
-      type = SnackBarType.info;
-    }
-    
-    showEnhancedSnackBar(message: message, type: type);
-  }
-  
 
   @override
   Widget build(BuildContext context) {

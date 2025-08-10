@@ -44,8 +44,24 @@ class _DnsListPageState extends State<DnsListPage> {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
     final isSelected = _selectedDnsId == record.id;
-    final ping = _pingCache['${record.id}_1'] ?? _pingCache[record.id];
-    final ping2 = _pingCache['${record.id}_2'] ?? _pingCache[record.id];
+    var ping1 = _pingCache['${record.id}_1'] ?? _pingCache[record.id] ?? -1;
+    var ping2 = _pingCache['${record.id}_2'] ?? -1;
+    
+    // تعیین کدام IP باید اول نمایش داده شود بر اساس پینگ
+    String displayIp1 = record.ip1;
+    String displayIp2 = record.ip2;
+    int displayPing1 = ping1;
+    int displayPing2 = ping2;
+    
+    // اگر IP دوم پینگ کمتری دارد یا فقط IP دوم پینگ دارد، جابجا کن
+    if ((ping1 > 0 && ping2 > 0 && ping2 < ping1) || (ping1 <= 0 && ping2 > 0)) {
+      displayIp1 = record.ip2;
+      displayIp2 = record.ip1;
+      displayPing1 = ping2;
+      displayPing2 = ping1;
+    }
+    
+    final ping = displayPing1;
 
     Future<void> _rePingBoth() async {
       setState(() {
@@ -66,7 +82,7 @@ class _DnsListPageState extends State<DnsListPage> {
     }
 
     Color pingColor;
-    if (ping == null || ping < 0) {
+    if (ping < 0) {
       pingColor = Colors.grey.shade400;
     } else if (ping < 50) {
       pingColor = AppColors.pingExcellent;
@@ -80,15 +96,15 @@ class _DnsListPageState extends State<DnsListPage> {
       pingColor = AppColors.pingBad;
     }
     Color pingColor2;
-    if (ping2 == null || ping2 < 0) {
+    if (displayPing2 < 0) {
       pingColor2 = Colors.grey.shade400;
-    } else if (ping2 < 50) {
+    } else if (displayPing2 < 50) {
       pingColor2 = AppColors.pingExcellent;
-    } else if (ping2 < 120) {
+    } else if (displayPing2 < 120) {
       pingColor2 = AppColors.pingGood;
-    } else if (ping2 < 250) {
+    } else if (displayPing2 < 250) {
       pingColor2 = AppColors.pingMedium;
-    } else if (ping2 < 500) {
+    } else if (displayPing2 < 500) {
       pingColor2 = AppColors.pingPoor;
     } else {
       pingColor2 = AppColors.pingBad;
@@ -228,7 +244,7 @@ class _DnsListPageState extends State<DnsListPage> {
                               Expanded(
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
-                                    final text = record.ip1;
+                                    final text = displayIp1;
                                     final textStyle = const TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFF607D8B),
@@ -257,8 +273,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              if (ping != null)
-                                Listener(
+                              Listener(
                                   behavior: HitTestBehavior.opaque,
                                   onPointerDown: (event) {
                                     if (Theme.of(context).platform ==
@@ -346,7 +361,7 @@ class _DnsListPageState extends State<DnsListPage> {
                               Expanded(
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
-                                    final text = record.ip2;
+                                    final text = displayIp2;
                                     final textStyle = const TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFF90A4AE),
@@ -375,8 +390,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              if (ping2 != null)
-                                Listener(
+                              Listener(
                                   behavior: HitTestBehavior.opaque,
                                   onPointerDown: (event) {
                                     if (Theme.of(context).platform ==
@@ -399,7 +413,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                           color: pingColor2,
                                         ),
                                         const SizedBox(width: 2),
-                                        ping2 == -2
+                                        displayPing2 == -2
                                             ? const SizedBox(
                                                 width: 18,
                                                 height: 18,
@@ -408,9 +422,9 @@ class _DnsListPageState extends State<DnsListPage> {
                                                       strokeWidth: 2,
                                                     ),
                                               )
-                                            : (ping2 == -1 ||
-                                                  ping2 < 0 ||
-                                                  ping2 >= 1000)
+                                            : (displayPing2 == -1 ||
+                                                  displayPing2 < 0 ||
+                                                  displayPing2 >= 1000)
                                             ? Text(
                                                 '---',
                                                 style: TextStyle(
@@ -421,9 +435,9 @@ class _DnsListPageState extends State<DnsListPage> {
                                                       TextDecoration.underline,
                                                 ),
                                               )
-                                            : Text(
-                                                '$ping2 ms',
-                                                style: TextStyle(
+                                          : Text(
+                                              '$displayPing2 ms',
+                                              style: TextStyle(
                                                   color: pingColor2,
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 13,
@@ -431,8 +445,8 @@ class _DnsListPageState extends State<DnsListPage> {
                                                       TextDecoration.underline,
                                                 ),
                                               ),
-                                        if (ping2 > 0 && ping2 < 80)
-                                          Container(
+                                      if (displayPing2 > 0 && displayPing2 < 80)
+                                        Container(
                                             margin: const EdgeInsets.only(
                                               left: 2,
                                             ),
@@ -817,9 +831,35 @@ class _DnsListPageState extends State<DnsListPage> {
     final prefs = await SharedPreferences.getInstance();
     prefs.setString('cached_selected_dns', record.id);
 
+    // بررسی پینگ‌ها و انتخاب بهترین IP
+    final ping1 = _pingCache['${record.id}_1'] ?? -1;
+    final ping2 = _pingCache['${record.id}_2'] ?? -1;
+    
+    // ایجاد رکورد جدید با IP بهینه
+    DnsRecord optimizedRecord = record;
+    
+    // اگر هر دو پینگ معتبر هستند، کمترین را انتخاب کن
+    if (ping1 > 0 && ping2 > 0) {
+      if (ping2 < ping1) {
+        // IP دوم پینگ کمتری دارد، جابجا کن
+        optimizedRecord = record.copyWith(
+          ip1: record.ip2,
+          ip2: record.ip1,
+        );
+      }
+    }
+    // اگر فقط IP دوم پینگ دارد
+    else if (ping1 <= 0 && ping2 > 0) {
+      optimizedRecord = record.copyWith(
+        ip1: record.ip2,
+        ip2: record.ip1,
+      );
+    }
+    // اگر فقط IP اول پینگ دارد یا هیچکدام پینگ ندارند، تغییری نده
+
     // فقط انتخاب و بازگشت به صفحه قبلی، روند اتصال در صفحه قبلی انجام شود
     if (mounted) {
-      Navigator.pop(context, record);
+      Navigator.pop(context, optimizedRecord);
     }
   }
 
