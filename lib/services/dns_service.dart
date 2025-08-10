@@ -112,36 +112,45 @@ class DnsService {
         );
       }
 
-      // تست دسترسی DNS ها
-      final dns1Status = await testDns(dns1);
-      if (!dns1Status.isReachable) {
-        debugPrint('Primary DNS is not reachable: $dns1');
-        return DnsChangeResult(
-          success: false,
-          message: DnsConstants.errorMessages['dns1Unreachable']!,
-          errorCode: 'PRIMARY_DNS_UNREACHABLE',
-        );
-      }
-
-      if (dns2.isNotEmpty) {
-        final dns2Status = await testDns(dns2);
-        if (!dns2Status.isReachable) {
-          debugPrint('Secondary DNS is not reachable: $dns2');
-          return DnsChangeResult(
-            success: false,
-            message: DnsConstants.errorMessages['dns2Unreachable']!,
-            errorCode: 'SECONDARY_DNS_UNREACHABLE',
-          );
+      // تست دسترسی DNS ها - اما اجازه ادامه بده حتی اگر در دسترس نباشند
+      bool dns1Reachable = false;
+      bool dns2Reachable = false;
+      
+      try {
+        final dns1Status = await testDns(dns1);
+        dns1Reachable = dns1Status.isReachable;
+        if (!dns1Reachable) {
+          debugPrint('Warning: Primary DNS is not reachable: $dns1 (continuing anyway)');
         }
+        
+        if (dns2.isNotEmpty) {
+          final dns2Status = await testDns(dns2);
+          dns2Reachable = dns2Status.isReachable;
+          if (!dns2Reachable) {
+            debugPrint('Warning: Secondary DNS is not reachable: $dns2 (continuing anyway)');
+          }
+        }
+      } catch (e) {
+        debugPrint('Error testing DNS reachability: $e (continuing anyway)');
       }
 
-      // تغییر DNS
+      // تغییر DNS - حتی اگر DNS ها در دسترس نباشند
       await _platform.invokeMethod('setDns', {'dns1': dns1, 'dns2': dns2});
       debugPrint('DNS changed successfully: $dns1, $dns2');
-      return DnsChangeResult(
-        success: true,
-        message: DnsConstants.errorMessages['vpnActivated']!,
-      );
+      
+      // اگر DNS ها در دسترس نبودند، پیام هشدار نمایش بده
+      if (!dns1Reachable || (dns2.isNotEmpty && !dns2Reachable)) {
+        return DnsChangeResult(
+          success: true,
+          message: DnsConstants.errorMessages['vpnActivatedWithWarning'] ??
+                  "VPN activated, but DNS servers might not be reachable. Connection might be limited.",
+        );
+      } else {
+        return DnsChangeResult(
+          success: true,
+          message: DnsConstants.errorMessages['vpnActivated']!,
+        );
+      }
     } on PlatformException catch (e) {
       debugPrint('Platform error changing DNS: ${e.message}');
       return DnsChangeResult(

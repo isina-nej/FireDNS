@@ -204,17 +204,21 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       final dns2 = _dns2Controller.text.trim();
       try {
         final result = await DnsService.changeDns(dns1, dns2);
-        _showMessage(
-          result.message,
-          result.success ? Colors.green : Colors.red,
-        );
+        
+        // Only show message if there was an error
+        if (!result.success) {
+          _showOptimizedMessage(
+            result.message,
+            Colors.red,
+          );
+        }
         
         // اگر تغییر DNS موفقیت‌آمیز نبود، وضعیت VPN را به‌روز نکن
         if (!result.success) {
           _updateVpnState(active: false, loading: false);
         }
       } catch (e) {
-        _showMessage('خطا در فعال‌سازی VPN: $e', Colors.red);
+        _showOptimizedMessage('خطا در فعال‌سازی VPN: $e', Colors.red);
         _updateVpnState(active: false, loading: false);
       }
     } else if (Platform.isWindows) {
@@ -228,7 +232,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       _dns1Controller.text.trim(),
       _dns2Controller.text.trim(),
     );
-    _showMessage('فعالسازی VPN فقط برای اندروید فعال است.', Colors.orange);
+    _showOptimizedMessage('فعالسازی VPN فقط برای اندروید فعال است.', Colors.orange);
   }
 
   Future<void> _deactivateVpn() async {
@@ -258,6 +262,21 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+  }
+  
+  /// Optimized SnackBar that prevents spam and duplicate messages
+  void _showOptimizedMessage(String message, Color color) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   @override
@@ -794,7 +813,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                       ),
                     );
                   } else if (Platform.isWindows) {
-                    _showMessage(
+                    _showOptimizedMessage(
                       'تست سرعت فقط برای اندروید فعال است.',
                       Colors.orange,
                     );

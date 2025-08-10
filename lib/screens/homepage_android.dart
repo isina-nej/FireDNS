@@ -11,10 +11,24 @@ import '../api/models/dns_usage_request.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
-
 import 'package:provider/provider.dart';
 import '../widgets/notification_bell.dart';
 import '../widgets/custom_drawer.dart';
+
+// SnackBar enhancements
+enum SnackBarType { success, error, warning, info }
+
+class SnackBarStyle {
+  final Color backgroundColor;
+  final Color borderColor;
+  final IconData icon;
+  
+  SnackBarStyle({
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.icon,
+  });
+}
 
 /// ویجت متن با پس‌زمینه نیمه‌شفاف
 class SemiTransparentText extends StatelessWidget {
@@ -88,6 +102,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   bool _vpnActive = false;
   bool _vpnLoading = false;
   bool _autoPingEnabled = false;
+  
+  // SnackBar management
+  DateTime? _lastSnackBarTime;
+  String? _lastSnackBarMessage;
 
   // Stream subscriptions
   StreamSubscription<bool>? _vpnStatusSubscription;
@@ -173,8 +191,33 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       isActive,
     ) {
       if (mounted) {
+        debugPrint('VPN status changed via stream: $isActive');
+        final wasActive = _vpnActive;
         setState(() {
           _vpnActive = isActive;
+          _vpnLoading = false; // Stop loading when we get a status update
+        });
+        
+        // Only show message if status actually changed and it's not during initialization
+        if (wasActive != isActive && !_vpnLoading) {
+          if (isActive) {
+            showEnhancedSnackBar(
+              message: DnsConstants.errorMessages['vpnActivated']!,
+              type: SnackBarType.success,
+            );
+          } else {
+            showEnhancedSnackBar(
+              message: DnsConstants.errorMessages['vpnDisabled']!,
+              type: SnackBarType.error,
+            );
+          }
+        }
+      }
+    }, onError: (error) {
+      debugPrint('Error in VPN status stream: $error');
+      if (mounted) {
+        setState(() {
+          _vpnLoading = false;
         });
       }
     });
@@ -204,6 +247,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
+        // Check VPN status when app resumes
+        debugPrint('App resumed, checking VPN status');
+        _checkInitialStatus();
         if (_autoPingEnabled) {}
         break;
       case AppLifecycleState.paused:
@@ -218,7 +264,14 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   Future<void> _checkInitialStatus() async {
     try {
       final status = await DnsService.getServiceStatus();
+      debugPrint('Initial VPN status check: $status');
       _updateVpnState(active: status, loading: false);
+      
+      // Don't show message during initialization - let the user discover the status from UI
+      // Only show message if there was a significant change or error
+      
+      // Manually notify VPN status service to ensure consistency
+      VpnStatusService.notifyVpnStatus(status);
     } catch (e) {
       _updateVpnState(loading: false);
       debugPrint('Error checking initial status: $e');
@@ -227,12 +280,37 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
   Future<void> _toggleVpn(bool value) async {
     if (_vpnLoading) return;
-    _updateVpnState(loading: true);
-    value ? await _activateVpn() : await _deactivateVpn();
-    _updateVpnState(loading: false);
-
-    // گزارش وضعیت اتصال به سرور
-    await _reportDnsUsage(value);
+    
+    // Check current VPN status before toggling
+    try {
+      final currentStatus = await DnsService.getServiceStatus();
+      debugPrint('Current VPN status from service: $currentStatus, UI state: $_vpnActive');
+      
+      // Update UI to match actual state
+      if (_vpnActive != currentStatus) {
+        debugPrint('Fixing UI state mismatch: UI shows $_vpnActive but actual state is $currentStatus');
+        _updateVpnState(active: currentStatus, loading: false);
+        return; // Return to let UI update first
+      }
+      
+      // Now toggle based on the correct state
+      _updateVpnState(loading: true);
+      
+      // If VPN is active, deactivate it; otherwise activate it
+      if (currentStatus) {
+        await _deactivateVpn();
+      } else {
+        await _activateVpn();
+      }
+      
+      _updateVpnState(loading: false);
+      
+      // گزارش وضعیت اتصال به سرور
+      await _reportDnsUsage(!currentStatus); // Report the new state (opposite of current)
+    } catch (e) {
+      debugPrint('Error checking VPN status: $e');
+      _updateVpnState(loading: false);
+    }
   }
 
   Future<void> _reportDnsUsage(bool isConnected) async {
@@ -312,17 +390,22 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     final dns2 = _dns2Controller.text.trim();
     try {
       final result = await DnsService.changeDns(dns1, dns2);
-      _showMessage(
-        result.message,
-        result.success ? AppColors.textSuccess : AppColors.textError,
+      showEnhancedSnackBar(
+        message: result.message,
+        type: result.success ? SnackBarType.success : SnackBarType.error,
       );
       
-      // اگر تغییر DNS موفقیت‌آمیز نبود، وضعیت VPN را به‌روز نکن
-      if (!result.success) {
+      // اگر تغییر DNS موفقیت‌آمیز بود، وضعیت VPN را به‌روز کن
+      if (result.success) {
+        _updateVpnState(active: true, loading: false);
+      } else {
         _updateVpnState(active: false, loading: false);
       }
     } catch (e) {
-      _showMessage('خطا در فعال‌سازی VPN: $e', AppColors.textError);
+      showEnhancedSnackBar(
+        message: 'خطا در فعال‌سازی VPN: $e',
+        type: SnackBarType.error,
+      );
       _updateVpnState(active: false, loading: false);
     }
   }
@@ -330,14 +413,24 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   Future<void> _deactivateVpn() async {
     try {
       final success = await DnsService.stopVpn();
-      _showMessage(
-        success
+      showEnhancedSnackBar(
+        message: success
             ? DnsConstants.errorMessages['vpnDisabled']!
             : DnsConstants.errorMessages['vpnDisableError']!,
-        success ? AppColors.textSuccess : AppColors.textError,
+        type: success ? SnackBarType.success : SnackBarType.error,
       );
+      
+      // Explicitly update UI state when VPN is deactivated
+      if (success) {
+        _updateVpnState(active: false, loading: false);
+      }
     } catch (e) {
-      _showMessage('خطا در غیرفعال‌سازی VPN: $e', AppColors.textError);
+      showEnhancedSnackBar(
+        message: 'خطا در غیرفعال‌سازی VPN: $e',
+        type: SnackBarType.error,
+      );
+      // Ensure UI is updated even if there's an error
+      _updateVpnState(active: false, loading: false);
     }
   }
 
@@ -349,11 +442,218 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     });
   }
 
-  void _showMessage(String message, Color color) {
+  /// Enhanced SnackBar system with animations and better styling
+  /// This replaces both _showMessage and _showOptimizedMessage with a unified system
+  void showEnhancedSnackBar({
+    required String message,
+    SnackBarType type = SnackBarType.info,
+    Duration duration = const Duration(seconds: 3),
+    bool dismissible = true,
+    VoidCallback? onTap,
+  }) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+    
+    final now = DateTime.now();
+    
+    // Anti-spam protection
+    if (_lastSnackBarMessage == message &&
+        _lastSnackBarTime != null &&
+        now.difference(_lastSnackBarTime!).inSeconds < 2) {
+      return;
+    }
+    
+    // Rate limiting
+    if (_lastSnackBarTime != null &&
+        now.difference(_lastSnackBarTime!).inMilliseconds < 800) {
+      return;
+    }
+    
+    _lastSnackBarMessage = message;
+    _lastSnackBarTime = now;
+    
+    // Clear any existing SnackBars to prevent stacking
+    ScaffoldMessenger.of(context).clearSnackBars();
+    
+    // Get appropriate colors and icon based on type
+    final isDark = _themeManager.isDarkModeActive(context);
+    final snackBarStyle = _getSnackBarStyle(type, isDark);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            // Icon with subtle animation
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                return Transform.scale(
+                  scale: value,
+                  child: Opacity(
+                    opacity: value,
+                    child: Icon(
+                      snackBarStyle.icon,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            // Message with fade-in animation
+            Expanded(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Text(
+                      message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Optional close button
+            if (dismissible)
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                },
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                splashRadius: 16,
+              ),
+          ],
+        ),
+        backgroundColor: snackBarStyle.backgroundColor,
+        duration: duration,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: snackBarStyle.borderColor,
+            width: 1,
+          ),
+        ),
+        elevation: 6,
+        onVisible: () {
+          // Add subtle animation when SnackBar appears
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(
+                        snackBarStyle.icon,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          message,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      if (dismissible)
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          splashRadius: 16,
+                        ),
+                    ],
+                  ),
+                  backgroundColor: snackBarStyle.backgroundColor,
+                  duration: duration,
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: snackBarStyle.borderColor,
+                      width: 1,
+                    ),
+                  ),
+                  elevation: 6,
+                ),
+              );
+            }
+          });
+        },
+      ),
+    );
+  }
+  
+  /// Helper method to get SnackBar style based on type
+  SnackBarStyle _getSnackBarStyle(SnackBarType type, bool isDark) {
+    switch (type) {
+      case SnackBarType.success:
+        return SnackBarStyle(
+          backgroundColor: const Color(0xFF2E7D32), // Dark green
+          borderColor: const Color(0xFF4CAF50).withOpacity(0.5),
+          icon: Icons.check_circle,
+        );
+      case SnackBarType.error:
+        return SnackBarStyle(
+          backgroundColor: const Color(0xFFD32F2F), // Dark red
+          borderColor: const Color(0xFFE57373).withOpacity(0.5),
+          icon: Icons.error,
+        );
+      case SnackBarType.warning:
+        return SnackBarStyle(
+          backgroundColor: const Color(0xFFEF6C00), // Dark orange
+          borderColor: const Color(0xFFFFB74D).withOpacity(0.5),
+          icon: Icons.warning,
+        );
+      case SnackBarType.info:
+      default:
+        return SnackBarStyle(
+          backgroundColor: const Color(0xFF1976D2), // Dark blue
+          borderColor: const Color(0xFF64B5F6).withOpacity(0.5),
+          icon: Icons.info,
+        );
+    }
+  }
+  
+  // Legacy method for backward compatibility - redirects to enhanced version
+  void _showMessage(String message, Color color) {
+    SnackBarType type = SnackBarType.info;
+    if (color == AppColors.textSuccess) {
+      type = SnackBarType.success;
+    } else if (color == AppColors.textError) {
+      type = SnackBarType.error;
+    } else if (color == AppColors.brightBlue) {
+      type = SnackBarType.info;
+    }
+    
+    showEnhancedSnackBar(message: message, type: type);
+  }
+  
+  // Legacy method for backward compatibility - redirects to enhanced version
+  void _showOptimizedMessage(String message, Color color) {
+    _showMessage(message, color);
   }
 
   @override
@@ -400,12 +700,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                 ),
               ),
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(context.tr('profileComingSoon')),
-                    duration: const Duration(seconds: 2),
-                    behavior: SnackBarBehavior.floating,
-                  ),
+                showEnhancedSnackBar(
+                  message: context.tr('profileComingSoon'),
+                  type: SnackBarType.info,
                 );
               },
             ),
@@ -555,11 +852,11 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                         decoration: BoxDecoration(
                           color: _vpnActive
                               ? AppColors.textSuccess
-                              : AppColors.textError,
+                              : Colors.red, // Bright red color for deactivated state
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: (_vpnActive ? AppColors.textSuccess : AppColors.textError).withOpacity(0.3),
+                              color: (_vpnActive ? AppColors.textSuccess : Colors.red).withOpacity(0.3),
                               blurRadius: 12,
                               spreadRadius: 2,
                               offset: Offset(0, 3),
@@ -673,7 +970,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                             ? AppColors.darkTextPrimary
                             : AppColors.textPrimary,
                       ),
-                      backgroundColor: _vpnActive ? AppColors.textSuccess : AppColors.textError,
+                      backgroundColor: _vpnActive ? AppColors.textSuccess : Colors.red, // Bright red for disconnected state
                       opacity: 0.15,
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -717,8 +1014,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SemiTransparentText(
-                              text: '${_selectedDnsLabel!}',
+                            // Removed the DNS label display to make room for IP addresses
                               style: TextStyle(
                                 fontSize: responsiveSize(
                                   16,
@@ -737,27 +1033,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                                   : AppColors.brightBlue,
                               opacity: 0.1,
                               borderRadius: BorderRadius.circular(8),
-                            ),
-                            SizedBox(height: 4),
-                            SemiTransparentText(
-                              text: context.tr('nameLabel'),
-                              style: TextStyle(
-                                fontSize: responsiveSize(
-                                  14,
-                                  context,
-                                  min: 10,
-                                  max: 24,
-                                  scaleByHeight: true,
-                                ),
-                                color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.textSecondary,
-                              ),
-                              backgroundColor: isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.textSecondary,
-                              opacity: 0.1,
-                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             ),
                             // نمایش آدرس‌های IP در یک ردیف برای صرفه‌جویی در فضا
                             Row(

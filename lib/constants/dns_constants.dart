@@ -34,10 +34,12 @@ class DnsConstants {
     'vpnDisabled': 'VPN غیرفعال شد.',
     'vpnDisableError': 'خطا در غیرفعال‌سازی VPN',
     'vpnActivated': 'DNS با موفقیت تغییر یافت و VPN فعال شد.',
+    'vpnActivatedWithWarning': 'VPN فعال شد، اما سرورهای DNS ممکن است در دسترس نباشند. اتصال ممکن است محدود باشد.',
     'vpnActivationError':
         'تغییر DNS با خطا مواجه شد یا توسط سیستم پشتیبانی نمی‌شود.',
     'connectivityTestPassed': 'Google connectivity test passed! ✅',
     'connectivityTestFailed': 'Google connectivity test failed! ❌',
     'connectivityTestError': 'Error testing Google connectivity',
+    'vpnActive': 'VPN فعال است',
   };
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/localization_extension.dart';
-import '../styles/language_manager.dart';
+// import '../styles/language_manager.dart';
 
 /// سرویس مدیریت تنظیمات تست DNS
 class DnsTestSettingsService extends ChangeNotifier {

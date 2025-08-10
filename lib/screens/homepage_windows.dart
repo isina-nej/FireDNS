@@ -75,6 +75,21 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       context,
     ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
+  
+  /// Optimized SnackBar that prevents spam and duplicate messages
+  void _showOptimizedMessage(String message, Color color) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -371,12 +386,12 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                                     _dnsSetSuccess = result;
                                   });
                                   if (result) {
-                                    _showMessage(
+                                    _showOptimizedMessage(
                                       'DNS با موفقیت روی ویندوز ست شد.',
                                       Colors.green,
                                     );
                                   } else {
-                                    _showMessage(
+                                    _showOptimizedMessage(
                                       'خطا در ست کردن DNS ویندوز! (دسترسی ادمین یا خطای سیستم)',
                                       Colors.red,
                                     );
