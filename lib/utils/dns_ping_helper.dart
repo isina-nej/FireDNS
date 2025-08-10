@@ -77,79 +77,91 @@ class DnsPingHelper {
     if (setCancelTest != null) setCancelTest(false);
     final List<String> results = [];
     pingCache.clear();
-    final List<Future<Map<String, dynamic>>> futures = [];
+    
+    // تست هر DNS به صورت جداگانه و به‌روزرسانی UI بعد از هر تست
+    int index = 0;
     for (final record in dnsRecords) {
       if (cancelRequested) break;
+      
       final ip1 = record.ip1;
       final ip2 = record.ip2;
+      
       // Only test IPv4 addresses, skip others
       final ipv4Regex = RegExp(
         r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$',
       );
+      
       if (!ipv4Regex.hasMatch(ip1) || !ipv4Regex.hasMatch(ip2)) {
-        futures.add(
-          Future.value({
-            'id': record.id,
-            'label': record.label,
-            'ping1': -1,
-            'isReachable1': false,
-            'ping2': -1,
-            'isReachable2': false,
-          }),
+        // برای DNS های نامعتبر
+        pingCache[record.id + '_1'] = -1;
+        pingCache[record.id + '_2'] = -1;
+        
+        results.add(
+          '${index + 1}. ${record.label}\nDNS1: ❌ (پینگ: --- ms)\nDNS2: ❌ (پینگ: --- ms)',
         );
+        
+        // به‌روزرسانی UI
+        if (sortType == 'ping' && mounted) {
+          sortDnsRecords();
+        }
+        
+        index++;
         continue;
       }
-      futures.add(
-        (() async {
-          if (cancelRequested) {
-            return {
-              'id': record.id,
-              'label': record.label,
-              'ping1': -1,
-              'isReachable1': false,
-              'ping2': -1,
-              'isReachable2': false,
-            };
-          }
-          final status1 = await DnsService.testDns(ip1);
-          final status2 = await DnsService.testDns(ip2);
-          return {
-            'id': record.id,
-            'label': record.label,
-            'ping1': status1.ping,
-            'isReachable1': status1.isReachable,
-            'ping2': status2.ping,
-            'isReachable2': status2.isReachable,
-          };
-        })(),
-      );
+      
+      // تست DNS1
+      if (!cancelRequested) {
+        final status1 = await DnsService.testDns(ip1);
+        pingCache[record.id + '_1'] = status1.ping;
+        
+        // به‌روزرسانی UI بعد از تست DNS1
+        if (sortType == 'ping' && mounted) {
+          sortDnsRecords();
+        }
+      }
+      
+      // تست DNS2
+      if (!cancelRequested) {
+        final status2 = await DnsService.testDns(ip2);
+        pingCache[record.id + '_2'] = status2.ping;
+        
+        // به‌روزرسانی UI بعد از تست DNS2
+        if (sortType == 'ping' && mounted) {
+          sortDnsRecords();
+        }
+      }
+      
+      if (!cancelRequested) {
+        // اضافه کردن نتیجه به لیست نتایج
+        final ping1 = pingCache[record.id + '_1'] ?? -1;
+        final ping2 = pingCache[record.id + '_2'] ?? -1;
+        
+        results.add(
+          '${index + 1}. ${record.label}\nDNS1: ${ping1 > 0 ? '✅' : '❌'}  (پینگ: ${ping1 > 0 ? ping1 : '---'} ms)\nDNS2: ${ping2 > 0 ? '✅' : '❌'}  (پینگ: ${ping2 > 0 ? ping2 : '---'} ms)',
+        );
+      }
+      
+      index++;
     }
-    final pingResults = await Future.wait(futures);
-    for (int i = 0; i < pingResults.length; i++) {
-      final r = pingResults[i];
-      pingCache[r['id'] + '_1'] = r['ping1'];
-      pingCache[r['id'] + '_2'] = r['ping2'];
-      results.add(
-        '${i + 1}. ${r['label']}\nDNS1: ${r['isReachable1'] ? '✅' : '❌'}  (پینگ: ${r['ping1'] > 0 ? r['ping1'] : '---'} ms)\nDNS2: ${r['isReachable2'] ? '✅' : '❌'}  (پینگ: ${r['ping2'] > 0 ? r['ping2'] : '---'} ms)',
-      );
-    }
-    if (sortType == 'ping') {
-      sortDnsRecords();
-    }
+    
+    // ذخیره نتایج در SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     prefs.setString('cached_ping_cache', jsonEncode(pingCache));
     prefs.setStringList(
       'cached_dns_order',
       dnsRecords.map((e) => e.id.toString()).toList().cast<String>(),
     );
+    
     if (!mounted) {
       if (setTestDialogOpen != null) setTestDialogOpen(false);
       if (setCancelTest != null) setCancelTest(false);
       return pingCache;
     }
+    
     if (!auto && showDialogCallback != null) {
       showDialogCallback(results);
     }
+    
     if (setTestDialogOpen != null) setTestDialogOpen(false);
     if (setCancelTest != null) setCancelTest(false);
     return pingCache;
@@ -225,25 +237,44 @@ class DnsPingHelper {
         results.add(
           '${i + 1}. ${record.label}\nDNS1: ❌ (پینگ: --- ms)\nDNS2: ❌ (پینگ: --- ms)',
         );
+        
+        // به‌روزرسانی UI
+        if (sortType == 'ping' && mounted) {
+          sortDnsRecords();
+        }
+        
         continue;
       }
       
       if (cancelRequested) break;
       
+      // تست DNS1 و به‌روزرسانی UI بلافاصله
       final status1 = await DnsService.testDns(ip1);
-      final status2 = await DnsService.testDns(ip2);
-      
       pingCache[record.id + '_1'] = status1.ping;
+      
+      // به‌روزرسانی UI بعد از تست DNS1
+      if (sortType == 'ping' && mounted) {
+        sortDnsRecords();
+      }
+      
+      if (cancelRequested) break;
+      
+      // تست DNS2 و به‌روزرسانی UI بلافاصله
+      final status2 = await DnsService.testDns(ip2);
       pingCache[record.id + '_2'] = status2.ping;
       
       results.add(
         '${i + 1}. ${record.label}\nDNS1: ${status1.isReachable ? '✅' : '❌'} (پینگ: ${status1.ping > 0 ? status1.ping : '---'} ms)\nDNS2: ${status2.isReachable ? '✅' : '❌'} (پینگ: ${status2.ping > 0 ? status2.ping : '---'} ms)',
       );
       
-      // به‌روزرسانی UI بعد از هر تست
-      if (sortType == 'ping') {
+      // به‌روزرسانی UI بعد از تست DNS2
+      if (sortType == 'ping' && mounted) {
         sortDnsRecords();
       }
+      
+      // ذخیره موقت نتایج در SharedPreferences بعد از هر DNS
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setString('cached_ping_cache', jsonEncode(pingCache));
     }
     
     final prefs = await SharedPreferences.getInstance();
@@ -266,7 +297,7 @@ class DnsPingHelper {
   }
   
   /// تست پیشرفته DNS با محاسبه میانگین پینگ، پکت از دست رفته و امتیازدهی
-  /// این نسخه از تست پیشرفته، همه DNS ها را به صورت همزمان تست می‌کند
+  /// این نسخه از تست پیشرفته، هر DNS را به صورت جداگانه تست می‌کند و UI را به‌روز می‌کند
   static Future<Map<String, dynamic>> testAdvancedDns({
     required BuildContext context,
     required List dnsRecords,
@@ -326,6 +357,12 @@ class DnsPingHelper {
           'score1': 0,
           'score2': 0,
         };
+        
+        // به‌روزرسانی UI
+        if (sortType == 'ping' && mounted) {
+          sortDnsRecords();
+        }
+        
         continue;
       }
       
@@ -340,42 +377,114 @@ class DnsPingHelper {
       };
     }
     
-    // انجام تست‌های همزمان برای همه DNS ها
-    for (int testIndex = 0; testIndex < testCount; testIndex++) {
+    // تست هر DNS به صورت جداگانه
+    for (final recordId in testData.keys) {
       if (cancelRequested) break;
       
-      // لیست Future ها برای تست همزمان همه DNS ها
-      List<Future<void>> testFutures = [];
+      final data = testData[recordId]!;
       
-      // ایجاد تست‌های همزمان برای همه DNS ها
-      for (final recordId in testData.keys) {
-        final data = testData[recordId]!;
+      // انجام تست‌های متعدد برای هر DNS
+      for (int testIndex = 0; testIndex < testCount; testIndex++) {
+        if (cancelRequested) break;
         
         // تست DNS1
-        testFutures.add((() async {
-          if (cancelRequested) return;
+        final status1 = await DnsService.testDns(data['ip1']);
+        if (status1.isReachable && status1.ping > 0) {
+          data['pings1'].add(status1.ping);
+          data['successCount1'] = data['successCount1'] + 1;
           
-          final status = await DnsService.testDns(data['ip1']);
-          if (status.isReachable && status.ping > 0) {
-            data['pings1'].add(status.ping);
-            data['successCount1'] = data['successCount1'] + 1;
+          // محاسبه میانگین موقت و به‌روزرسانی pingCache
+          if (data['pings1'].isNotEmpty) {
+            double avgPing1 = data['pings1'].reduce((a, b) => a + b) / data['pings1'].length;
+            pingCache[recordId + '_1'] = avgPing1.round();
+            
+            // به‌روزرسانی UI بعد از هر تست
+            if (sortType == 'ping' && mounted) {
+              sortDnsRecords();
+            }
           }
-        })());
+        }
         
         // تست DNS2
-        testFutures.add((() async {
-          if (cancelRequested) return;
+        final status2 = await DnsService.testDns(data['ip2']);
+        if (status2.isReachable && status2.ping > 0) {
+          data['pings2'].add(status2.ping);
+          data['successCount2'] = data['successCount2'] + 1;
           
-          final status = await DnsService.testDns(data['ip2']);
-          if (status.isReachable && status.ping > 0) {
-            data['pings2'].add(status.ping);
-            data['successCount2'] = data['successCount2'] + 1;
+          // محاسبه میانگین موقت و به‌روزرسانی pingCache
+          if (data['pings2'].isNotEmpty) {
+            double avgPing2 = data['pings2'].reduce((a, b) => a + b) / data['pings2'].length;
+            pingCache[recordId + '_2'] = avgPing2.round();
+            
+            // به‌روزرسانی UI بعد از هر تست
+            if (sortType == 'ping' && mounted) {
+              sortDnsRecords();
+            }
           }
-        })());
+        }
+        
+        // ذخیره موقت نتایج در SharedPreferences بعد از هر دور تست
+        if (testIndex % 2 == 1) { // هر دو تست یکبار ذخیره کن
+          final prefs = await SharedPreferences.getInstance();
+          prefs.setString('cached_ping_cache', jsonEncode(pingCache));
+        }
       }
       
-      // انتظار برای تکمیل همه تست‌های این دور
-      await Future.wait(testFutures);
+      // محاسبه نتایج نهایی برای این DNS
+      List<int> pings1 = data['pings1'];
+      List<int> pings2 = data['pings2'];
+      int successCount1 = data['successCount1'];
+      int successCount2 = data['successCount2'];
+      
+      double avgPing1 = pings1.isEmpty ? -1 : pings1.reduce((a, b) => a + b) / pings1.length;
+      double avgPing2 = pings2.isEmpty ? -1 : pings2.reduce((a, b) => a + b) / pings2.length;
+      
+      // محاسبه پکت از دست رفته
+      double packetLoss1 = (testCount - successCount1) / testCount * 100;
+      double packetLoss2 = (testCount - successCount2) / testCount * 100;
+      
+      // محاسبه امتیاز
+      double pingScore1 = avgPing1 <= 0 ? 0 : (avgPing1 < 50 ? 70 : (avgPing1 >= 500 ? 0 : 70 - (avgPing1 - 50) * 70 / 450));
+      double pingScore2 = avgPing2 <= 0 ? 0 : (avgPing2 < 50 ? 70 : (avgPing2 >= 500 ? 0 : 70 - (avgPing2 - 50) * 70 / 450));
+      
+      double packetLossScore1 = 30 - (packetLoss1 * 30 / 100);
+      double packetLossScore2 = 30 - (packetLoss2 * 30 / 100);
+      
+      double score1 = pingScore1 + packetLossScore1;
+      double score2 = pingScore2 + packetLossScore2;
+      
+      // ذخیره نتایج
+      pingCache[recordId + '_1'] = avgPing1.round();
+      pingCache[recordId + '_2'] = avgPing2.round();
+      
+      advancedResults[recordId] = {
+        'label': data['label'],
+        'ip1': data['ip1'],
+        'ip2': data['ip2'],
+        'avgPing1': avgPing1,
+        'avgPing2': avgPing2,
+        'packetLoss1': packetLoss1,
+        'packetLoss2': packetLoss2,
+        'score1': score1,
+        'score2': score2,
+        'allPings1': pings1,
+        'allPings2': pings2,
+      };
+      
+      results.add(
+        '${data['label']}\n'
+        'DNS1: ${avgPing1 > 0 ? avgPing1.toStringAsFixed(1) : '---'} ms, '
+        '${context.tr('packetLoss')}: ${packetLoss1.toStringAsFixed(1)}%, '
+        '${context.tr('score')}: ${score1.toStringAsFixed(1)}\n'
+        'DNS2: ${avgPing2 > 0 ? avgPing2.toStringAsFixed(1) : '---'} ms, '
+        '${context.tr('packetLoss')}: ${packetLoss2.toStringAsFixed(1)}%, '
+        '${context.tr('score')}: ${score2.toStringAsFixed(1)}',
+      );
+      
+      // به‌روزرسانی UI بعد از تکمیل هر DNS
+      if (sortType == 'ping' && mounted) {
+        sortDnsRecords();
+      }
     }
     
     // پردازش نتایج و محاسبه آمار
