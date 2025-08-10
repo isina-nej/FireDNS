@@ -142,13 +142,26 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         } catch (_) {
           selected = records.isNotEmpty ? records.first : null;
         }
-        setState(() {
-          _selectedDnsLabel = selected?.label;
-          _selectedDnsIp = selected != null
-              ? (selected.ip1.isNotEmpty ? selected.ip1 : selected.ip2)
-              : null;
-        });
-      } catch (_) {
+        
+        if (selected != null) {
+          setState(() {
+            _selectedDnsLabel = selected!.label;
+            _selectedDnsIp = selected.ip1.isNotEmpty ? selected.ip1 : selected.ip2;
+            // مهم: به‌روزرسانی DNS controllers با مقادیر جدید
+            _dns1Controller.text = selected.ip1;
+            _dns2Controller.text = selected.ip2;
+          });
+          
+          debugPrint('DNS loaded from cache: ${selected.label}');
+          debugPrint('DNS1: ${selected.ip1}, DNS2: ${selected.ip2}');
+        } else {
+          setState(() {
+            _selectedDnsLabel = null;
+            _selectedDnsIp = null;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error loading selected DNS: $e');
         setState(() {
           _selectedDnsLabel = null;
           _selectedDnsIp = null;
@@ -191,30 +204,48 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       isActive,
     ) {
       if (mounted) {
-        debugPrint('VPN status changed via stream: $isActive');
-        final wasActive = _vpnActive;
-        setState(() {
-          _vpnActive = isActive;
-          _vpnLoading = false; // Stop loading when we get a status update
-        });
+        debugPrint('📡 VPN status changed via stream: $isActive');
         
-        // Only show message if status actually changed and it's not during initialization
-        if (wasActive != isActive && !_vpnLoading) {
-          if (isActive) {
-            showEnhancedSnackBar(
-              message: DnsConstants.errorMessages['vpnActivated']!,
-              type: SnackBarType.success,
-            );
-          } else {
-            showEnhancedSnackBar(
-              message: DnsConstants.errorMessages['vpnDisabled']!,
-              type: SnackBarType.error,
-            );
+        // بررسی کن که آیا این تغییر واقعی است یا فقط یک به‌روزرسانی
+        if (_vpnActive != isActive) {
+          debugPrint('Status actually changed: $_vpnActive -> $isActive');
+          final wasActive = _vpnActive;
+          
+          setState(() {
+            _vpnActive = isActive;
+            _vpnLoading = false;
+          });
+          
+          // فقط در صورتی که در حال بارگذاری نیستیم و تغییر واقعی رخ داده، پیام نمایش بده
+          if (!_vpnLoading && wasActive != isActive) {
+            // کمی تاخیر برای اطمینان از اینکه UI به‌روز شده
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (mounted) {
+                if (isActive) {
+                  showEnhancedSnackBar(
+                    message: DnsConstants.errorMessages['vpnActivated']!,
+                    type: SnackBarType.success,
+                  );
+                } else {
+                  showEnhancedSnackBar(
+                    message: DnsConstants.errorMessages['vpnDisabled']!,
+                    type: SnackBarType.info,
+                  );
+                }
+              }
+            });
+          }
+        } else {
+          debugPrint('Status unchanged, just updating loading state');
+          if (_vpnLoading) {
+            setState(() {
+              _vpnLoading = false;
+            });
           }
         }
       }
     }, onError: (error) {
-      debugPrint('Error in VPN status stream: $error');
+      debugPrint('❌ Error in VPN status stream: $error');
       if (mounted) {
         setState(() {
           _vpnLoading = false;
@@ -263,53 +294,102 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
   Future<void> _checkInitialStatus() async {
     try {
+      // ابتدا وضعیت واقعی سرویس را بررسی کن
       final status = await DnsService.getServiceStatus();
-      debugPrint('Initial VPN status check: $status');
-      _updateVpnState(active: status, loading: false);
+      debugPrint('Initial VPN status check from service: $status');
       
-      // Don't show message during initialization - let the user discover the status from UI
-      // Only show message if there was a significant change or error
+      // وضعیت UI را با وضعیت واقعی سرویس همگام کن
+      setState(() {
+        _vpnActive = status;
+        _vpnLoading = false;
+      });
       
-      // Manually notify VPN status service to ensure consistency
+      // به VpnStatusService اطلاع بده تا stream ها به‌روز شوند
       VpnStatusService.notifyVpnStatus(status);
+      
+      // اگر وضعیت فعلی با وضعیت قبلی متفاوت است، پیام نمایش نده (در حال بارگذاری اولیه)
+      // فقط اجازه بده کاربر وضعیت را از UI ببیند
     } catch (e) {
-      _updateVpnState(loading: false);
       debugPrint('Error checking initial status: $e');
+      setState(() {
+        _vpnActive = false;
+        _vpnLoading = false;
+      });
     }
   }
 
   Future<void> _toggleVpn(bool value) async {
     if (_vpnLoading) return;
     
-    // Check current VPN status before toggling
+    debugPrint('=== Toggle VPN requested ===');
+    debugPrint('Requested value: $value');
+    debugPrint('Current UI state: $_vpnActive');
+    
+    // ابتدا وضعیت واقعی سرویس را بررسی کن
     try {
-      final currentStatus = await DnsService.getServiceStatus();
-      debugPrint('Current VPN status from service: $currentStatus, UI state: $_vpnActive');
+      final actualStatus = await DnsService.getServiceStatus();
+      debugPrint('Actual service status: $actualStatus');
       
-      // Update UI to match actual state
-      if (_vpnActive != currentStatus) {
-        debugPrint('Fixing UI state mismatch: UI shows $_vpnActive but actual state is $currentStatus');
-        _updateVpnState(active: currentStatus, loading: false);
-        return; // Return to let UI update first
+      // اگر وضعیت UI با وضعیت واقعی متفاوت است، ابتدا UI را اصلاح کن
+      if (_vpnActive != actualStatus) {
+        debugPrint('⚠️ UI state mismatch detected!');
+        debugPrint('Correcting UI state: $_vpnActive -> $actualStatus');
+        setState(() {
+          _vpnActive = actualStatus;
+        });
+        
+        // اگر وضعیت درخواستی با وضعیت واقعی یکی است، نیازی به تغییر نیست
+        if (value == actualStatus) {
+          debugPrint('Requested state matches actual state, no action needed');
+          return;
+        }
       }
       
-      // Now toggle based on the correct state
-      _updateVpnState(loading: true);
+      // حالا می‌توانیم toggle را انجام دهیم
+      setState(() {
+        _vpnLoading = true;
+      });
       
-      // If VPN is active, deactivate it; otherwise activate it
-      if (currentStatus) {
+      // بر اساس وضعیت فعلی، عملیات مناسب را انجام بده
+      if (actualStatus) {
+        // VPN فعال است، باید غیرفعال شود
+        debugPrint('Deactivating VPN...');
         await _deactivateVpn();
       } else {
+        // VPN غیرفعال است، باید فعال شود
+        debugPrint('Activating VPN...');
         await _activateVpn();
       }
       
-      _updateVpnState(loading: false);
+      // بعد از عملیات، وضعیت جدید را بررسی کن
+      final newStatus = await DnsService.getServiceStatus();
+      debugPrint('New service status after toggle: $newStatus');
+      
+      setState(() {
+        _vpnActive = newStatus;
+        _vpnLoading = false;
+      });
       
       // گزارش وضعیت اتصال به سرور
-      await _reportDnsUsage(!currentStatus); // Report the new state (opposite of current)
+      await _reportDnsUsage(newStatus);
     } catch (e) {
-      debugPrint('Error checking VPN status: $e');
-      _updateVpnState(loading: false);
+      debugPrint('❌ Error in _toggleVpn: $e');
+      setState(() {
+        _vpnLoading = false;
+      });
+      
+      // در صورت خطا، وضعیت واقعی را دوباره بررسی کن
+      try {
+        final actualStatus = await DnsService.getServiceStatus();
+        setState(() {
+          _vpnActive = actualStatus;
+        });
+      } catch (_) {
+        // در صورت خطا در بررسی وضعیت، فرض کن VPN غیرفعال است
+        setState(() {
+          _vpnActive = false;
+        });
+      }
     }
   }
 
@@ -389,30 +469,47 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     final dns1 = _dns1Controller.text.trim();
     final dns2 = _dns2Controller.text.trim();
     try {
+      debugPrint('Activating VPN with DNS1: $dns1, DNS2: $dns2');
       final result = await DnsService.changeDns(dns1, dns2);
+      
+      // بعد از تلاش برای فعال‌سازی، وضعیت واقعی را بررسی کن
+      await Future.delayed(const Duration(milliseconds: 500)); // کمی صبر کن تا سرویس راه‌اندازی شود
+      final actualStatus = await DnsService.getServiceStatus();
+      debugPrint('VPN activation result: ${result.success}, actual status: $actualStatus');
+      
       showEnhancedSnackBar(
         message: result.message,
         type: result.success ? SnackBarType.success : SnackBarType.error,
       );
       
-      // اگر تغییر DNS موفقیت‌آمیز بود، وضعیت VPN را به‌روز کن
-      if (result.success) {
-        _updateVpnState(active: true, loading: false);
-      } else {
-        _updateVpnState(active: false, loading: false);
-      }
+      // وضعیت UI را بر اساس وضعیت واقعی سرویس تنظیم کن
+      setState(() {
+        _vpnActive = actualStatus;
+        _vpnLoading = false;
+      });
     } catch (e) {
+      debugPrint('Error activating VPN: $e');
       showEnhancedSnackBar(
         message: 'خطا در فعال‌سازی VPN: $e',
         type: SnackBarType.error,
       );
-      _updateVpnState(active: false, loading: false);
+      setState(() {
+        _vpnActive = false;
+        _vpnLoading = false;
+      });
     }
   }
 
   Future<void> _deactivateVpn() async {
     try {
+      debugPrint('Deactivating VPN...');
       final success = await DnsService.stopVpn();
+      
+      // بعد از تلاش برای غیرفعال‌سازی، وضعیت واقعی را بررسی کن
+      await Future.delayed(const Duration(milliseconds: 500)); // کمی صبر کن تا سرویس متوقف شود
+      final actualStatus = await DnsService.getServiceStatus();
+      debugPrint('VPN deactivation success: $success, actual status: $actualStatus');
+      
       showEnhancedSnackBar(
         message: success
             ? DnsConstants.errorMessages['vpnDisabled']!
@@ -420,17 +517,31 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         type: success ? SnackBarType.success : SnackBarType.error,
       );
       
-      // Explicitly update UI state when VPN is deactivated
-      if (success) {
-        _updateVpnState(active: false, loading: false);
-      }
+      // وضعیت UI را بر اساس وضعیت واقعی سرویس تنظیم کن
+      setState(() {
+        _vpnActive = actualStatus;
+        _vpnLoading = false;
+      });
     } catch (e) {
+      debugPrint('Error deactivating VPN: $e');
       showEnhancedSnackBar(
         message: 'خطا در غیرفعال‌سازی VPN: $e',
         type: SnackBarType.error,
       );
-      // Ensure UI is updated even if there's an error
-      _updateVpnState(active: false, loading: false);
+      
+      // در صورت خطا هم وضعیت واقعی را بررسی کن
+      try {
+        final actualStatus = await DnsService.getServiceStatus();
+        setState(() {
+          _vpnActive = actualStatus;
+          _vpnLoading = false;
+        });
+      } catch (_) {
+        setState(() {
+          _vpnActive = false;
+          _vpnLoading = false;
+        });
+      }
     }
   }
 
@@ -1014,7 +1125,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Removed the DNS label display to make room for IP addresses
+                            // نمایش نام DNS
+                            SemiTransparentText(
+                              text: _selectedDnsLabel ?? 'DNS',
                               style: TextStyle(
                                 fontSize: responsiveSize(
                                   16,
@@ -1034,33 +1147,28 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                               opacity: 0.1,
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            const SizedBox(height: 4),
                             // نمایش آدرس‌های IP در یک ردیف برای صرفه‌جویی در فضا
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: SemiTransparentText(
-                                    text: "${_dns1Controller.text} / ${_dns2Controller.text}",
-                                    style: TextStyle(
-                                      fontSize: responsiveSize(
-                                        12, // کاهش اندازه فونت
-                                        context,
-                                        min: 8,
-                                        max: 20,
-                                        scaleByHeight: true,
-                                      ),
-                                      fontFamily: 'monospace',
-                                      color: _vpnActive
-                                          ? AppColors.textSuccess
-                                          : AppColors.brightBlue,
-                                    ),
-                                    backgroundColor: _vpnActive
-                                        ? AppColors.textSuccess
-                                        : AppColors.brightBlue,
-                                    opacity: 0.08,
-                                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  ),
+                            SemiTransparentText(
+                              text: "${_dns1Controller.text} / ${_dns2Controller.text}",
+                              style: TextStyle(
+                                fontSize: responsiveSize(
+                                  12, // کاهش اندازه فونت
+                                  context,
+                                  min: 8,
+                                  max: 20,
+                                  scaleByHeight: true,
                                 ),
-                              ],
+                                fontFamily: 'monospace',
+                                color: _vpnActive
+                                    ? AppColors.textSuccess
+                                    : AppColors.brightBlue,
+                              ),
+                              backgroundColor: _vpnActive
+                                  ? AppColors.textSuccess
+                                  : AppColors.brightBlue,
+                              opacity: 0.08,
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             ),
                           ],
                         ),
@@ -1342,14 +1450,48 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
               // دکمه Switch (فعال)
               GestureDetector(
                 onTap: () async {
-                  await Navigator.push(
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const DnsListPage(),
                     ),
                   );
-                  // پس از بازگشت، دی‌ان‌اس انتخابی را مجدداً بارگذاری کن
-                  await _loadSelectedDnsLabel();
+                  
+                  // اگر کاربر DNS جدیدی انتخاب کرده
+                  if (result != null && result is DnsRecord) {
+                    debugPrint('User selected DNS: ${result.label}');
+                    debugPrint('IP1: ${result.ip1}, IP2: ${result.ip2}');
+                    
+                    setState(() {
+                      _selectedDnsLabel = result.label;
+                      _selectedDnsIp = result.ip1.isNotEmpty ? result.ip1 : result.ip2;
+                      // مهم: به‌روزرسانی DNS controllers با مقادیر جدید
+                      _dns1Controller.text = result.ip1;
+                      _dns2Controller.text = result.ip2;
+                    });
+                    
+                    // ذخیره DNS انتخابی در SharedPreferences
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('cached_selected_dns', result.id);
+                    
+                    // اگر VPN فعال است، با DNS جدید مجدداً متصل شود
+                    if (_vpnActive) {
+                      showEnhancedSnackBar(
+                        message: 'در حال اعمال DNS جدید...',
+                        type: SnackBarType.info,
+                      );
+                      
+                      // ابتدا VPN را قطع کن
+                      await _deactivateVpn();
+                      
+                      // سپس با DNS جدید وصل کن
+                      await Future.delayed(const Duration(milliseconds: 500));
+                      await _activateVpn();
+                    }
+                  } else {
+                    // اگر کاربر بدون انتخاب برگشت، DNS قبلی را بارگذاری کن
+                    await _loadSelectedDnsLabel();
+                  }
                 },
                 child: Container(
                   padding: EdgeInsets.symmetric(
