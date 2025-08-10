@@ -32,7 +32,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             ),
             child: Center(
               child: Text(
-                'Fire DNS',
+                context.tr('appName'),
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -49,7 +49,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
             ),
             title: Text(
-              'تنظیمات',
+              context.tr('settings'),
               style: TextStyle(
                 color: isDark
                     ? AppColors.darkTextPrimary
@@ -70,7 +70,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
             ),
             title: Text(
-              isDark ? 'حالت روشن' : 'حالت تاریک',
+              isDark ? context.tr('lightMode') : context.tr('darkMode'),
               style: TextStyle(
                 color: isDark
                     ? AppColors.darkTextPrimary
@@ -88,7 +88,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
             ),
             title: Text(
-              'بررسی بروزرسانی',
+              context.tr('checkForUpdates'),
               style: TextStyle(
                 color: isDark
                     ? AppColors.darkTextPrimary
@@ -109,7 +109,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
             ),
             title: Text(
-              'ارسال تیکت',
+              context.tr('sendTicket'),
               style: TextStyle(
                 color: isDark
                     ? AppColors.darkTextPrimary
@@ -130,7 +130,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
             ),
             title: Text(
-              'درباره ما',
+              context.tr('aboutUs'),
               style: TextStyle(
                 color: isDark
                     ? AppColors.darkTextPrimary

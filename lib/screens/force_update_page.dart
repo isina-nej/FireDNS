@@ -54,7 +54,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'خطا در دریافت اطلاعات آپدیت';
+        _errorMessage = context.tr('updateInfoError');
       });
     } finally {
       setState(() {
@@ -73,16 +73,16 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
       );
       if (!launched && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('امکان باز کردن وبسایت وجود ندارد!'),
+          SnackBar(
+            content: Text(context.tr('cannotOpenWebsite')),
           ),
         );
       }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('خطا در باز کردن وبسایت!'),
+          SnackBar(
+            content: Text(context.tr('errorOpeningWebsite')),
           ),
         );
       }
@@ -97,7 +97,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return ElevatedButton.icon(
           icon: const Icon(Icons.open_in_new),
-          label: const Text('دریافت نسخه جدید'),
+          label: Text(context.tr('getNewVersion')),
           onPressed: () => _launchUpdateUrl(updateInfo.updateUrl),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(
@@ -116,7 +116,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
           children: [
             ElevatedButton.icon(
               icon: const Icon(Icons.open_in_new),
-              label: const Text('دریافت نسخه جدید'),
+              label: Text(context.tr('getNewVersion')),
               onPressed: () => _launchUpdateUrl(updateInfo.updateUrl),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
@@ -140,7 +140,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
                     ? AppColors.darkTextSecondary
                     : AppColors.textSecondary,
               ),
-              child: const Text('فعلاً رد کردن'),
+              child: Text(context.tr('skipForNow')),
             ),
           ],
         );
@@ -151,7 +151,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
           children: [
             ElevatedButton.icon(
               icon: const Icon(Icons.open_in_new),
-              label: const Text('دریافت نسخه جدید'),
+              label: Text(context.tr('getNewVersion')),
               onPressed: () => _launchUpdateUrl(updateInfo.updateUrl),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
@@ -175,7 +175,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
                     ? AppColors.darkTextSecondary
                     : AppColors.textSecondary,
               ),
-              child: const Text('فعلاً رد کردن'),
+              child: Text(context.tr('skipForNow')),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -185,7 +185,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
                 // that the user has chosen to ignore
                 Navigator.of(context).pop(); // Return to previous screen
               },
-              child: const Text('دیگر نشان نده'),
+              child: Text(context.tr('dontShowAgain')),
               style: TextButton.styleFrom(
                 foregroundColor: Theme.of(context).brightness == Brightness.dark
                     ? Colors.grey.shade400
@@ -230,7 +230,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
                             backgroundColor: isDark ? AppColors.brightBlue : AppColors.brightBlue,
                             foregroundColor: Colors.white,
                           ),
-                          child: const Text('تلاش مجدد'),
+                          child: Text(context.tr('tryAgain')),
                         ),
                       ],
                     )
@@ -252,7 +252,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
                           ),
                           const SizedBox(height: 24),
                           Text(
-                            'نسخه جدید برنامه در دسترس است!',
+                            context.tr('newVersionAvailable'),
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -262,7 +262,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'برای ادامه استفاده، لطفاً برنامه را به‌روزرسانی کنید.',
+                            context.tr('pleaseUpdateToContinue'),
                             style: TextStyle(
                               fontSize: 16,
                               color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -289,7 +289,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
                               child: Column(
                                 children: [
                                   Text(
-                                    'نسخه فعلی: ${_updateInfo!.currentVersion}',
+                                    '${context.tr('currentVersion')}: ${_updateInfo!.currentVersion}',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -298,7 +298,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'نسخه جدید: ${_updateInfo!.latestVersion}',
+                                    '${context.tr('newVersion')}: ${_updateInfo!.latestVersion}',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -324,7 +324,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
                             // Features
                             if (_updateInfo!.features.isNotEmpty) ...[
                               Text(
-                                'ویژگی‌های جدید:',
+                                context.tr('newFeatures') + ':',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -363,7 +363,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
                             // Changes
                             if (_updateInfo!.changes.isNotEmpty) ...[
                               Text(
-                                'تغییرات:',
+                                context.tr('changes') + ':',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -406,7 +406,7 @@ final response = await _updateApiService.getUpdateInfo(widget.currentAppVersion)
                           ] else ...[
                             ElevatedButton.icon(
                               icon: const Icon(Icons.open_in_new),
-                              label: const Text('دریافت نسخه جدید'),
+                              label: Text(context.tr('getNewVersion')),
                               onPressed: () => _launchUpdateUrl(widget.updateUrl),
                               style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(

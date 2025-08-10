@@ -135,14 +135,14 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('خطا'),
-          content: const Text(
-            'نام وارد شده تکراری است. لطفاً نام دیگری انتخاب کنید.',
+          title: Text(context.tr('error')),
+          content: Text(
+            context.tr('duplicateNameError'),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('باشه'),
+              child: Text(context.tr('ok')),
             ),
           ],
         ),
@@ -179,22 +179,22 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
       final result = await showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('IP تکراری'),
-          content: const Text(
-            'حداقل یکی از IPهای وارد شده قبلاً در یک DNS دیگر ثبت شده است. چه کاری می‌خواهید انجام دهید؟',
+          title: Text(context.tr('duplicateIP')),
+          content: Text(
+            context.tr('duplicateIPMessage'),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop('cancel'),
-              child: const Text('لغو'),
+              child: Text(context.tr('cancel')),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop('connect'),
-              child: const Text('وصل شدن به DNS موجود'),
+              child: Text(context.tr('connectToExistingDNS')),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop('add'),
-              child: const Text('ثبت'),
+              child: Text(context.tr('submit')),
             ),
           ],
         ),
@@ -296,7 +296,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
           ? AppColors.darkNavy
           : AppColors.pureWhite,
       title: Text(
-        isEdit ? 'ویرایش DNS' : 'افزودن DNS جدید',
+        isEdit ? context.tr('editDNS') : context.tr('addNewDNS'),
         style: TextStyle(
           color: Theme.of(context).brightness == Brightness.dark
               ? AppColors.textWhite
@@ -316,7 +316,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                     : AppColors.textPrimary,
               ),
               decoration: InputDecoration(
-                labelText: 'نام',
+                labelText: context.tr('name'),
                 filled: true,
                 fillColor: Theme.of(context).brightness == Brightness.dark
                     ? AppColors.darkNavy
@@ -338,7 +338,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                 ),
               ),
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'نام را وارد کنید' : null,
+                  v == null || v.trim().isEmpty ? context.tr('enterName') : null,
             ),
             IpInputField(
               label: 'DNS1',
@@ -397,7 +397,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                             ),
                           ),
                         )
-                      : Text(isEdit ? 'ثبت ویرایش' : 'افزودن'),
+                      : Text(isEdit ? context.tr('saveEdit') : context.tr('add')),
                 ),
               ),
               const SizedBox(width: 12),
@@ -409,7 +409,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                     foregroundColor: Colors.red,
                     minimumSize: const Size.fromHeight(48),
                   ),
-                  child: const Text('انصراف'),
+                  child: Text(context.tr('cancel')),
                 ),
               ),
             ],
