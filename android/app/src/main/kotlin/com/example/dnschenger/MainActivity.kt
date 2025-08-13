@@ -27,11 +27,6 @@ class MainActivity : FlutterActivity() {
         
         // Force synchronization of VPN status
         forceSyncVpnStatus()
-        
-        if (!isServiceRunning) {
-            Log.d("FireDNS", "VPN service is not running, restarting VPN service...")
-            startDnsVpnService(lastDns1, lastDns2)
-        }
     }
 
     private fun isMyVpnServiceRunning(): Boolean {

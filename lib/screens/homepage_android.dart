@@ -22,7 +22,7 @@ class SnackBarStyle {
   final Color backgroundColor;
   final Color borderColor;
   final IconData icon;
-  
+
   SnackBarStyle({
     required this.backgroundColor,
     required this.borderColor,
@@ -88,8 +88,9 @@ class FireDNSHomePage extends StatefulWidget {
 }
 
 class _FireDNSHomePageState extends State<FireDNSHomePage>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   late ThemeManager _themeManager;
+  late final AnimationController _lottieController;
 
   String? _selectedDnsLabel;
   String? _selectedDnsIp;
@@ -102,7 +103,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   bool _vpnActive = false;
   bool _vpnLoading = false;
   bool _autoPingEnabled = false;
-  
+
   // SnackBar management
   DateTime? _lastSnackBarTime;
   String? _lastSnackBarMessage;
@@ -116,14 +117,20 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   void initState() {
     super.initState();
     _themeManager = Provider.of<ThemeManager>(context, listen: false);
+    _lottieController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+      upperBound: 1,
+      lowerBound: 0,
+    );
     _initializeControllers();
     _initializeObserver();
     _initializeServices();
     _themeManager.loadThemeMode();
     setState(() {
-      _vpnLoading = true;
+      _vpnLoading = false;
+      _vpnActive = false;
     });
-    _checkInitialStatus();
     _loadSelectedDnsLabel();
   }
 
@@ -142,16 +149,17 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         } catch (_) {
           selected = records.isNotEmpty ? records.first : null;
         }
-        
+
         if (selected != null) {
           setState(() {
             _selectedDnsLabel = selected!.label;
-            _selectedDnsIp = selected.ip1.isNotEmpty ? selected.ip1 : selected.ip2;
+            _selectedDnsIp =
+                selected.ip1.isNotEmpty ? selected.ip1 : selected.ip2;
             // مهم: به‌روزرسانی DNS controllers با مقادیر جدید
             _dns1Controller.text = selected.ip1;
             _dns2Controller.text = selected.ip2;
           });
-          
+
           debugPrint('DNS loaded from cache: ${selected.label}');
           debugPrint('DNS1: ${selected.ip1}, DNS2: ${selected.ip2}');
         } else {
@@ -181,6 +189,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     _disposeObserver();
     _disposeServices();
     _themeManager.dispose();
+    _lottieController.dispose();
     super.dispose();
   }
 
@@ -205,35 +214,63 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     ) {
       if (mounted) {
         debugPrint('📡 VPN status changed via stream: $isActive');
-        
+
         // بررسی کن که آیا این تغییر واقعی است یا فقط یک به‌روزرسانی
         if (_vpnActive != isActive) {
           debugPrint('Status actually changed: $_vpnActive -> $isActive');
           final wasActive = _vpnActive;
-          
+
           setState(() {
             _vpnActive = isActive;
             _vpnLoading = false;
           });
-          
+
+          // کنترل انیمیشن بر اساس وضعیت VPN با تغییر نرم
+          if (isActive) {
+            // روشن شدن با انیمیشن نرم
+            _lottieController
+                .animateTo(
+              0.1,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeIn,
+            )
+                .then((_) {
+              if (_vpnActive) {
+                // دوباره چک کنیم که هنوز فعال است
+                _lottieController.repeat();
+              }
+            });
+          } else {
+            // خاموش شدن با انیمیشن نرم
+            if (_lottieController.isAnimating) {
+              // اول سرعت را کم می‌کنیم
+              _lottieController
+                  .animateTo(
+                _lottieController.value,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              )
+                  .then((_) {
+                // بعد به آرامی به فریم صفر برمی‌گردیم
+                final remaining = 1.0 - (_lottieController.value % 1.0);
+                _lottieController
+                    .animateTo(
+                      _lottieController.value + remaining,
+                      duration: Duration(
+                          milliseconds: (remaining * 1500)
+                              .round()), // زمان بیشتر برای نرم‌تر شدن
+                      curve: Curves.easeInOut,
+                    )
+                    .then((_) => _lottieController.stop());
+              });
+            }
+          }
+
           // فقط در صورتی که در حال بارگذاری نیستیم و تغییر واقعی رخ داده، پیام نمایش بده
           if (!_vpnLoading && wasActive != isActive) {
             // کمی تاخیر برای اطمینان از اینکه UI به‌روز شده
-            Future.delayed(const Duration(milliseconds: 100), () {
-              if (mounted) {
-                if (isActive) {
-                  showEnhancedSnackBar(
-                    message: DnsConstants.errorMessages['vpnActivated']!,
-                    type: SnackBarType.success,
-                  );
-                } else {
-                  showEnhancedSnackBar(
-                    message: DnsConstants.errorMessages['vpnDisabled']!,
-                    type: SnackBarType.info,
-                  );
-                }
-              }
-            });
+            // VPN status listener updates only handle UI state
+            // SnackBar notifications are handled by the action functions (_toggleVpn, _deactivateVpn)
           }
         } else {
           debugPrint('Status unchanged, just updating loading state');
@@ -278,9 +315,11 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        // Check VPN status when app resumes
-        debugPrint('App resumed, checking VPN status');
-        _checkInitialStatus();
+        debugPrint('App resumed');
+        if (_vpnActive) {
+          // Only check status if VPN was previously active
+          _checkInitialStatus();
+        }
         if (_autoPingEnabled) {}
         break;
       case AppLifecycleState.paused:
@@ -294,21 +333,18 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
   Future<void> _checkInitialStatus() async {
     try {
-      // ابتدا وضعیت واقعی سرویس را بررسی کن
       final status = await DnsService.getServiceStatus();
       debugPrint('Initial VPN status check from service: $status');
-      
-      // وضعیت UI را با وضعیت واقعی سرویس همگام کن
-      setState(() {
-        _vpnActive = status;
-        _vpnLoading = false;
-      });
-      
-      // به VpnStatusService اطلاع بده تا stream ها به‌روز شوند
-      VpnStatusService.notifyVpnStatus(status);
-      
-      // اگر وضعیت فعلی با وضعیت قبلی متفاوت است، پیام نمایش نده (در حال بارگذاری اولیه)
-      // فقط اجازه بده کاربر وضعیت را از UI ببیند
+
+      // Only update UI state if VPN was previously active
+      if (_vpnActive || status) {
+        setState(() {
+          _vpnActive = status;
+          _vpnLoading = false;
+        });
+
+        VpnStatusService.notifyVpnStatus(status);
+      }
     } catch (e) {
       debugPrint('Error checking initial status: $e');
       setState(() {
@@ -320,16 +356,16 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
   Future<void> _toggleVpn(bool value) async {
     if (_vpnLoading) return;
-    
+
     debugPrint('=== Toggle VPN requested ===');
     debugPrint('Requested value: $value');
     debugPrint('Current UI state: $_vpnActive');
-    
+
     // ابتدا وضعیت واقعی سرویس را بررسی کن
     try {
       final actualStatus = await DnsService.getServiceStatus();
       debugPrint('Actual service status: $actualStatus');
-      
+
       // اگر وضعیت UI با وضعیت واقعی متفاوت است، ابتدا UI را اصلاح کن
       if (_vpnActive != actualStatus) {
         debugPrint('⚠️ UI state mismatch detected!');
@@ -337,19 +373,19 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         setState(() {
           _vpnActive = actualStatus;
         });
-        
+
         // اگر وضعیت درخواستی با وضعیت واقعی یکی است، نیازی به تغییر نیست
         if (value == actualStatus) {
           debugPrint('Requested state matches actual state, no action needed');
           return;
         }
       }
-      
+
       // حالا می‌توانیم toggle را انجام دهیم
       setState(() {
         _vpnLoading = true;
       });
-      
+
       // بر اساس وضعیت فعلی، عملیات مناسب را انجام بده
       if (actualStatus) {
         // VPN فعال است، باید غیرفعال شود
@@ -360,16 +396,16 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         debugPrint('Activating VPN...');
         await _activateVpn();
       }
-      
+
       // بعد از عملیات، وضعیت جدید را بررسی کن
       final newStatus = await DnsService.getServiceStatus();
       debugPrint('New service status after toggle: $newStatus');
-      
+
       setState(() {
         _vpnActive = newStatus;
         _vpnLoading = false;
       });
-      
+
       // گزارش وضعیت اتصال به سرور
       await _reportDnsUsage(newStatus);
     } catch (e) {
@@ -377,7 +413,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       setState(() {
         _vpnLoading = false;
       });
-      
+
       // در صورت خطا، وضعیت واقعی را دوباره بررسی کن
       try {
         final actualStatus = await DnsService.getServiceStatus();
@@ -471,17 +507,19 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     try {
       debugPrint('Activating VPN with DNS1: $dns1, DNS2: $dns2');
       final result = await DnsService.changeDns(dns1, dns2);
-      
+
       // بعد از تلاش برای فعال‌سازی، وضعیت واقعی را بررسی کن
-      await Future.delayed(const Duration(milliseconds: 500)); // کمی صبر کن تا سرویس راه‌اندازی شود
+      await Future.delayed(const Duration(
+          milliseconds: 500)); // کمی صبر کن تا سرویس راه‌اندازی شود
       final actualStatus = await DnsService.getServiceStatus();
-      debugPrint('VPN activation result: ${result.success}, actual status: $actualStatus');
-      
+      debugPrint(
+          'VPN activation result: ${result.success}, actual status: $actualStatus');
+
       showEnhancedSnackBar(
         message: result.message,
         type: result.success ? SnackBarType.success : SnackBarType.error,
       );
-      
+
       // وضعیت UI را بر اساس وضعیت واقعی سرویس تنظیم کن
       setState(() {
         _vpnActive = actualStatus;
@@ -504,19 +542,21 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     try {
       debugPrint('Deactivating VPN...');
       final success = await DnsService.stopVpn();
-      
+
       // بعد از تلاش برای غیرفعال‌سازی، وضعیت واقعی را بررسی کن
-      await Future.delayed(const Duration(milliseconds: 500)); // کمی صبر کن تا سرویس متوقف شود
+      await Future.delayed(
+          const Duration(milliseconds: 500)); // کمی صبر کن تا سرویس متوقف شود
       final actualStatus = await DnsService.getServiceStatus();
-      debugPrint('VPN deactivation success: $success, actual status: $actualStatus');
-      
+      debugPrint(
+          'VPN deactivation success: $success, actual status: $actualStatus');
+
       showEnhancedSnackBar(
         message: success
             ? DnsConstants.errorMessages['vpnDisabled']!
             : DnsConstants.errorMessages['vpnDisableError']!,
         type: success ? SnackBarType.success : SnackBarType.error,
       );
-      
+
       // وضعیت UI را بر اساس وضعیت واقعی سرویس تنظیم کن
       setState(() {
         _vpnActive = actualStatus;
@@ -528,7 +568,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         message: 'خطا در غیرفعال‌سازی VPN: $e',
         type: SnackBarType.error,
       );
-      
+
       // در صورت خطا هم وضعیت واقعی را بررسی کن
       try {
         final actualStatus = await DnsService.getServiceStatus();
@@ -555,32 +595,32 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     VoidCallback? onTap,
   }) {
     if (!mounted) return;
-    
+
     final now = DateTime.now();
-    
+
     // Anti-spam protection
     if (_lastSnackBarMessage == message &&
         _lastSnackBarTime != null &&
         now.difference(_lastSnackBarTime!).inSeconds < 2) {
       return;
     }
-    
+
     // Rate limiting
     if (_lastSnackBarTime != null &&
         now.difference(_lastSnackBarTime!).inMilliseconds < 800) {
       return;
     }
-    
+
     _lastSnackBarMessage = message;
     _lastSnackBarTime = now;
-    
+
     // Clear any existing SnackBars to prevent stacking
     ScaffoldMessenger.of(context).clearSnackBars();
-    
+
     // Get appropriate colors and icon based on type
     final isDark = _themeManager.isDarkModeActive(context);
     final snackBarStyle = _getSnackBarStyle(type, isDark);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -651,64 +691,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           ),
         ),
         elevation: 6,
-        onVisible: () {
-          // Add subtle animation when SnackBar appears
-          Future.delayed(const Duration(milliseconds: 100), () {
-            if (mounted) {
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(
-                        snackBarStyle.icon,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          message,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      if (dismissible)
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          splashRadius: 16,
-                        ),
-                    ],
-                  ),
-                  backgroundColor: snackBarStyle.backgroundColor,
-                  duration: duration,
-                  behavior: SnackBarBehavior.floating,
-                  margin: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: snackBarStyle.borderColor,
-                      width: 1,
-                    ),
-                  ),
-                  elevation: 6,
-                ),
-              );
-            }
-          });
-        },
       ),
     );
   }
-  
+
   /// Helper method to get SnackBar style based on type
   SnackBarStyle _getSnackBarStyle(SnackBarType type, bool isDark) {
     switch (type) {
@@ -738,7 +724,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         );
     }
   }
-  
 
   @override
   Widget build(BuildContext context) {
@@ -779,7 +764,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                 backgroundColor: AppColors.backgroundGrey,
                 child: Icon(
                   Icons.person_outline,
-                  color: isDark ? AppColors.darkIconPrimary : AppColors.textPrimary,
+                  color: isDark
+                      ? AppColors.darkIconPrimary
+                      : AppColors.textPrimary,
                   size: 20,
                 ),
               ),
@@ -861,11 +848,11 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                 return Opacity(
                   opacity: 0.45, // کاهش شفافیت برای وضوح بیشتر متن‌ها
                   child: Align(
-                    alignment: Alignment.centerRight, // تغییر موقعیت به سمت راست
+                    alignment: Alignment.center, // تنظیم در مرکز
                     child: OverflowBox(
                       maxWidth: constraints.maxWidth * factor,
                       maxHeight: constraints.maxHeight * factor,
-                      alignment: Alignment.centerRight,
+                      alignment: Alignment.center,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(
                           responsiveSize(
@@ -881,8 +868,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                           width: constraints.maxWidth * factor,
                           height: constraints.maxHeight * factor,
                           fit: BoxFit.contain,
-                          alignment: Alignment.centerRight,
-                          repeat: true,
+                          alignment: Alignment.center,
+                          controller: _lottieController,
+                          animate: true,
                         ),
                       ),
                     ),
@@ -918,71 +906,102 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     ),
                     GestureDetector(
                       onTap: _vpnLoading ? null : () => _toggleVpn(!_vpnActive),
-                      child: Container(
-                        width: responsiveSize(
-                          70, // کاهش اندازه دکمه
-                          context,
-                          min: 40,
-                          max: 90,
-                          scaleByHeight: true,
-                        ),
-                        height: responsiveSize(
-                          70, // کاهش اندازه دکمه
-                          context,
-                          min: 40,
-                          max: 90,
-                          scaleByHeight: true,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _vpnActive
+                      child: TweenAnimationBuilder<Color?>(
+                        duration: const Duration(milliseconds: 500),
+                        tween: ColorTween(
+                          begin: _vpnLoading
                               ? AppColors.textSuccess
-                              : Colors.red, // Bright red color for deactivated state
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: (_vpnActive ? AppColors.textSuccess : Colors.red).withOpacity(0.3),
-                              blurRadius: 12,
-                              spreadRadius: 2,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
+                              : (_vpnActive
+                                  ? AppColors.textSuccess
+                                  : AppColors.statusDisconnected),
+                          end: _vpnActive
+                              ? AppColors.textSuccess
+                              : AppColors.statusDisconnected,
                         ),
-                        child: _vpnLoading
-                            ? Center(
-                                child: SizedBox(
-                                  width: responsiveSize(
-                                    36,
-                                    context,
-                                    min: 20,
-                                    max: 40,
-                                    scaleByHeight: true,
+                        builder: (context, color, _) {
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            width: responsiveSize(
+                              70,
+                              context,
+                              min: 40,
+                              max: 90,
+                              scaleByHeight: true,
+                            ),
+                            height: responsiveSize(
+                              70,
+                              context,
+                              min: 40,
+                              max: 90,
+                              scaleByHeight: true,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color ?? AppColors.statusDisconnected,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (color ?? AppColors.statusDisconnected)
+                                      .withOpacity(0.3),
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              transitionBuilder:
+                                  (Widget child, Animation<double> animation) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: ScaleTransition(
+                                    scale: animation,
+                                    child: child,
                                   ),
-                                  height: responsiveSize(
-                                    36,
-                                    context,
-                                    min: 20,
-                                    max: 40,
-                                    scaleByHeight: true,
-                                  ),
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppColors.pureWhite,
+                                );
+                              },
+                              child: _vpnLoading
+                                  ? Center(
+                                      key: const ValueKey('loading'),
+                                      child: SizedBox(
+                                        width: responsiveSize(
+                                          36,
+                                          context,
+                                          min: 20,
+                                          max: 40,
+                                          scaleByHeight: true,
+                                        ),
+                                        height: responsiveSize(
+                                          36,
+                                          context,
+                                          min: 20,
+                                          max: 40,
+                                          scaleByHeight: true,
+                                        ),
+                                        child: CircularProgressIndicator(
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            AppColors.pureWhite,
+                                          ),
+                                          strokeWidth: 4,
+                                        ),
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.power_settings_new,
+                                      key: const ValueKey('power'),
+                                      color: AppColors.pureWhite,
+                                      size: responsiveSize(
+                                        40,
+                                        context,
+                                        min: 24,
+                                        max: 48,
+                                        scaleByHeight: true,
+                                      ),
                                     ),
-                                    strokeWidth: 4,
-                                  ),
-                                ),
-                              )
-                            : Icon(
-                                Icons.power_settings_new,
-                                color: AppColors.pureWhite,
-                                size: responsiveSize(
-                                  40,
-                                  context,
-                                  min: 24,
-                                  max: 48,
-                                  scaleByHeight: true,
-                                ),
-                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     // ...existing code...
@@ -1040,7 +1059,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                       ),
                     ),
                     SemiTransparentText(
-                      text: _vpnActive ? context.tr('connected') : context.tr('disconnected'),
+                      text: _vpnActive
+                          ? context.tr('connected')
+                          : context.tr('disconnected'),
                       style: TextStyle(
                         fontSize: responsiveSize(
                           24,
@@ -1054,7 +1075,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                             ? AppColors.darkTextPrimary
                             : AppColors.textPrimary,
                       ),
-                      backgroundColor: _vpnActive ? AppColors.textSuccess : Colors.red, // Bright red for disconnected state
+                      backgroundColor: _vpnActive
+                          ? AppColors.textSuccess
+                          : Colors.red, // Bright red for disconnected state
                       opacity: 0.15,
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -1123,7 +1146,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                             const SizedBox(height: 4),
                             // نمایش آدرس‌های IP در یک ردیف برای صرفه‌جویی در فضا
                             SemiTransparentText(
-                              text: "${_dns1Controller.text} / ${_dns2Controller.text}",
+                              text:
+                                  "${_dns1Controller.text} / ${_dns2Controller.text}",
                               style: TextStyle(
                                 fontSize: responsiveSize(
                                   12, // کاهش اندازه فونت
@@ -1141,7 +1165,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                                   ? AppColors.textSuccess
                                   : AppColors.brightBlue,
                               opacity: 0.08,
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                             ),
                           ],
                         ),
@@ -1330,7 +1355,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           Container(
             padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary).withOpacity(0.05),
+              color: (isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary)
+                  .withOpacity(0.05),
               borderRadius: BorderRadius.circular(8),
             ),
             child: RichText(
@@ -1429,34 +1457,35 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                       builder: (context) => const DnsListPage(),
                     ),
                   );
-                  
+
                   // اگر کاربر DNS جدیدی انتخاب کرده
                   if (result != null && result is DnsRecord) {
                     debugPrint('User selected DNS: ${result.label}');
                     debugPrint('IP1: ${result.ip1}, IP2: ${result.ip2}');
-                    
+
                     setState(() {
                       _selectedDnsLabel = result.label;
-                      _selectedDnsIp = result.ip1.isNotEmpty ? result.ip1 : result.ip2;
+                      _selectedDnsIp =
+                          result.ip1.isNotEmpty ? result.ip1 : result.ip2;
                       // مهم: به‌روزرسانی DNS controllers با مقادیر جدید
                       _dns1Controller.text = result.ip1;
                       _dns2Controller.text = result.ip2;
                     });
-                    
+
                     // ذخیره DNS انتخابی در SharedPreferences
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.setString('cached_selected_dns', result.id);
-                    
+
                     // اگر VPN فعال است، با DNS جدید مجدداً متصل شود
                     if (_vpnActive) {
                       showEnhancedSnackBar(
                         message: 'در حال اعمال DNS جدید...',
                         type: SnackBarType.info,
                       );
-                      
+
                       // ابتدا VPN را قطع کن
                       await _deactivateVpn();
-                      
+
                       // سپس با DNS جدید وصل کن
                       await Future.delayed(const Duration(milliseconds: 500));
                       await _activateVpn();
@@ -1628,7 +1657,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           Container(
             padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary).withOpacity(0.05),
+              color: (isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary)
+                  .withOpacity(0.05),
               borderRadius: BorderRadius.circular(8),
             ),
             child: RichText(
