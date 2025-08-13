@@ -4,16 +4,22 @@ import '../path/path.dart';
 import '../services/notification_service.dart';
 import '../services/dns_test_settings_service.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
 
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
-    
+
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF5F5F5),
+      backgroundColor:
+          isDark ? AppColors.darkBackground : const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
         elevation: 0,
@@ -27,10 +33,8 @@ class SettingsPage extends StatelessWidget {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back, 
-            color: isDark ? AppColors.darkIconPrimary : Colors.black54
-          ),
+          icon: Icon(Icons.arrow_back,
+              color: isDark ? AppColors.darkIconPrimary : Colors.black54),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -55,7 +59,7 @@ class SettingsPage extends StatelessWidget {
               _buildSettingItem(
                 icon: Icons.dark_mode,
                 title: context.tr('appTheme'),
-                subtitle: themeManager.themeName,
+                subtitle: themeManager.getThemeName(context),
                 onTap: () async {
                   await themeManager.toggleTheme();
                 },
@@ -95,7 +99,8 @@ class SettingsPage extends StatelessWidget {
                       context,
                     ),
                     onTap: () {
-                      _showTestTypeSelectionDialog(context, dnsTestSettingsService);
+                      _showTestTypeSelectionDialog(
+                          context, dnsTestSettingsService);
                     },
                   );
                 },
@@ -107,7 +112,8 @@ class SettingsPage extends StatelessWidget {
                     title: context.tr('testCount'),
                     subtitle: dnsTestSettingsService.testCount.toString(),
                     onTap: () {
-                      _showTestCountSelectionDialog(context, dnsTestSettingsService);
+                      _showTestCountSelectionDialog(
+                          context, dnsTestSettingsService);
                     },
                   );
                 },
@@ -135,43 +141,42 @@ class SettingsPage extends StatelessWidget {
     required String title,
     required List<Widget> items,
   }) {
-    return Builder(
-      builder: (context) {
-        final isDark = Provider.of<ThemeManager>(context).isDarkModeActive(context);
-    
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.darkTextSecondary : Colors.grey,
-                ),
+    return Builder(builder: (context) {
+      final isDark =
+          Provider.of<ThemeManager>(context).isDarkModeActive(context);
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.darkTextSecondary : Colors.grey,
               ),
             ),
-            Container(
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  if (!isDark)
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                ],
-              ),
-              child: Column(children: items),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                if (!isDark)
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+              ],
             ),
-          ],
-        );
-      }
-    );
+            child: Column(children: items),
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildSettingItem({
@@ -183,73 +188,75 @@ class SettingsPage extends StatelessWidget {
     bool switchValue = false,
     ValueChanged<bool>? onChanged,
   }) {
-    return Builder(
-      builder: (context) {
-        final isDark = Provider.of<ThemeManager>(context).isDarkModeActive(context);
-    
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: isSwitch ? null : onTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Icon(
-                    icon,
+    return Builder(builder: (context) {
+      final isDark =
+          Provider.of<ThemeManager>(context).isDarkModeActive(context);
+
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isSwitch ? null : onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon,
                     color: isDark ? AppColors.brightBlue : Colors.blue,
-                    size: 24
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                    size: 24),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color:
+                              isDark ? AppColors.darkTextPrimary : Colors.black,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 4),
                         Text(
-                          title,
+                          subtitle,
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? AppColors.darkTextPrimary : Colors.black,
+                            fontSize: 14,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : Colors.grey,
                           ),
                         ),
-                        if (subtitle != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            subtitle,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isDark ? AppColors.darkTextSecondary : Colors.grey,
-                            ),
-                          ),
-                        ],
                       ],
-                    ),
+                    ],
                   ),
-                  if (isSwitch)
-                    Switch(
-                      value: switchValue,
-                      onChanged: onChanged,
-                      activeColor: isDark ? AppColors.brightBlue : Colors.blue,
-                    )
-                  else
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: isDark ? AppColors.darkIconSecondary : Colors.grey,
-                      size: 16,
-                    ),
-                ],
-              ),
+                ),
+                if (isSwitch)
+                  Switch(
+                    value: switchValue,
+                    onChanged: onChanged,
+                    activeColor: isDark ? AppColors.brightBlue : Colors.blue,
+                  )
+                else
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: isDark ? AppColors.darkIconSecondary : Colors.grey,
+                    size: 16,
+                  ),
+              ],
             ),
           ),
-        );
-      }
-    );
+        ),
+      );
+    });
   }
-  
-  void _showLanguageSelectionDialog(BuildContext context, LanguageManager languageManager) {
-    final isDark = Provider.of<ThemeManager>(context, listen: false).isDarkModeActive(context);
-    
+
+  void _showLanguageSelectionDialog(
+      BuildContext context, LanguageManager languageManager) {
+    final isDark = Provider.of<ThemeManager>(context, listen: false)
+        .isDarkModeActive(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -284,25 +291,14 @@ class SettingsPage extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _buildLanguageOption(BuildContext context, String name, String code, LanguageManager languageManager) {
-    final isDark = Provider.of<ThemeManager>(context, listen: false).isDarkModeActive(context);
+
+  Widget _buildLanguageOption(BuildContext context, String name, String code,
+      LanguageManager languageManager) {
+    final isDark = Provider.of<ThemeManager>(context, listen: false)
+        .isDarkModeActive(context);
     final isSelected = languageManager.locale.languageCode == code;
-    
+
     return ListTile(
-      title: Text(
-        name,
-        style: TextStyle(
-          color: isDark ? AppColors.darkTextPrimary : Colors.black,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-      trailing: isSelected
-        ? Icon(
-            Icons.check_circle,
-            color: isDark ? AppColors.brightBlue : Colors.blue,
-          )
-        : null,
       onTap: () async {
         switch (code) {
           case 'fa':
@@ -321,14 +317,32 @@ class SettingsPage extends StatelessWidget {
             await languageManager.setChinese();
             break;
         }
-        Navigator.pop(context);
+        if (mounted) {
+          setState(() {});
+          Navigator.pop(context);
+        }
       },
+      title: Text(
+        name,
+        style: TextStyle(
+          color: isDark ? AppColors.darkTextPrimary : Colors.black,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      trailing: isSelected
+          ? Icon(
+              Icons.check_circle,
+              color: isDark ? AppColors.brightBlue : Colors.blue,
+            )
+          : null,
     );
   }
-  
-  void _showTestTypeSelectionDialog(BuildContext context, DnsTestSettingsService dnsTestSettingsService) {
-    final isDark = Provider.of<ThemeManager>(context, listen: false).isDarkModeActive(context);
-    
+
+  void _showTestTypeSelectionDialog(
+      BuildContext context, DnsTestSettingsService dnsTestSettingsService) {
+    final isDark = Provider.of<ThemeManager>(context, listen: false)
+        .isDarkModeActive(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -342,7 +356,8 @@ class SettingsPage extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildTestTypeOption(context, 'simultaneous', dnsTestSettingsService),
+            _buildTestTypeOption(
+                context, 'simultaneous', dnsTestSettingsService),
             _buildTestTypeOption(context, 'sequential', dnsTestSettingsService),
             _buildTestTypeOption(context, 'advanced', dnsTestSettingsService),
           ],
@@ -361,11 +376,13 @@ class SettingsPage extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _buildTestTypeOption(BuildContext context, String type, DnsTestSettingsService dnsTestSettingsService) {
-    final isDark = Provider.of<ThemeManager>(context, listen: false).isDarkModeActive(context);
+
+  Widget _buildTestTypeOption(BuildContext context, String type,
+      DnsTestSettingsService dnsTestSettingsService) {
+    final isDark = Provider.of<ThemeManager>(context, listen: false)
+        .isDarkModeActive(context);
     final isSelected = dnsTestSettingsService.testType == type;
-    
+
     return ListTile(
       title: Text(
         dnsTestSettingsService.getTestTypeName(type, context),
@@ -375,21 +392,23 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
       trailing: isSelected
-        ? Icon(
-            Icons.check_circle,
-            color: isDark ? AppColors.brightBlue : Colors.blue,
-          )
-        : null,
+          ? Icon(
+              Icons.check_circle,
+              color: isDark ? AppColors.brightBlue : Colors.blue,
+            )
+          : null,
       onTap: () async {
         await dnsTestSettingsService.setTestType(type);
         Navigator.pop(context);
       },
     );
   }
-  
-  void _showTestCountSelectionDialog(BuildContext context, DnsTestSettingsService dnsTestSettingsService) {
-    final isDark = Provider.of<ThemeManager>(context, listen: false).isDarkModeActive(context);
-    
+
+  void _showTestCountSelectionDialog(
+      BuildContext context, DnsTestSettingsService dnsTestSettingsService) {
+    final isDark = Provider.of<ThemeManager>(context, listen: false)
+        .isDarkModeActive(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -423,11 +442,13 @@ class SettingsPage extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _buildTestCountOption(BuildContext context, int count, DnsTestSettingsService dnsTestSettingsService) {
-    final isDark = Provider.of<ThemeManager>(context, listen: false).isDarkModeActive(context);
+
+  Widget _buildTestCountOption(BuildContext context, int count,
+      DnsTestSettingsService dnsTestSettingsService) {
+    final isDark = Provider.of<ThemeManager>(context, listen: false)
+        .isDarkModeActive(context);
     final isSelected = dnsTestSettingsService.testCount == count;
-    
+
     return ListTile(
       title: Text(
         count.toString(),
@@ -437,11 +458,11 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
       trailing: isSelected
-        ? Icon(
-            Icons.check_circle,
-            color: isDark ? AppColors.brightBlue : Colors.blue,
-          )
-        : null,
+          ? Icon(
+              Icons.check_circle,
+              color: isDark ? AppColors.brightBlue : Colors.blue,
+            )
+          : null,
       onTap: () async {
         await dnsTestSettingsService.setTestCount(count);
         Navigator.pop(context);

@@ -44,7 +44,8 @@ class AppLocalizations {
       'searchByNameOrIp': 'جستجو بر اساس نام یا آی‌پی',
       'ok': 'تایید',
       'sequentialTestDescription': 'تست ترتیبی DNS ها بر اساس کمترین پینگ',
-      'advancedTestDescription': 'تست پیشرفته DNS با محاسبه میانگین پینگ، پکت از دست رفته و امتیازدهی',
+      'advancedTestDescription':
+          'تست پیشرفته DNS با محاسبه میانگین پینگ، پکت از دست رفته و امتیازدهی',
       'default': 'پیش‌فرض',
       'lowestPing': 'کمترین پینگ',
       'sortByName': 'مرتب‌سازی بر اساس نام',
@@ -58,7 +59,8 @@ class AppLocalizations {
       'speedTest': 'تست سرعت',
       'yourInternetSpeedBetween': ' سرعت اینترنت شما را بین ',
       'device': 'دستگاه',
-      'measuresAndUsesConnection': ' و سرور تست اندازه‌گیری می‌کند و از اتصال اینترنت فعلی شما استفاده می‌کند.',
+      'measuresAndUsesConnection':
+          ' و سرور تست اندازه‌گیری می‌کند و از اتصال اینترنت فعلی شما استفاده می‌کند.',
       'changeDns': 'تغییر DNS',
       'networkConfiguration': 'پیکربندی شبکه',
       'inThisSection': 'در این بخش می‌توانید ',
@@ -76,13 +78,15 @@ class AppLocalizations {
       'cannotOpenLink': 'امکان باز کردن لینک وجود ندارد!',
       'errorOpeningLink': 'خطا در باز کردن لینک!',
       'appName': 'Fire DNS',
-      'appDescription': 'یک برنامه DNS برای بهبود امنیت و سرعت اتصال شما به اینترنت',
+      'appDescription':
+          'یک برنامه DNS برای بهبود امنیت و سرعت اتصال شما به اینترنت',
       'supportEmail': 'ایمیل پشتیبانی',
       'supportEmailAddress': 'support@firedns.com',
       'website': 'وب‌سایت',
       'websiteAddress': 'www.firedns.com',
       'developmentTeam': 'تیم توسعه‌دهنده',
-      'thankYouMessage': 'با تشکر از تمامی کاربران عزیز که با استفاده از این برنامه به ما کمک می‌کنند تا خدمات بهتری ارائه دهیم.',
+      'thankYouMessage':
+          'با تشکر از تمامی کاربران عزیز که با استفاده از این برنامه به ما کمک می‌کنند تا خدمات بهتری ارائه دهیم.',
       'checkForUpdates': 'بررسی بروزرسانی',
       'checkingForUpdates': 'در حال بررسی بروزرسانی...',
       'tryAgain': 'تلاش مجدد',
@@ -96,7 +100,8 @@ class AppLocalizations {
       'getNewVersion': 'دریافت نسخه جدید',
       'skipForNow': 'فعلاً رد کردن',
       'newVersionAvailable': 'نسخه جدید برنامه در دسترس است!',
-      'pleaseUpdateToContinue': 'برای ادامه استفاده، لطفاً برنامه را به‌روزرسانی کنید.',
+      'pleaseUpdateToContinue':
+          'برای ادامه استفاده، لطفاً برنامه را به‌روزرسانی کنید.',
       'newVersion': 'نسخه جدید',
       'newFeatures': 'ویژگی‌های جدید',
       'changes': 'تغییرات',
@@ -104,10 +109,12 @@ class AppLocalizations {
       'darkMode': 'حالت تاریک',
       'sendTicket': 'ارسال تیکت',
       // 'error': 'خطا',
-      'duplicateNameError': 'نام وارد شده تکراری است. لطفاً نام دیگری انتخاب کنید.',
+      'duplicateNameError':
+          'نام وارد شده تکراری است. لطفاً نام دیگری انتخاب کنید.',
       // 'ok': 'باشه',
       'duplicateIP': 'IP تکراری',
-      'duplicateIPMessage': 'حداقل یکی از IPهای وارد شده قبلاً در یک DNS دیگر ثبت شده است. چه کاری می‌خواهید انجام دهید؟',
+      'duplicateIPMessage':
+          'حداقل یکی از IPهای وارد شده قبلاً در یک DNS دیگر ثبت شده است. چه کاری می‌خواهید انجام دهید؟',
       // 'cancel': 'لغو',
       'connectToExistingDNS': 'وصل شدن به DNS موجود',
       'submit': 'ثبت',
@@ -117,6 +124,9 @@ class AppLocalizations {
       'enterName': 'نام را وارد کنید',
       'saveEdit': 'ثبت ویرایش',
       'add': 'افزودن',
+      'systemMode': 'سیستم',
+      'dark': 'تاریک',
+      'light': 'روشن'
     },
     'en': {
       'appTitle': 'Fire DNS',
@@ -161,7 +171,8 @@ class AppLocalizations {
       'searchByNameOrIp': 'Search by name or IP',
       'ok': 'OK',
       'sequentialTestDescription': 'Sequential DNS test based on lowest ping',
-      'advancedTestDescription': 'Advanced DNS test with packet loss tracking and scoring',
+      'advancedTestDescription':
+          'Advanced DNS test with packet loss tracking and scoring',
       'default': 'Default',
       'lowestPing': 'Lowest Ping',
       'sortByName': 'Sort by Name',
@@ -175,7 +186,8 @@ class AppLocalizations {
       'speedTest': 'Speed Test',
       'yourInternetSpeedBetween': ' measures your internet speed between ',
       'device': 'device',
-      'measuresAndUsesConnection': ' and test server, using your current internet connection.',
+      'measuresAndUsesConnection':
+          ' and test server, using your current internet connection.',
       'changeDns': 'Change DNS',
       'networkConfiguration': 'Network Configuration',
       'inThisSection': 'In this section you can ',
@@ -193,13 +205,15 @@ class AppLocalizations {
       'cannotOpenLink': 'Cannot open link!',
       'errorOpeningLink': 'Error opening link!',
       'appName': 'Fire DNS',
-      'appDescription': 'A DNS app to improve your internet connection security and speed',
+      'appDescription':
+          'A DNS app to improve your internet connection security and speed',
       'supportEmail': 'Support Email',
       'supportEmailAddress': 'support@firedns.com',
       'website': 'Website',
       'websiteAddress': 'www.firedns.com',
       'developmentTeam': 'Development Team',
-      'thankYouMessage': 'Thanks to all dear users who help us provide better services by using this app.',
+      'thankYouMessage':
+          'Thanks to all dear users who help us provide better services by using this app.',
       'checkForUpdates': 'Check for Updates',
       'checkingForUpdates': 'Checking for updates...',
       'tryAgain': 'Try Again',
@@ -221,10 +235,12 @@ class AppLocalizations {
       'darkMode': 'Dark Mode',
       'sendTicket': 'Send Ticket',
       // 'error': 'Error',
-      'duplicateNameError': 'The entered name is duplicate. Please choose another name.',
+      'duplicateNameError':
+          'The entered name is duplicate. Please choose another name.',
       // 'ok': 'OK',
       'duplicateIP': 'Duplicate IP',
-      'duplicateIPMessage': 'At least one of the entered IPs has already been registered in another DNS. What do you want to do?',
+      'duplicateIPMessage':
+          'At least one of the entered IPs has already been registered in another DNS. What do you want to do?',
       // 'cancel': 'Cancel',
       'connectToExistingDNS': 'Connect to existing DNS',
       'submit': 'Submit',
@@ -234,6 +250,9 @@ class AppLocalizations {
       'enterName': 'Enter a name',
       'saveEdit': 'Save edit',
       'add': 'Add',
+      'systemMode': 'System',
+      'dark': 'Dark',
+      'light': 'Light'
     },
     'ar': {
       'appTitle': 'فاير دي إن إس',
@@ -277,8 +296,10 @@ class AppLocalizations {
       'comingSoon': 'ستتوفر هذه الميزة قريبًا.',
       'searchByNameOrIp': 'البحث بالاسم أو عنوان IP',
       'ok': 'موافق',
-      'sequentialTestDescription': 'اختبار DNS التسلسلي بناءً على أقل وقت استجابة',
-      'advancedTestDescription': 'اختبار DNS متقدم مع تتبع فقدان الحزم والتقييم',
+      'sequentialTestDescription':
+          'اختبار DNS التسلسلي بناءً على أقل وقت استجابة',
+      'advancedTestDescription':
+          'اختبار DNS متقدم مع تتبع فقدان الحزم والتقييم',
       'default': 'افتراضي',
       'lowestPing': 'أقل وقت استجابة',
       'sortByName': 'ترتيب حسب الاسم',
@@ -292,7 +313,8 @@ class AppLocalizations {
       'speedTest': 'اختبار السرعة',
       'yourInternetSpeedBetween': ' يقيس سرعة الإنترنت بين ',
       'device': 'الجهاز',
-      'measuresAndUsesConnection': ' وخادم الاختبار، باستخدام اتصال الإنترنت الحالي.',
+      'measuresAndUsesConnection':
+          ' وخادم الاختبار، باستخدام اتصال الإنترنت الحالي.',
       'changeDns': 'تغيير DNS',
       'networkConfiguration': 'إعدادات الشبكة',
       'inThisSection': 'في هذا القسم يمكنك ',
@@ -316,7 +338,8 @@ class AppLocalizations {
       'website': 'الموقع الإلكتروني',
       'websiteAddress': 'www.firedns.com',
       'developmentTeam': 'فريق التطوير',
-      'thankYouMessage': 'شكرًا لجميع المستخدمين الأعزاء الذين يساعدوننا على تقديم خدمات أفضل من خلال استخدام هذا التطبيق.',
+      'thankYouMessage':
+          'شكرًا لجميع المستخدمين الأعزاء الذين يساعدوننا على تقديم خدمات أفضل من خلال استخدام هذا التطبيق.',
       'checkForUpdates': 'التحقق من التحديثات',
       'checkingForUpdates': 'جاري التحقق من التحديثات...',
       'tryAgain': 'المحاولة مرة أخرى',
@@ -341,7 +364,8 @@ class AppLocalizations {
       'duplicateNameError': 'الاسم المدخل مكرر. يرجى اختيار اسم آخر.',
       // 'ok': 'موافق',
       'duplicateIP': 'عنوان IP مكرر',
-      'duplicateIPMessage': 'تم تسجيل واحد على الأقل من عناوين IP المدخلة بالفعل في DNS آخر. ماذا تريد أن تفعل؟',
+      'duplicateIPMessage':
+          'تم تسجيل واحد على الأقل من عناوين IP المدخلة بالفعل في DNS آخر. ماذا تريد أن تفعل؟',
       // 'cancel': 'إلغاء',
       'connectToExistingDNS': 'الاتصال بـ DNS الموجود',
       'submit': 'إرسال',
@@ -351,6 +375,9 @@ class AppLocalizations {
       'enterName': 'أدخل اسمًا',
       'saveEdit': 'حفظ التعديل',
       'add': 'إضافة',
+      'systemMode': 'النظام',
+      'dark': 'مظلم',
+      'light': 'مضيء'
     },
     'ru': {
       'appTitle': 'Fire DNS',
@@ -394,8 +421,10 @@ class AppLocalizations {
       'comingSoon': 'Эта функция будет доступна в ближайшее время.',
       'searchByNameOrIp': 'Поиск по имени или IP',
       'ok': 'OK',
-      'sequentialTestDescription': 'Последовательный тест DNS на основе наименьшего пинга',
-      'advancedTestDescription': 'Расширенный тест DNS с отслеживанием потери пакетов и оценкой',
+      'sequentialTestDescription':
+          'Последовательный тест DNS на основе наименьшего пинга',
+      'advancedTestDescription':
+          'Расширенный тест DNS с отслеживанием потери пакетов и оценкой',
       'default': 'По умолчанию',
       'lowestPing': 'Наименьший пинг',
       'sortByName': 'Сортировка по имени',
@@ -409,15 +438,18 @@ class AppLocalizations {
       'speedTest': 'Тест скорости',
       'yourInternetSpeedBetween': ' измеряет скорость интернета между ',
       'device': 'устройством',
-      'measuresAndUsesConnection': ' и тестовым сервером, используя текущее подключение к интернету.',
+      'measuresAndUsesConnection':
+          ' и тестовым сервером, используя текущее подключение к интернету.',
       'changeDns': 'Изменить DNS',
       'networkConfiguration': 'Конфигурация сети',
       'inThisSection': 'В этом разделе вы можете ',
       'networkSettings': 'настройки сети',
       'customizeYour': ' настроить ваши ',
       'configuration': 'конфигурацию',
-      'chooseAccordingToNeeds': ' в соответствии с потребностями вашего подключения.',
-      'profileComingSoon': 'Профиль пользователя будет добавлен в ближайшее время',
+      'chooseAccordingToNeeds':
+          ' в соответствии с потребностями вашего подключения.',
+      'profileComingSoon':
+          'Профиль пользователя будет добавлен в ближайшее время',
       'appTheme': 'Тема приложения',
       'aboutUs': 'О нас',
       'appVersion': 'Версия приложения',
@@ -427,13 +459,15 @@ class AppLocalizations {
       'cannotOpenLink': 'Невозможно открыть ссылку!',
       'errorOpeningLink': 'Ошибка при открытии ссылки!',
       'appName': 'Fire DNS',
-      'appDescription': 'Приложение DNS для улучшения безопасности и скорости вашего интернет-соединения',
+      'appDescription':
+          'Приложение DNS для улучшения безопасности и скорости вашего интернет-соединения',
       'supportEmail': 'Электронная почта поддержки',
       'supportEmailAddress': 'support@firedns.com',
       'website': 'Веб-сайт',
       'websiteAddress': 'www.firedns.com',
       'developmentTeam': 'Команда разработчиков',
-      'thankYouMessage': 'Спасибо всем дорогим пользователям, которые помогают нам предоставлять лучшие услуги, используя это приложение.',
+      'thankYouMessage':
+          'Спасибо всем дорогим пользователям, которые помогают нам предоставлять лучшие услуги, используя это приложение.',
       'checkForUpdates': 'Проверка обновлений',
       'checkingForUpdates': 'Проверка обновлений...',
       'tryAgain': 'Попробовать снова',
@@ -447,13 +481,17 @@ class AppLocalizations {
       'getNewVersion': 'Получить новую версию',
       'skipForNow': 'Пропустить сейчас',
       'newVersionAvailable': 'Доступна новая версия приложения!',
-      'pleaseUpdateToContinue': 'Для продолжения использования, пожалуйста, обновите приложение.',
+      'pleaseUpdateToContinue':
+          'Для продолжения использования, пожалуйста, обновите приложение.',
       'newVersion': 'Новая версия',
       'newFeatures': 'Новые функции',
       'changes': 'Изменения',
       'lightMode': 'Светлый режим',
       'darkMode': 'Темный режим',
       'sendTicket': 'Отправить тикет',
+      'systemMode': 'Система',
+      'dark': 'Тёмный',
+      'light': 'Светлый'
     },
     'zh': {
       'appTitle': 'Fire DNS',
@@ -557,6 +595,9 @@ class AppLocalizations {
       'lightMode': '浅色模式',
       'darkMode': '深色模式',
       'sendTicket': '发送工单',
+      'systemMode': '系统',
+      'dark': '黑暗',
+      'light': '明亮'
     },
   };
 

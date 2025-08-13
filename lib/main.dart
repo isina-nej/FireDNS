@@ -119,7 +119,8 @@ class FireDNSApp extends StatelessWidget {
                     currentAppVersion: UpdateChecker.currentVersion,
                   )
                 : (Platform.isWindows
-                    ? windows.FireDNSHomePage(title: context.tr('appTitle'))
+                    ?android.FireDNSHomePage(title: context.tr('appTitle'))
+                     //windows.FireDNSHomePage(title: context.tr('appTitle'))
                     : android.FireDNSHomePage(title: context.tr('appTitle'))),
             debugShowCheckedModeBanner: false,
           );

@@ -23,6 +23,8 @@ export '../models/google_connectivity_result.dart';
 // screens
 export '../screens/homepage.dart';
 export '../screens/speed_test_page.dart';
+export '../screens/dns_list_new.dart';
+
 
 // services
 export '../services/dns_service.dart';

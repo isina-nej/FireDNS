@@ -116,14 +116,14 @@ class ThemeManager extends ChangeNotifier {
   }
 
   /// دریافت نام تم فعلی
-  String get themeName {
+  String getThemeName(BuildContext context) {
     switch (_themeMode) {
       case ThemeMode.system:
-        return 'سیستم';
+        return context.tr('systemMode');
       case ThemeMode.light:
-        return 'روشن';
+        return context.tr('lightMode');
       case ThemeMode.dark:
-        return 'تاریک';
+        return context.tr('darkMode');
     }
   }
 
