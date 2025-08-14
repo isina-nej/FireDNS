@@ -2,6 +2,7 @@
 class AppLocalizations {
   static const Map<String, Map<String, String>> _localizedStrings = {
     'fa': {
+      'deviceLanguage': 'زبان دستگاه',
       'appTitle': 'تغییر دهنده DNS',
       'settings': 'تنظیمات',
       'language': 'زبان',
@@ -129,6 +130,7 @@ class AppLocalizations {
       'light': 'روشن'
     },
     'en': {
+      'deviceLanguage': 'Device Language',
       'appTitle': 'Fire DNS',
       'settings': 'Settings',
       'language': 'Language',
@@ -255,6 +257,7 @@ class AppLocalizations {
       'light': 'Light'
     },
     'ar': {
+      'deviceLanguage': 'لغة الجهاز',
       'appTitle': 'فاير دي إن إس',
       'settings': 'الإعدادات',
       'language': 'اللغة',
@@ -380,6 +383,7 @@ class AppLocalizations {
       'light': 'مضيء'
     },
     'ru': {
+      'deviceLanguage': 'Язык устройства',
       'appTitle': 'Fire DNS',
       'settings': 'Настройки',
       'language': 'Язык',
@@ -494,6 +498,7 @@ class AppLocalizations {
       'light': 'Светлый'
     },
     'zh': {
+      'deviceLanguage': '设备语言',
       'appTitle': 'Fire DNS',
       'settings': '设置',
       'language': '语言',

@@ -7,30 +7,33 @@ import '../l10n/localization_extension.dart';
 class DnsTestSettingsService extends ChangeNotifier {
   static const String _testTypeKey = 'dns_test_type';
   static const String _testCountKey = 'dns_test_count';
-  
-  String _testType = 'simultaneous'; // پیش‌فرض: تست همزمان
+
+  String _testType = 'auto'; // پیش‌فرض: تست خودکار
   int _testCount = 5; // پیش‌فرض: 5 تست
-  
+
   /// نوع تست فعلی
   String get testType => _testType;
-  
+
   /// تعداد تست فعلی
   int get testCount => _testCount;
-  
+
+  /// نمایش منوی تست - بر اساس نوع تست
+  bool get showTestMenu => _testType == 'auto';
+
   /// بارگذاری تنظیمات از SharedPreferences
   Future<void> loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _testType = prefs.getString(_testTypeKey) ?? 'simultaneous';
+      _testType = prefs.getString(_testTypeKey) ?? 'auto';
       _testCount = prefs.getInt(_testCountKey) ?? 5;
       notifyListeners();
     } catch (e) {
       // در صورت بروز خطا، از مقادیر پیش‌فرض استفاده کن
-      _testType = 'simultaneous';
+      _testType = 'auto';
       _testCount = 5;
     }
   }
-  
+
   /// ذخیره تنظیمات در SharedPreferences
   Future<void> saveSettings() async {
     try {
@@ -41,7 +44,7 @@ class DnsTestSettingsService extends ChangeNotifier {
       // خطا در ذخیره
     }
   }
-  
+
   /// تغییر نوع تست
   Future<void> setTestType(String type) async {
     if (type != _testType) {
@@ -50,7 +53,7 @@ class DnsTestSettingsService extends ChangeNotifier {
       await saveSettings();
     }
   }
-  
+
   /// تغییر تعداد تست
   Future<void> setTestCount(int count) async {
     if (count != _testCount) {
@@ -59,7 +62,7 @@ class DnsTestSettingsService extends ChangeNotifier {
       await saveSettings();
     }
   }
-  
+
   /// نام نوع تست به فارسی
   String getTestTypeName(String type, BuildContext context) {
     switch (type) {
@@ -69,6 +72,8 @@ class DnsTestSettingsService extends ChangeNotifier {
         return context.tr('sequentialTest');
       case 'advanced':
         return context.tr('advancedTest');
+      case 'auto':
+        return context.tr('autoTest');
       default:
         return context.tr('simultaneousTest');
     }

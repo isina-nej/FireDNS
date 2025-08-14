@@ -10,7 +10,7 @@ import 'services/notification_service.dart';
 import 'services/dns_test_settings_service.dart';
 import 'dart:io' show Platform;
 import 'screens/homepage_android.dart' as android;
-import 'screens/homepage_windows.dart' as windows;
+// import 'screens/homepage_windows.dart' as windows;
 import 'utils/update_checker.dart';
 import 'screens/force_update_page.dart';
 
@@ -22,6 +22,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // راه‌اندازی مدیریت زبان اول از همه
+  final languageManager = LanguageManager();
+  await languageManager.loadLanguage();
 
   // راه‌اندازی Firebase
   await Firebase.initializeApp();
@@ -35,9 +39,7 @@ void main() async {
 
   final themeManager = ThemeManager();
   await themeManager.loadThemeMode();
-  final languageManager = LanguageManager();
-  await languageManager.loadLanguage();
-  
+
   // Load DNS test settings
   final dnsTestSettingsService = DnsTestSettingsService();
   await dnsTestSettingsService.loadSettings();
@@ -119,8 +121,8 @@ class FireDNSApp extends StatelessWidget {
                     currentAppVersion: UpdateChecker.currentVersion,
                   )
                 : (Platform.isWindows
-                    ?android.FireDNSHomePage(title: context.tr('appTitle'))
-                     //windows.FireDNSHomePage(title: context.tr('appTitle'))
+                    ? android.FireDNSHomePage(title: context.tr('appTitle'))
+                    //windows.FireDNSHomePage(title: context.tr('appTitle'))
                     : android.FireDNSHomePage(title: context.tr('appTitle'))),
             debugShowCheckedModeBanner: false,
           );

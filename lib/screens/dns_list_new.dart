@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter/gestures.dart';
 import 'dart:convert';
+import '../services/dns_test_settings_service.dart';
 import '../path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../utils/dns_ping_helper_new.dart';
+import '../utils/dns_ping_base.dart';
 import 'package:provider/provider.dart';
 import '../styles/theme_manager.dart';
 import '../styles/app_colors.dart';
@@ -29,7 +30,8 @@ class _DnsListPageState extends State<DnsListPage> {
   bool _isLoading = false;
   bool _loadingList = true;
   String? _loadError;
-  String _sortType = 'ping'; // 'default', 'ping', 'name', 'avg_ping', 'packet_loss', 'score'
+  String _sortType =
+      'ping'; // 'default', 'ping', 'name', 'avg_ping', 'packet_loss', 'score'
   bool _testDialogOpen = false;
   bool _hasAdvancedTest = false;
   String _searchQuery = '';
@@ -127,20 +129,40 @@ class _DnsListPageState extends State<DnsListPage> {
         } else if (_sortType == 'packet_loss') {
           final advA = _advancedResults[a.id];
           final advB = _advancedResults[b.id];
-          double lossA = advA != null ? ((advA['packetLoss1'] + advA['packetLoss2']) / 2) : 100.0;
-          double lossB = advB != null ? ((advB['packetLoss1'] + advB['packetLoss2']) / 2) : 100.0;
+          double lossA = advA != null
+              ? ((advA['packetLoss1'] + advA['packetLoss2']) / 2)
+              : 100.0;
+          double lossB = advB != null
+              ? ((advB['packetLoss1'] + advB['packetLoss2']) / 2)
+              : 100.0;
           return lossA.compareTo(lossB);
         } else if (_sortType == 'score') {
           final advA = _advancedResults[a.id];
           final advB = _advancedResults[b.id];
-          double scoreA = advA != null ? ((advA['score1'] + advA['score2']) / 2) : 0.0;
-          double scoreB = advB != null ? ((advB['score1'] + advB['score2']) / 2) : 0.0;
+          double scoreA =
+              advA != null ? ((advA['score1'] + advA['score2']) / 2) : 0.0;
+          double scoreB =
+              advB != null ? ((advB['score1'] + advB['score2']) / 2) : 0.0;
           return scoreB.compareTo(scoreA); // Descending for higher score first
         } else {
           return 0;
         }
       });
     });
+  }
+
+  void _onTestTypeChanged() async {
+    final dnsTestSettingsService =
+        Provider.of<DnsTestSettingsService>(context, listen: false);
+    if (dnsTestSettingsService.testType == 'auto') {
+      await _testAllDns(auto: true);
+    } else if (dnsTestSettingsService.testType == 'simultaneous') {
+      await _testAllDns(auto: false);
+    } else if (dnsTestSettingsService.testType == 'sequential') {
+      await _testSequentialDns();
+    } else if (dnsTestSettingsService.testType == 'advanced') {
+      await _testAdvancedDns();
+    }
   }
 
   @override
@@ -153,7 +175,7 @@ class _DnsListPageState extends State<DnsListPage> {
       await _loadUserDnsIds();
       await _loadAdvancedResults();
       await fetchDnsListWithTimer();
-      _pingCache = await DnsPingHelper.loadPingCache();
+      _pingCache = await DnsPingBase.loadPingCache();
       _sortDnsRecords();
       final prefs = await SharedPreferences.getInstance();
       final lastPingStr = prefs.getString('last_auto_ping');
@@ -163,8 +185,19 @@ class _DnsListPageState extends State<DnsListPage> {
         } catch (_) {}
       }
       final now = DateTime.now();
-      if (_lastAutoPing == null || now.difference(_lastAutoPing!).inHours >= 1) {
-        await _testAllDns(auto: true);
+      if (_lastAutoPing == null ||
+          now.difference(_lastAutoPing!).inHours >= 1) {
+        final dnsTestSettingsService =
+            Provider.of<DnsTestSettingsService>(context, listen: false);
+        if (dnsTestSettingsService.testType == 'auto') {
+          await _testAllDns(auto: true);
+        } else if (dnsTestSettingsService.testType == 'simultaneous') {
+          await _testAllDns(auto: false);
+        } else if (dnsTestSettingsService.testType == 'sequential') {
+          await _testSequentialDns();
+        } else if (dnsTestSettingsService.testType == 'advanced') {
+          await _testAdvancedDns();
+        }
         _lastAutoPing = now;
         await prefs.setString('last_auto_ping', now.toIso8601String());
       }
@@ -182,16 +215,21 @@ class _DnsListPageState extends State<DnsListPage> {
     }
     final now = DateTime.now();
     final cachedJson = prefs.getString('cached_dns_list');
-    bool shouldFetch = force || cachedJson == null || (lastFetch == null || now.difference(lastFetch).inHours >= 6);
+    bool shouldFetch = force ||
+        cachedJson == null ||
+        (lastFetch == null || now.difference(lastFetch).inHours >= 6);
     List<DnsRecord> newRecords = [];
     if (shouldFetch) {
       final response = await _dnsApiService.getAllDnsRecords();
-      List<DnsRecord> apiRecords = response.status && response.data != null ? response.data! : [];
+      List<DnsRecord> apiRecords =
+          response.status && response.data != null ? response.data! : [];
       final userDnsJson = prefs.getString('user_dns_list');
       List<DnsRecord> userDnsRecords = [];
       if (userDnsJson != null) {
         try {
-          userDnsRecords = (jsonDecode(userDnsJson) as List).map((e) => DnsRecord.fromJson(e)).toList();
+          userDnsRecords = (jsonDecode(userDnsJson) as List)
+              .map((e) => DnsRecord.fromJson(e))
+              .toList();
         } catch (_) {}
       }
       newRecords = [...apiRecords, ...userDnsRecords];
@@ -209,21 +247,27 @@ class _DnsListPageState extends State<DnsListPage> {
           _sortDnsRecords();
         });
       }
-      await prefs.setString('cached_dns_list', jsonEncode(newRecords.map((e) => e.toJson()).toList()));
-      await prefs.setStringList('cached_dns_order', newRecords.map((e) => e.id).toList());
+      await prefs.setString('cached_dns_list',
+          jsonEncode(newRecords.map((e) => e.toJson()).toList()));
+      await prefs.setStringList(
+          'cached_dns_order', newRecords.map((e) => e.id).toList());
       await prefs.setString('last_dns_api_fetch', now.toIso8601String());
     } else {
       List<DnsRecord> cachedRecords = [];
       if (cachedJson != null) {
         try {
-          cachedRecords = (jsonDecode(cachedJson) as List).map((e) => DnsRecord.fromJson(e)).toList();
+          cachedRecords = (jsonDecode(cachedJson) as List)
+              .map((e) => DnsRecord.fromJson(e))
+              .toList();
         } catch (_) {}
       }
       final userDnsJson = prefs.getString('user_dns_list');
       List<DnsRecord> userDnsRecords = [];
       if (userDnsJson != null) {
         try {
-          userDnsRecords = (jsonDecode(userDnsJson) as List).map((e) => DnsRecord.fromJson(e)).toList();
+          userDnsRecords = (jsonDecode(userDnsJson) as List)
+              .map((e) => DnsRecord.fromJson(e))
+              .toList();
         } catch (_) {}
       }
       newRecords = [...cachedRecords, ...userDnsRecords];
@@ -247,19 +291,23 @@ class _DnsListPageState extends State<DnsListPage> {
   Future<void> _loadCachedDnsList() async {
     final prefs = await SharedPreferences.getInstance();
     final cached = prefs.getString('cached_dns_list');
-    final cachedOrder = await DnsPingHelper.loadDnsOrder();
+    final cachedOrder = await DnsPingBase.loadDnsOrder();
     final cachedSelected = prefs.getString('cached_selected_dns');
     final userDnsJson = prefs.getString('user_dns_list');
     List<DnsRecord> userDnsRecords = [];
     if (userDnsJson != null) {
       try {
-        userDnsRecords = (jsonDecode(userDnsJson) as List).map((e) => DnsRecord.fromJson(e)).toList();
+        userDnsRecords = (jsonDecode(userDnsJson) as List)
+            .map((e) => DnsRecord.fromJson(e))
+            .toList();
       } catch (_) {}
     }
     List<DnsRecord> records = [];
     if (cached != null) {
       try {
-        records = (jsonDecode(cached) as List).map((e) => DnsRecord.fromJson(e)).toList();
+        records = (jsonDecode(cached) as List)
+            .map((e) => DnsRecord.fromJson(e))
+            .toList();
       } catch (_) {}
     }
     records.addAll(userDnsRecords);
@@ -279,7 +327,7 @@ class _DnsListPageState extends State<DnsListPage> {
         return ia.compareTo(ib);
       });
     }
-    final pingCache = await DnsPingHelper.loadPingCache();
+    final pingCache = await DnsPingBase.loadPingCache();
     if (mounted) {
       setState(() {
         _dnsRecords = records;
@@ -293,7 +341,17 @@ class _DnsListPageState extends State<DnsListPage> {
   void dispose() {
     _dnsApiService.dispose();
     _searchController.dispose();
+    final dnsTestSettingsService =
+        Provider.of<DnsTestSettingsService>(context, listen: false);
+    dnsTestSettingsService.removeListener(_onTestTypeChanged);
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final dnsTestSettingsService = Provider.of<DnsTestSettingsService>(context);
+    dnsTestSettingsService.addListener(_onTestTypeChanged);
   }
 
   Future<void> _fetchDnsList() async {
@@ -305,13 +363,16 @@ class _DnsListPageState extends State<DnsListPage> {
       });
     }
     final response = await _dnsApiService.getAllDnsRecords();
-    List<DnsRecord> records = response.status && response.data != null ? response.data! : [];
+    List<DnsRecord> records =
+        response.status && response.data != null ? response.data! : [];
     final prefs = await SharedPreferences.getInstance();
     final userDnsJson = prefs.getString('user_dns_list');
     List<DnsRecord> userDnsRecords = [];
     if (userDnsJson != null) {
       try {
-        userDnsRecords = (jsonDecode(userDnsJson) as List).map((e) => DnsRecord.fromJson(e)).toList();
+        userDnsRecords = (jsonDecode(userDnsJson) as List)
+            .map((e) => DnsRecord.fromJson(e))
+            .toList();
       } catch (_) {}
     }
     records.addAll(userDnsRecords);
@@ -330,8 +391,10 @@ class _DnsListPageState extends State<DnsListPage> {
           _sortDnsRecords();
         });
       }
-      await prefs.setString('cached_dns_list', jsonEncode(records.map((e) => e.toJson()).toList()));
-      await prefs.setStringList('cached_dns_order', records.map((e) => e.id).toList());
+      await prefs.setString('cached_dns_list',
+          jsonEncode(records.map((e) => e.toJson()).toList()));
+      await prefs.setStringList(
+          'cached_dns_order', records.map((e) => e.id).toList());
       if (_selectedDnsId != null) {
         await prefs.setString('cached_selected_dns', _selectedDnsId!);
       }
@@ -350,13 +413,15 @@ class _DnsListPageState extends State<DnsListPage> {
     if (_testDialogOpen) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr('waitForPingTest')), duration: const Duration(seconds: 2)),
+          SnackBar(
+              content: Text(context.tr('waitForPingTest')),
+              duration: const Duration(seconds: 2)),
         );
       }
       return;
     }
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      DnsPingHelper.cancelPingTest();
+      DnsPingBase.cancelPingTest();
     }
     if (mounted) {
       setState(() {
@@ -381,13 +446,28 @@ class _DnsListPageState extends State<DnsListPage> {
 
   Future<void> _testAllDns({bool auto = false}) async {
     final prefs = await SharedPreferences.getInstance();
-    final pingCache = await DnsPingHelper.testSimultaneous(
+    final result = await DnsPingBase.runTest(
+      testType: 'sequential',
       context: context,
       dnsRecords: _dnsRecords,
       sortDnsRecords: _sortDnsRecords,
-      sortType: _sortType,
-      auto: auto,
+      onPingResult: (String dnsId, String ipIndex, int pingResult) {
+        if (mounted) {
+          setState(() {
+            _pingCache['${dnsId}_$ipIndex'] = pingResult;
+            _sortDnsRecords();
+          });
+        }
+      },
       mounted: mounted,
+      // onPingResult: (String dnsId, String ip, int pingResult) {
+      //   if (mounted) {
+      //     setState(() {
+      //       _pingCache['${dnsId}_${ip == "1" ? "1" : "2"}'] = pingResult;
+      //       _sortDnsRecords();
+      //     });
+      //   }
+      // },
       showDialogCallback: (List<String> results) async {
         if (!mounted) return;
         final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
@@ -400,9 +480,15 @@ class _DnsListPageState extends State<DnsListPage> {
             onTap: () => Navigator.of(context).pop(),
             child: AlertDialog(
               title: Text(context.tr('testResultAllDns')),
-              content: SizedBox(width: double.maxFinite, child: ListView(shrinkWrap: true, children: results.map((e) => Text(e)).toList())),
+              content: SizedBox(
+                  width: double.maxFinite,
+                  child: ListView(
+                      shrinkWrap: true,
+                      children: results.map((e) => Text(e)).toList())),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('close'))),
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(context.tr('close'))),
                 TextButton(
                   onPressed: () async {
                     await prefs.setBool('dont_show_dns_test_dialog', true);
@@ -421,10 +507,13 @@ class _DnsListPageState extends State<DnsListPage> {
       setCancelTest: (v) {},
     );
     if (mounted) {
-      setState(() {
-        _pingCache = pingCache;
-        _sortDnsRecords();
-      });
+      final pingCache = result['pingCache'] as Map<String, int>?;
+      if (pingCache != null) {
+        setState(() {
+          _pingCache = pingCache;
+          _sortDnsRecords();
+        });
+      }
     }
   }
 
@@ -439,22 +528,33 @@ class _DnsListPageState extends State<DnsListPage> {
             Text(context.tr('sequentialTestDescription')),
             const SizedBox(height: 16),
             Text(context.tr('testCount')),
-            Slider(value: 5, min: 1, max: 20, divisions: 19, label: '5', onChanged: (value) {}),
+            Slider(
+                value: 5,
+                min: 1,
+                max: 20,
+                divisions: 19,
+                label: '5',
+                onChanged: (value) {}),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('cancel'))),
-          TextButton(onPressed: () => Navigator.pop(context, 5), child: Text(context.tr('ok'))),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('cancel'))),
+          TextButton(
+              onPressed: () => Navigator.pop(context, 5),
+              child: Text(context.tr('ok'))),
         ],
       ),
     );
     if (testCount == null) return;
     final prefs = await SharedPreferences.getInstance();
-    final pingCache = await DnsPingHelper.testSequential(
+    final result = await DnsPingBase.runTest(
+      testType: 'simultaneous',
       context: context,
       dnsRecords: _dnsRecords,
       sortDnsRecords: _sortDnsRecords,
-      sortType: _sortType,
+      // sortType: _sortType,
       mounted: mounted,
       showDialogCallback: (List<String> results) async {
         if (!mounted) return;
@@ -468,9 +568,15 @@ class _DnsListPageState extends State<DnsListPage> {
             onTap: () => Navigator.of(context).pop(),
             child: AlertDialog(
               title: Text(context.tr('sequentialTest')),
-              content: SizedBox(width: double.maxFinite, child: ListView(shrinkWrap: true, children: results.map((e) => Text(e)).toList())),
+              content: SizedBox(
+                  width: double.maxFinite,
+                  child: ListView(
+                      shrinkWrap: true,
+                      children: results.map((e) => Text(e)).toList())),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('close'))),
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(context.tr('close'))),
                 TextButton(
                   onPressed: () async {
                     await prefs.setBool('dont_show_dns_test_dialog', true);
@@ -489,10 +595,13 @@ class _DnsListPageState extends State<DnsListPage> {
       setCancelTest: (v) {},
     );
     if (mounted) {
-      setState(() {
-        _pingCache = pingCache;
-        _sortDnsRecords();
-      });
+      final pingCache = result['pingCache'] as Map<String, int>?;
+      if (pingCache != null) {
+        setState(() {
+          _pingCache = pingCache;
+          _sortDnsRecords();
+        });
+      }
     }
   }
 
@@ -513,14 +622,15 @@ class _DnsListPageState extends State<DnsListPage> {
                 return Column(
                   children: [
                     Slider(
-                      value: DnsPingHelper.defaultTestCount.toDouble(),
+                      value: DnsPingBase.defaultTestCount.toDouble(),
                       min: 3,
                       max: 10,
                       divisions: 7,
-                      label: DnsPingHelper.defaultTestCount.toString(),
-                      onChanged: (value) => setState(() => DnsPingHelper.defaultTestCount = value.toInt()),
+                      label: DnsPingBase.defaultTestCount.toString(),
+                      onChanged: (value) => setState(
+                          () => DnsPingBase.defaultTestCount = value.toInt()),
                     ),
-                    Text('${DnsPingHelper.defaultTestCount}'),
+                    Text('${DnsPingBase.defaultTestCount}'),
                   ],
                 );
               },
@@ -528,18 +638,24 @@ class _DnsListPageState extends State<DnsListPage> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('cancel'))),
-          TextButton(onPressed: () => Navigator.pop(context, DnsPingHelper.defaultTestCount), child: Text(context.tr('ok'))),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('cancel'))),
+          TextButton(
+              onPressed: () =>
+                  Navigator.pop(context, DnsPingBase.defaultTestCount),
+              child: Text(context.tr('ok'))),
         ],
       ),
     );
     if (testCount == null) return;
-    final result = await DnsPingHelper.testAdvanced(
+    final result = await DnsPingBase.runTest(
+      testType: 'advanced',
       context: context,
       dnsRecords: _dnsRecords,
       sortDnsRecords: _sortDnsRecords,
       testCount: testCount,
-      sortType: _sortType,
+      // sortType: _sortType,
       mounted: mounted,
       showDialogCallback: (List<String> results) async {
         if (!mounted) return;
@@ -553,9 +669,15 @@ class _DnsListPageState extends State<DnsListPage> {
             onTap: () => Navigator.of(context).pop(),
             child: AlertDialog(
               title: Text(context.tr('advancedTest')),
-              content: SizedBox(width: double.maxFinite, child: ListView(shrinkWrap: true, children: results.map((e) => Text(e)).toList())),
+              content: SizedBox(
+                  width: double.maxFinite,
+                  child: ListView(
+                      shrinkWrap: true,
+                      children: results.map((e) => Text(e)).toList())),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('close'))),
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(context.tr('close'))),
                 TextButton(
                   onPressed: () async {
                     await prefs.setBool('dont_show_dns_test_dialog', true);
@@ -574,9 +696,13 @@ class _DnsListPageState extends State<DnsListPage> {
       setCancelTest: (v) {},
     );
     if (mounted) {
+      final pingCache = result['pingCache'] as Map<String, int>?;
+      final advancedResults =
+          result['advancedResults'] as Map<String, dynamic>?;
+
       setState(() {
-        _pingCache = result['pingCache'];
-        _advancedResults = result['advancedResults'];
+        if (pingCache != null) _pingCache = pingCache;
+        if (advancedResults != null) _advancedResults = advancedResults;
         _hasAdvancedTest = true;
         _sortDnsRecords();
       });
@@ -586,7 +712,8 @@ class _DnsListPageState extends State<DnsListPage> {
 
   List<DnsRecord> get _filteredDnsRecords {
     if (_searchQuery.trim().isEmpty) return _dnsRecords;
-    final parts = _searchQuery.replaceAll(RegExp(r'\s+'), ' ').trim().split(' ');
+    final parts =
+        _searchQuery.replaceAll(RegExp(r'\s+'), ' ').trim().split(' ');
     return _dnsRecords.where((r) {
       final label = r.label.replaceAll(' ', '').toLowerCase();
       final ip1 = r.ip1.replaceAll(' ', '').toLowerCase();
@@ -631,8 +758,11 @@ class _DnsListPageState extends State<DnsListPage> {
             } catch (_) {}
           }
           userDnsList.removeWhere((e) {
-            final key = '${e['ip1']}_${e['ip2']}'.replaceAll(' ', '').toLowerCase();
-            final editedKey = '${editedRecord.ip1}_${editedRecord.ip2}'.replaceAll(' ', '').toLowerCase();
+            final key =
+                '${e['ip1']}_${e['ip2']}'.replaceAll(' ', '').toLowerCase();
+            final editedKey = '${editedRecord.ip1}_${editedRecord.ip2}'
+                .replaceAll(' ', '')
+                .toLowerCase();
             return e['id'] == record.id || key == editedKey;
           });
           userDnsList.add(editedRecord.toJson());
@@ -660,14 +790,13 @@ class _DnsListPageState extends State<DnsListPage> {
     String displayIp2 = record.ip2;
     int displayPing1 = ping1;
     int displayPing2 = ping2;
-    if ((ping1 > 0 && ping2 > 0 && ping2 < ping1) || (ping1 <= 0 && ping2 > 0)) {
+    if ((ping1 > 0 && ping2 > 0 && ping2 < ping1) ||
+        (ping1 <= 0 && ping2 > 0)) {
       displayIp1 = record.ip2;
       displayIp2 = record.ip1;
       displayPing1 = ping2;
       displayPing2 = ping1;
     }
-    final ping = displayPing1;
-
     Future<void> _rePingBoth() async {
       if (mounted) {
         setState(() {
@@ -675,8 +804,8 @@ class _DnsListPageState extends State<DnsListPage> {
           _pingCache['${record.id}_2'] = -2;
         });
       }
-      final ping1Result = await DnsPingHelper.ping(record.ip1);
-      final ping2Result = await DnsPingHelper.ping(record.ip2);
+      final ping1Result = await DnsPingBase.ping(record.ip1);
+      final ping2Result = await DnsPingBase.ping(record.ip2);
       if (mounted) {
         setState(() {
           _pingCache['${record.id}_1'] = ping1Result < 0 ? -1 : ping1Result;
@@ -721,9 +850,14 @@ class _DnsListPageState extends State<DnsListPage> {
         height: 140,
         child: Card(
           elevation: isSelected ? 4 : 1,
-          color: isDark ? (isSelected ? AppColors.darkCardBackground.withOpacity(0.8) : AppColors.darkCardBackground) : (isSelected ? AppColors.selectedLight : Colors.white),
+          color: isDark
+              ? (isSelected
+                  ? AppColors.darkCardBackground.withOpacity(0.8)
+                  : AppColors.darkCardBackground)
+              : (isSelected ? AppColors.selectedLight : Colors.white),
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: _isLoading ? null : () => _connectToDns(record),
@@ -736,11 +870,18 @@ class _DnsListPageState extends State<DnsListPage> {
                   Container(
                     width: 36,
                     height: 36,
-                    decoration: BoxDecoration(color: AppColors.primaryBlue.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(
+                        color: AppColors.primaryBlue.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12)),
                     alignment: Alignment.center,
                     child: Text(
                       '${index + 1}',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isDark ? AppColors.darkTextPrimary : const Color(0xFF5A9CFF)),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : const Color(0xFF5A9CFF)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -757,37 +898,85 @@ class _DnsListPageState extends State<DnsListPage> {
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
                                     final text = record.label;
-                                    final textStyle = TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45));
-                                    final textPainter = TextPainter(text: TextSpan(text: text, style: textStyle), maxLines: 1, textDirection: TextDirection.ltr)..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow = textPainter.width > constraints.maxWidth;
-                                    return isOverflow ? AnimatedOverflowLabel(label: text, width: constraints.maxWidth, style: textStyle) : Text(text, style: textStyle);
+                                    final textStyle = TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                        color: isDark
+                                            ? AppColors.darkTextPrimary
+                                            : const Color(0xFF222B45));
+                                    final textPainter = TextPainter(
+                                        text: TextSpan(
+                                            text: text, style: textStyle),
+                                        maxLines: 1,
+                                        textDirection: TextDirection.ltr)
+                                      ..layout(maxWidth: constraints.maxWidth);
+                                    final isOverflow = textPainter.width >
+                                        constraints.maxWidth;
+                                    return isOverflow
+                                        ? AnimatedOverflowLabel(
+                                            label: text,
+                                            width: constraints.maxWidth,
+                                            style: textStyle)
+                                        : Text(text, style: textStyle);
                                   },
                                 ),
                               ),
                               IconButton(
-                                icon: Icon(_likedDnsIds.contains(record.id) ? Icons.favorite : Icons.favorite_border, color: _likedDnsIds.contains(record.id) ? Colors.red : Colors.grey.shade400),
-                                tooltip: _likedDnsIds.contains(record.id) ? context.tr('removeFromFavorites') : context.tr('addToFavorites'),
+                                icon: Icon(
+                                    _likedDnsIds.contains(record.id)
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: _likedDnsIds.contains(record.id)
+                                        ? Colors.red
+                                        : Colors.grey.shade400),
+                                tooltip: _likedDnsIds.contains(record.id)
+                                    ? context.tr('removeFromFavorites')
+                                    : context.tr('addToFavorites'),
                                 onPressed: () => _toggleLikeDns(record.id),
                               ),
                               if (isUserDns) ...[
-                                IconButton(icon: const Icon(Icons.edit, color: Colors.blue), tooltip: context.tr('edit'), onPressed: () => _editUserDns(record)),
-                                IconButton(icon: const Icon(Icons.delete, color: Colors.red), tooltip: context.tr('delete'), onPressed: () => _deleteUserDns(record)),
+                                IconButton(
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blue),
+                                    tooltip: context.tr('edit'),
+                                    onPressed: () => _editUserDns(record)),
+                                IconButton(
+                                    icon: const Icon(Icons.delete,
+                                        color: Colors.red),
+                                    tooltip: context.tr('delete'),
+                                    onPressed: () => _deleteUserDns(record)),
                               ],
                             ],
                           ),
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(Icons.dns, size: 18, color: isDark ? AppColors.darkIconPrimary : const Color(0xFF5A9CFF)),
+                              Icon(Icons.dns,
+                                  size: 18,
+                                  color: isDark
+                                      ? AppColors.darkIconPrimary
+                                      : const Color(0xFF5A9CFF)),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
                                     final text = displayIp1;
-                                    final textStyle = const TextStyle(fontSize: 14, color: Color(0xFF607D8B));
-                                    final textPainter = TextPainter(text: TextSpan(text: text, style: textStyle), maxLines: 1, textDirection: TextDirection.ltr)..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow = textPainter.width > constraints.maxWidth;
-                                    return isOverflow ? AnimatedOverflowLabel(label: text, width: constraints.maxWidth, style: textStyle) : Text(text, style: textStyle);
+                                    final textStyle = const TextStyle(
+                                        fontSize: 14, color: Color(0xFF607D8B));
+                                    final textPainter = TextPainter(
+                                        text: TextSpan(
+                                            text: text, style: textStyle),
+                                        maxLines: 1,
+                                        textDirection: TextDirection.ltr)
+                                      ..layout(maxWidth: constraints.maxWidth);
+                                    final isOverflow = textPainter.width >
+                                        constraints.maxWidth;
+                                    return isOverflow
+                                        ? AnimatedOverflowLabel(
+                                            label: text,
+                                            width: constraints.maxWidth,
+                                            style: textStyle)
+                                        : Text(text, style: textStyle);
                                   },
                                 ),
                               ),
@@ -795,7 +984,9 @@ class _DnsListPageState extends State<DnsListPage> {
                               Listener(
                                 behavior: HitTestBehavior.opaque,
                                 onPointerDown: (event) {
-                                  if (Theme.of(context).platform == TargetPlatform.windows && event.kind == PointerDeviceKind.mouse) {
+                                  if (Theme.of(context).platform ==
+                                          TargetPlatform.windows &&
+                                      event.kind == PointerDeviceKind.mouse) {
                                     _rePingBoth();
                                   }
                                 },
@@ -805,19 +996,43 @@ class _DnsListPageState extends State<DnsListPage> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.speed, size: 18, color: pingColor),
+                                      Icon(Icons.speed,
+                                          size: 18, color: pingColor),
                                       const SizedBox(width: 2),
                                       displayPing1 == -2
-                                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                                          : (displayPing1 < 0 || displayPing1 >= 1000)
-                                              ? Text('---', style: TextStyle(color: pingColor, fontWeight: FontWeight.bold, fontSize: 13, decoration: TextDecoration.underline))
-                                              : Text('$displayPing1 ms', style: TextStyle(color: pingColor, fontWeight: FontWeight.bold, fontSize: 13, decoration: TextDecoration.underline)),
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2))
+                                          : (displayPing1 < 0 ||
+                                                  displayPing1 >= 1000)
+                                              ? Text('---',
+                                                  style: TextStyle(
+                                                      color: pingColor,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                      decoration: TextDecoration
+                                                          .underline))
+                                              : Text('$displayPing1 ms',
+                                                  style: TextStyle(
+                                                      color: pingColor,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                      decoration: TextDecoration
+                                                          .underline)),
                                       if (displayPing1 > 0 && displayPing1 < 80)
                                         Container(
-                                          margin: const EdgeInsets.only(left: 2),
+                                          margin:
+                                              const EdgeInsets.only(left: 2),
                                           width: 22,
                                           height: 22,
-                                          child: Lottie.asset('assets/icone/Fire.json', repeat: true, animate: true),
+                                          child: Lottie.asset(
+                                              'assets/icone/Fire.json',
+                                              repeat: true,
+                                              animate: true),
                                         ),
                                     ],
                                   ),
@@ -828,16 +1043,32 @@ class _DnsListPageState extends State<DnsListPage> {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              Icon(Icons.dns_outlined, size: 18, color: isDark ? AppColors.darkIconSecondary : const Color(0xFFB0BEC5)),
+                              Icon(Icons.dns_outlined,
+                                  size: 18,
+                                  color: isDark
+                                      ? AppColors.darkIconSecondary
+                                      : const Color(0xFFB0BEC5)),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
                                     final text = displayIp2;
-                                    final textStyle = const TextStyle(fontSize: 14, color: Color(0xFF90A4AE));
-                                    final textPainter = TextPainter(text: TextSpan(text: text, style: textStyle), maxLines: 1, textDirection: TextDirection.ltr)..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow = textPainter.width > constraints.maxWidth;
-                                    return isOverflow ? AnimatedOverflowLabel(label: text, width: constraints.maxWidth, style: textStyle) : Text(text, style: textStyle);
+                                    final textStyle = const TextStyle(
+                                        fontSize: 14, color: Color(0xFF90A4AE));
+                                    final textPainter = TextPainter(
+                                        text: TextSpan(
+                                            text: text, style: textStyle),
+                                        maxLines: 1,
+                                        textDirection: TextDirection.ltr)
+                                      ..layout(maxWidth: constraints.maxWidth);
+                                    final isOverflow = textPainter.width >
+                                        constraints.maxWidth;
+                                    return isOverflow
+                                        ? AnimatedOverflowLabel(
+                                            label: text,
+                                            width: constraints.maxWidth,
+                                            style: textStyle)
+                                        : Text(text, style: textStyle);
                                   },
                                 ),
                               ),
@@ -845,7 +1076,9 @@ class _DnsListPageState extends State<DnsListPage> {
                               Listener(
                                 behavior: HitTestBehavior.opaque,
                                 onPointerDown: (event) {
-                                  if (Theme.of(context).platform == TargetPlatform.windows && event.kind == PointerDeviceKind.mouse) {
+                                  if (Theme.of(context).platform ==
+                                          TargetPlatform.windows &&
+                                      event.kind == PointerDeviceKind.mouse) {
                                     _rePingBoth();
                                   }
                                 },
@@ -855,19 +1088,43 @@ class _DnsListPageState extends State<DnsListPage> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.speed, size: 18, color: pingColor2),
+                                      Icon(Icons.speed,
+                                          size: 18, color: pingColor2),
                                       const SizedBox(width: 2),
                                       displayPing2 == -2
-                                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                                          : (displayPing2 < 0 || displayPing2 >= 1000)
-                                              ? Text('---', style: TextStyle(color: pingColor2, fontWeight: FontWeight.bold, fontSize: 13, decoration: TextDecoration.underline))
-                                              : Text('$displayPing2 ms', style: TextStyle(color: pingColor2, fontWeight: FontWeight.bold, fontSize: 13, decoration: TextDecoration.underline)),
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2))
+                                          : (displayPing2 < 0 ||
+                                                  displayPing2 >= 1000)
+                                              ? Text('---',
+                                                  style: TextStyle(
+                                                      color: pingColor2,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                      decoration: TextDecoration
+                                                          .underline))
+                                              : Text('$displayPing2 ms',
+                                                  style: TextStyle(
+                                                      color: pingColor2,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                      decoration: TextDecoration
+                                                          .underline)),
                                       if (displayPing2 > 0 && displayPing2 < 80)
                                         Container(
-                                          margin: const EdgeInsets.only(left: 2),
+                                          margin:
+                                              const EdgeInsets.only(left: 2),
                                           width: 22,
                                           height: 22,
-                                          child: Lottie.asset('assets/icone/Fire.json', repeat: true, animate: true),
+                                          child: Lottie.asset(
+                                              'assets/icone/Fire.json',
+                                              repeat: true,
+                                              animate: true),
                                         ),
                                     ],
                                   ),
@@ -879,18 +1136,26 @@ class _DnsListPageState extends State<DnsListPage> {
                             const SizedBox(height: 4),
                             Text(
                               'Avg: ${avgPing1 > 0 ? avgPing1.toStringAsFixed(1) : '---'} ms / Loss: ${packetLoss1.toStringAsFixed(1)}% / Score: ${score1.toStringAsFixed(1)}',
-                              style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.blueGrey),
                             ),
                             Text(
                               'Avg: ${avgPing2 > 0 ? avgPing2.toStringAsFixed(1) : '---'} ms / Loss: ${packetLoss2.toStringAsFixed(1)}% / Score: ${score2.toStringAsFixed(1)}',
-                              style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.blueGrey),
                             ),
                           ],
                         ],
                       ),
                     ),
                   ),
-                  if (isSelected && _isLoading) const Padding(padding: EdgeInsets.only(left: 8, top: 8), child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))),
+                  if (isSelected && _isLoading)
+                    const Padding(
+                        padding: EdgeInsets.only(left: 8, top: 8),
+                        child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2))),
                 ],
               ),
             ),
@@ -908,22 +1173,38 @@ class _DnsListPageState extends State<DnsListPage> {
     return WillPopScope(
       onWillPop: () async {
         if (_testDialogOpen) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('waitForPingTest')), duration: const Duration(seconds: 2)));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(context.tr('waitForPingTest')),
+              duration: const Duration(seconds: 2)));
           return false;
         }
         return true;
       },
       child: Scaffold(
-        backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF7F8FA),
+        backgroundColor:
+            isDark ? AppColors.darkBackground : const Color(0xFFF7F8FA),
         appBar: AppBar(
           elevation: 0,
           backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,
-          title: Text(context.tr('selectDns'), style: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.primaryText, fontWeight: FontWeight.bold, fontSize: 22, letterSpacing: 0.5)),
-          iconTheme: IconThemeData(color: isDark ? AppColors.darkIconPrimary : const Color(0xFF222B45)),
+          title: Text(context.tr('selectDns'),
+              style: TextStyle(
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.primaryText,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                  letterSpacing: 0.5)),
+          iconTheme: IconThemeData(
+              color:
+                  isDark ? AppColors.darkIconPrimary : const Color(0xFF222B45)),
           actions: [
             _testDialogOpen
                 ? IconButton(
-                    icon: const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF5A9CFF))),
+                    icon: const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Color(0xFF5A9CFF))),
                     tooltip: context.tr('cancelAllDnsTest'),
                     onPressed: () {
                       if (mounted) setState(() => _testDialogOpen = false);
@@ -935,13 +1216,39 @@ class _DnsListPageState extends State<DnsListPage> {
                     color: isDark ? AppColors.darkCardBackground : Colors.white,
                     enabled: !_loadingList && _dnsRecords.isNotEmpty,
                     itemBuilder: (context) => [
-                      PopupMenuItem(value: 'simultaneous', child: SizedBox(width: 180, child: Text(context.tr('simultaneousTest'), style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))),
-                      PopupMenuItem(value: 'sequential', child: SizedBox(width: 180, child: Text(context.tr('sequentialTest'), style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))),
-                      PopupMenuItem(value: 'advanced', child: SizedBox(width: 180, child: Text(context.tr('advancedTest'), style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))),
+                      PopupMenuItem(
+                          value: 'simultaneous',
+                          child: SizedBox(
+                              width: 180,
+                              child: Text(context.tr('simultaneousTest'),
+                                  style: TextStyle(
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : const Color(0xFF222B45))))),
+                      PopupMenuItem(
+                          value: 'sequential',
+                          child: SizedBox(
+                              width: 180,
+                              child: Text(context.tr('sequentialTest'),
+                                  style: TextStyle(
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : const Color(0xFF222B45))))),
+                      PopupMenuItem(
+                          value: 'advanced',
+                          child: SizedBox(
+                              width: 180,
+                              child: Text(context.tr('advancedTest'),
+                                  style: TextStyle(
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : const Color(0xFF222B45))))),
                     ],
                     onSelected: (value) async {
-                      if (value == 'simultaneous') await _testAllDns();
-                      else if (value == 'sequential') await _testSequentialDns();
+                      if (value == 'simultaneous')
+                        await _testAllDns();
+                      else if (value == 'sequential')
+                        await _testSequentialDns();
                       else if (value == 'advanced') await _testAdvancedDns();
                     },
                   ),
@@ -951,15 +1258,63 @@ class _DnsListPageState extends State<DnsListPage> {
               color: isDark ? AppColors.darkCardBackground : Colors.white,
               itemBuilder: (context) {
                 List<PopupMenuEntry<String>> items = [
-                  PopupMenuItem(value: 'default', child: SizedBox(width: 160, child: Text(context.tr('default'), style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))),
-                  PopupMenuItem(value: 'ping', child: SizedBox(width: 160, child: Text(context.tr('lowestPing'), style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))),
-                  PopupMenuItem(value: 'name', child: SizedBox(width: 160, child: Text(context.tr('sortByName'), style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))),
+                  PopupMenuItem(
+                      value: 'default',
+                      child: SizedBox(
+                          width: 160,
+                          child: Text(context.tr('default'),
+                              style: TextStyle(
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : const Color(0xFF222B45))))),
+                  PopupMenuItem(
+                      value: 'ping',
+                      child: SizedBox(
+                          width: 160,
+                          child: Text(context.tr('lowestPing'),
+                              style: TextStyle(
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : const Color(0xFF222B45))))),
+                  PopupMenuItem(
+                      value: 'name',
+                      child: SizedBox(
+                          width: 160,
+                          child: Text(context.tr('sortByName'),
+                              style: TextStyle(
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : const Color(0xFF222B45))))),
                 ];
                 if (_hasAdvancedTest) {
                   items.addAll([
-                    PopupMenuItem(value: 'avg_ping', child: SizedBox(width: 160, child: Text('Avg Ping', style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))),
-                    PopupMenuItem(value: 'packet_loss', child: SizedBox(width: 160, child: Text('Packet Loss', style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))),
-                    PopupMenuItem(value: 'score', child: SizedBox(width: 160, child: Text('Score', style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))),
+                    PopupMenuItem(
+                        value: 'avg_ping',
+                        child: SizedBox(
+                            width: 160,
+                            child: Text('Avg Ping',
+                                style: TextStyle(
+                                    color: isDark
+                                        ? AppColors.darkTextPrimary
+                                        : const Color(0xFF222B45))))),
+                    PopupMenuItem(
+                        value: 'packet_loss',
+                        child: SizedBox(
+                            width: 160,
+                            child: Text('Packet Loss',
+                                style: TextStyle(
+                                    color: isDark
+                                        ? AppColors.darkTextPrimary
+                                        : const Color(0xFF222B45))))),
+                    PopupMenuItem(
+                        value: 'score',
+                        child: SizedBox(
+                            width: 160,
+                            child: Text('Score',
+                                style: TextStyle(
+                                    color: isDark
+                                        ? AppColors.darkTextPrimary
+                                        : const Color(0xFF222B45))))),
                   ]);
                 }
                 return items;
@@ -990,8 +1345,24 @@ class _DnsListPageState extends State<DnsListPage> {
               tooltip: context.tr('more'),
               color: isDark ? AppColors.darkCardBackground : Colors.white,
               itemBuilder: (context) => [
-                PopupMenuItem(value: 'customTest', child: SizedBox(width: 180, child: Text(context.tr('testDomainWithAllDns'), style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))),
-                PopupMenuItem(value: 'refreshDns', child: SizedBox(width: 180, child: Text(context.tr('getNewListFromServer'), style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))),
+                PopupMenuItem(
+                    value: 'customTest',
+                    child: SizedBox(
+                        width: 180,
+                        child: Text(context.tr('testDomainWithAllDns'),
+                            style: TextStyle(
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : const Color(0xFF222B45))))),
+                PopupMenuItem(
+                    value: 'refreshDns',
+                    child: SizedBox(
+                        width: 180,
+                        child: Text(context.tr('getNewListFromServer'),
+                            style: TextStyle(
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : const Color(0xFF222B45))))),
               ],
               onSelected: (value) async {
                 if (value == 'customTest') {
@@ -1000,12 +1371,18 @@ class _DnsListPageState extends State<DnsListPage> {
                     builder: (context) => AlertDialog(
                       title: Text(context.tr('testDomainWithAllDns')),
                       content: Text(context.tr('comingSoon')),
-                      actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(context.tr('close')))],
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(context.tr('close')))
+                      ],
                     ),
                   );
                 } else if (value == 'refreshDns') {
                   await fetchDnsListWithTimer(force: true);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('dnsListUpdated')), duration: const Duration(seconds: 2)));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(context.tr('dnsListUpdated')),
+                      duration: const Duration(seconds: 2)));
                 }
               },
             ),
@@ -1026,26 +1403,41 @@ class _DnsListPageState extends State<DnsListPage> {
                               Expanded(
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
-                                    final isWide = constraints.maxWidth > 600 && Theme.of(context).platform == TargetPlatform.windows;
+                                    final isWide = constraints.maxWidth > 600 &&
+                                        Theme.of(context).platform ==
+                                            TargetPlatform.windows;
                                     if (isWide) {
-                                      int columns = constraints.maxWidth > 1050 ? 3 : 2;
+                                      int columns =
+                                          constraints.maxWidth > 1050 ? 3 : 2;
                                       return GridView.builder(
-                                        physics: const AlwaysScrollableScrollPhysics(),
-                                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
+                                        gridDelegate:
+                                            SliverGridDelegateWithFixedCrossAxisCount(
                                           crossAxisCount: columns,
                                           crossAxisSpacing: 8,
                                           mainAxisSpacing: 8,
                                           mainAxisExtent: 140,
                                         ),
                                         itemCount: _filteredDnsRecords.length,
-                                        itemBuilder: (context, index) => _buildDnsCard(context, _filteredDnsRecords[index], index),
+                                        itemBuilder: (context, index) =>
+                                            _buildDnsCard(
+                                                context,
+                                                _filteredDnsRecords[index],
+                                                index),
                                       );
                                     } else {
                                       return ListView.separated(
-                                        physics: const AlwaysScrollableScrollPhysics(),
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
                                         itemCount: _filteredDnsRecords.length,
-                                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                                        itemBuilder: (context, index) => _buildDnsCard(context, _filteredDnsRecords[index], index),
+                                        separatorBuilder: (_, __) =>
+                                            const SizedBox(height: 8),
+                                        itemBuilder: (context, index) =>
+                                            _buildDnsCard(
+                                                context,
+                                                _filteredDnsRecords[index],
+                                                index),
                                       );
                                     }
                                   },
@@ -1066,11 +1458,18 @@ class _DnsListPageState extends State<DnsListPage> {
                       child: SafeArea(
                         child: Container(
                           margin: const EdgeInsets.all(24),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkCardBackground : AppColors.pureWhite,
+                            color: isDark
+                                ? AppColors.darkCardBackground
+                                : AppColors.pureWhite,
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)],
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 8)
+                            ],
                           ),
                           child: Row(
                             children: [
@@ -1078,28 +1477,41 @@ class _DnsListPageState extends State<DnsListPage> {
                                 child: TextField(
                                   controller: _searchController,
                                   autofocus: true,
-                                  style: TextStyle(color: isDark ? AppColors.textWhite : AppColors.textPrimary),
+                                  style: TextStyle(
+                                      color: isDark
+                                          ? AppColors.textWhite
+                                          : AppColors.textPrimary),
                                   decoration: InputDecoration(
                                     hintText: context.tr('searchByNameOrIp'),
-                                    hintStyle: TextStyle(color: isDark ? AppColors.textLight : AppColors.textSecondary),
+                                    hintStyle: TextStyle(
+                                        color: isDark
+                                            ? AppColors.textLight
+                                            : AppColors.textSecondary),
                                     border: InputBorder.none,
-                                    fillColor: isDark ? AppColors.darkNavy : AppColors.pureWhite,
+                                    fillColor: isDark
+                                        ? AppColors.darkNavy
+                                        : AppColors.pureWhite,
                                     filled: true,
                                   ),
                                   onChanged: (v) {
-                                    if (mounted) setState(() => _searchQuery = v);
+                                    if (mounted)
+                                      setState(() => _searchQuery = v);
                                   },
                                   onSubmitted: (v) {
-                                    if (mounted) setState(() {
-                                      _searchQuery = v;
-                                      _showSearch = false;
-                                    });
+                                    if (mounted)
+                                      setState(() {
+                                        _searchQuery = v;
+                                        _showSearch = false;
+                                      });
                                   },
                                 ),
                               ),
-                              IconButton(icon: const Icon(Icons.close), onPressed: () {
-                                if (mounted) setState(() => _showSearch = false);
-                              }),
+                              IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () {
+                                    if (mounted)
+                                      setState(() => _showSearch = false);
+                                  }),
                             ],
                           ),
                         ),
@@ -1114,7 +1526,9 @@ class _DnsListPageState extends State<DnsListPage> {
           child: const Icon(Icons.add),
           onPressed: () async {
             if (_testDialogOpen) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('waitForPingTest')), duration: const Duration(seconds: 2)));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(context.tr('waitForPingTest')),
+                  duration: const Duration(seconds: 2)));
               return;
             }
             final result = await showDialog(
@@ -1143,13 +1557,16 @@ class _DnsListPageState extends State<DnsListPage> {
 class _TestDomainWithAllDnsDialog extends StatefulWidget {
   final String domain;
   final List<DnsRecord> dnsRecords;
-  const _TestDomainWithAllDnsDialog({required this.domain, required this.dnsRecords});
+  const _TestDomainWithAllDnsDialog(
+      {required this.domain, required this.dnsRecords});
 
   @override
-  State<_TestDomainWithAllDnsDialog> createState() => _TestDomainWithAllDnsDialogState();
+  State<_TestDomainWithAllDnsDialog> createState() =>
+      _TestDomainWithAllDnsDialogState();
 }
 
-class _TestDomainWithAllDnsDialogState extends State<_TestDomainWithAllDnsDialog> {
+class _TestDomainWithAllDnsDialogState
+    extends State<_TestDomainWithAllDnsDialog> {
   @override
   Widget build(BuildContext context) {
     final themeManager = Provider.of<ThemeManager>(context);
@@ -1157,16 +1574,29 @@ class _TestDomainWithAllDnsDialogState extends State<_TestDomainWithAllDnsDialog
 
     return AlertDialog(
       backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,
-      title: Text('${context.tr('testDomainWithAllDns')}: "${widget.domain}"', style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))),
+      title: Text('${context.tr('testDomainWithAllDns')}: "${widget.domain}"',
+          style: TextStyle(
+              color: isDark
+                  ? AppColors.darkTextPrimary
+                  : const Color(0xFF222B45))),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView.builder(
           shrinkWrap: true,
           itemCount: widget.dnsRecords.length,
-          itemBuilder: (context, index) => _DnsTestTile(domain: widget.domain, record: widget.dnsRecords[index]),
+          itemBuilder: (context, index) => _DnsTestTile(
+              domain: widget.domain, record: widget.dnsRecords[index]),
         ),
       ),
-      actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(context.tr('close'), style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))))],
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(context.tr('close'),
+                style: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : const Color(0xFF222B45))))
+      ],
     );
   }
 }
@@ -1191,7 +1621,8 @@ class _DnsTestTileState extends State<_DnsTestTile> {
   }
 
   Future<void> _runTest() async {
-    final result = await DnsService.testDnsWithDns(widget.domain, widget.record.ip1);
+    final result =
+        await DnsService.testDnsWithDns(widget.domain, widget.record.ip1);
     if (mounted) {
       setState(() {
         status = result;
@@ -1206,13 +1637,24 @@ class _DnsTestTileState extends State<_DnsTestTile> {
     final isDark = themeManager.isDarkModeActive(context);
 
     return ListTile(
-      title: Text(widget.record.label, style: TextStyle(color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45))),
-      subtitle: Text(widget.record.ip1, style: TextStyle(color: isDark ? AppColors.darkTextSecondary : Colors.grey[600])),
+      title: Text(widget.record.label,
+          style: TextStyle(
+              color: isDark
+                  ? AppColors.darkTextPrimary
+                  : const Color(0xFF222B45))),
+      subtitle: Text(widget.record.ip1,
+          style: TextStyle(
+              color: isDark ? AppColors.darkTextSecondary : Colors.grey[600])),
       trailing: _loading
-          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2))
           : status != null
-              ? Text(status.toString(), style: const TextStyle(fontWeight: FontWeight.bold))
-              : Text(context.tr('error'), style: const TextStyle(color: Colors.red)),
+              ? Text(status.toString(),
+                  style: const TextStyle(fontWeight: FontWeight.bold))
+              : Text(context.tr('error'),
+                  style: const TextStyle(color: Colors.red)),
     );
   }
 }

@@ -6,7 +6,7 @@ class LanguageManager extends ChangeNotifier {
   static const String _languageKey = 'language_code';
   static const String _countryKey = 'country_code';
 
-  Locale _locale = const Locale('fa', 'IR'); // پیش‌فرض فارسی
+  late Locale _locale;
 
   Locale get locale => _locale;
 
@@ -58,18 +58,48 @@ class LanguageManager extends ChangeNotifier {
     }
   }
 
+  /// چک کردن پشتیبانی از زبان
+  bool isLanguageSupported(String languageCode) {
+    return supportedLocales
+        .any((locale) => locale.languageCode == languageCode);
+  }
+
+  /// تنظیم زبان بر اساس زبان دستگاه
+  Locale getDeviceLanguage(Locale deviceLocale) {
+    // اگر زبان دستگاه پشتیبانی می‌شود، از آن استفاده کن
+    if (isLanguageSupported(deviceLocale.languageCode)) {
+      // پیدا کردن تنظیمات کشور مناسب از لیست زبان‌های پشتیبانی شده
+      final supportedLocale = supportedLocales.firstWhere(
+        (locale) => locale.languageCode == deviceLocale.languageCode,
+      );
+      return supportedLocale;
+    }
+    // در غیر این صورت از انگلیسی استفاده کن
+    return const Locale('en', 'US');
+  }
+
   /// بارگذاری تنظیمات زبان از SharedPreferences
   Future<void> loadLanguage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final languageCode = prefs.getString(_languageKey) ?? 'fa';
-      final countryCode = prefs.getString(_countryKey) ?? 'IR';
+      final deviceLocale = WidgetsBinding.instance.window.locale;
 
-      _locale = Locale(languageCode, countryCode);
+      // اگر زبان قبلاً تنظیم نشده است
+      if (!prefs.containsKey(_languageKey)) {
+        _locale = getDeviceLanguage(deviceLocale);
+        await saveLanguage();
+      } else {
+        // استفاده از تنظیمات ذخیره شده
+        final languageCode = prefs.getString(_languageKey)!;
+        final countryCode = prefs.getString(_countryKey);
+        _locale = Locale(languageCode, countryCode ?? '');
+      }
+
       notifyListeners();
     } catch (e) {
-      // در صورت بروز خطا، از زبان پیش‌فرض استفاده کن
-      _locale = const Locale('fa', 'IR');
+      // در صورت بروز خطا، از زبان دستگاه یا انگلیسی استفاده کن
+      final deviceLocale = WidgetsBinding.instance.window.locale;
+      _locale = getDeviceLanguage(deviceLocale);
     }
   }
 

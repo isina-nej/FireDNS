@@ -115,15 +115,45 @@ class ThemeManager extends ChangeNotifier {
     }
   }
 
+  /// دریافت تم فعلی
+  String getCurrentTheme() {
+    switch (_themeMode) {
+      case ThemeMode.system:
+        return 'system';
+      case ThemeMode.light:
+        return 'light';
+      case ThemeMode.dark:
+        return 'dark';
+    }
+  }
+
   /// دریافت نام تم فعلی
   String getThemeName(BuildContext context) {
     switch (_themeMode) {
       case ThemeMode.system:
-        return context.tr('systemMode');
+        return context.tr('systemDefault');
       case ThemeMode.light:
         return context.tr('lightMode');
       case ThemeMode.dark:
         return context.tr('darkMode');
+    }
+  }
+
+  /// تنظیم تم بر اساس مقدار رشته‌ای
+  Future<void> setTheme(String theme) async {
+    switch (theme) {
+      case 'system':
+        await setSystemTheme();
+        break;
+      case 'light':
+        await setLightTheme();
+        break;
+      case 'dark':
+        await setDarkTheme();
+        break;
+      default:
+        await setSystemTheme();
+        break;
     }
   }
 

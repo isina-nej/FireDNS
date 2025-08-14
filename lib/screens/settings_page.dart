@@ -13,6 +13,18 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   @override
+  void initState() {
+    super.initState();
+    // تنظیم زبان بر اساس زبان دستگاه در اولین اجرا
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final languageManager =
+          Provider.of<LanguageManager>(context, listen: false);
+      final deviceLocale = WidgetsBinding.instance.window.locale;
+      languageManager.getDeviceLanguage(deviceLocale);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
@@ -60,8 +72,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.dark_mode,
                 title: context.tr('appTheme'),
                 subtitle: themeManager.getThemeName(context),
-                onTap: () async {
-                  await themeManager.toggleTheme();
+                onTap: () {
+                  _showThemeSelectionDialog(context, themeManager);
                 },
               ),
             ],
@@ -100,19 +112,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     onTap: () {
                       _showTestTypeSelectionDialog(
-                          context, dnsTestSettingsService);
-                    },
-                  );
-                },
-              ),
-              Consumer<DnsTestSettingsService>(
-                builder: (context, dnsTestSettingsService, child) {
-                  return _buildSettingItem(
-                    icon: Icons.numbers,
-                    title: context.tr('testCount'),
-                    subtitle: dnsTestSettingsService.testCount.toString(),
-                    onTap: () {
-                      _showTestCountSelectionDialog(
                           context, dnsTestSettingsService);
                     },
                   );
@@ -297,6 +296,8 @@ class _SettingsPageState extends State<SettingsPage> {
     final isDark = Provider.of<ThemeManager>(context, listen: false)
         .isDarkModeActive(context);
     final isSelected = languageManager.locale.languageCode == code;
+    final deviceLocale = WidgetsBinding.instance.window.locale;
+    final isDeviceLanguage = deviceLocale.languageCode == code;
 
     return ListTile(
       onTap: () async {
@@ -322,6 +323,15 @@ class _SettingsPageState extends State<SettingsPage> {
           Navigator.pop(context);
         }
       },
+      subtitle: isDeviceLanguage
+          ? Text(
+              context.tr('deviceLanguage'),
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? AppColors.darkTextSecondary : Colors.grey,
+              ),
+            )
+          : null,
       title: Text(
         name,
         style: TextStyle(
@@ -356,6 +366,7 @@ class _SettingsPageState extends State<SettingsPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            _buildTestTypeOption(context, 'auto', dnsTestSettingsService),
             _buildTestTypeOption(
                 context, 'simultaneous', dnsTestSettingsService),
             _buildTestTypeOption(context, 'sequential', dnsTestSettingsService),
@@ -404,69 +415,94 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showTestCountSelectionDialog(
-      BuildContext context, DnsTestSettingsService dnsTestSettingsService) {
+  void _showThemeSelectionDialog(
+      BuildContext context, ThemeManager themeManager) {
     final isDark = Provider.of<ThemeManager>(context, listen: false)
         .isDarkModeActive(context);
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-        title: Text(
-          context.tr('testCount'),
-          style: TextStyle(
-            color: isDark ? AppColors.darkTextPrimary : Colors.black,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTestCountOption(context, 3, dnsTestSettingsService),
-            _buildTestCountOption(context, 5, dnsTestSettingsService),
-            _buildTestCountOption(context, 10, dnsTestSettingsService),
-            _buildTestCountOption(context, 15, dnsTestSettingsService),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              context.tr('cancel'),
-              style: TextStyle(
-                color: isDark ? AppColors.brightBlue : Colors.blue,
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          textTheme: Theme.of(context).textTheme.apply(
+                bodyColor: isDark ? AppColors.darkTextPrimary : Colors.black,
+                displayColor: isDark ? AppColors.darkTextPrimary : Colors.black,
               ),
+        ),
+        child: AlertDialog(
+          backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+          title: Text(
+            context.tr('appTheme'),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildThemeOption(context, 'system', themeManager),
+                _buildThemeOption(context, 'dark', themeManager),
+                _buildThemeOption(context, 'light', themeManager),
+              ],
             ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                context.tr('cancel'),
+                style: TextStyle(
+                  color: isDark ? AppColors.brightBlue : Colors.blue,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTestCountOption(BuildContext context, int count,
-      DnsTestSettingsService dnsTestSettingsService) {
-    final isDark = Provider.of<ThemeManager>(context, listen: false)
-        .isDarkModeActive(context);
-    final isSelected = dnsTestSettingsService.testCount == count;
+  Widget _buildThemeOption(
+      BuildContext context, String theme, ThemeManager themeManager) {
+    return Consumer<ThemeManager>(
+      builder: (context, themeManager, child) {
+        final isDark = themeManager.isDarkModeActive(context);
+        final isSelected = themeManager.getCurrentTheme() == theme;
 
-    return ListTile(
-      title: Text(
-        count.toString(),
-        style: TextStyle(
-          color: isDark ? AppColors.darkTextPrimary : Colors.black,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-      trailing: isSelected
-          ? Icon(
-              Icons.check_circle,
-              color: isDark ? AppColors.brightBlue : Colors.blue,
-            )
-          : null,
-      onTap: () async {
-        await dnsTestSettingsService.setTestCount(count);
-        Navigator.pop(context);
+        return Material(
+          color: Colors.transparent,
+          child: ListTile(
+            title: DefaultTextStyle(
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+              child: Text(_getThemeDisplayName(context, theme)),
+            ),
+            trailing: isSelected
+                ? Icon(
+                    Icons.check_circle,
+                    color: isDark ? AppColors.brightBlue : Colors.blue,
+                  )
+                : null,
+            onTap: () async {
+              Navigator.pop(context);
+              await themeManager.setTheme(theme);
+            },
+          ),
+        );
       },
     );
+  }
+
+  String _getThemeDisplayName(BuildContext context, String theme) {
+    switch (theme) {
+      case 'system':
+        return context.tr('systemDefault');
+      case 'dark':
+        return context.tr('darkMode');
+      case 'light':
+        return context.tr('lightMode');
+      default:
+        return theme;
+    }
   }
 }
