@@ -42,6 +42,7 @@ class _DnsListPageState extends State<DnsListPage> {
   }
 
   bool _isUserDns(DnsRecord record) => _userDnsIds.contains(record.id);
+
   Widget _buildDnsCard(BuildContext context, DnsRecord record, int index) {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
@@ -79,19 +80,19 @@ class _DnsListPageState extends State<DnsListPage> {
     } else {
       pingColor = AppColors.pingBad;
     }
-    Color pingColor2;
+    Color ping2Color;
     if (ping2 == null || ping2 < 0) {
-      pingColor2 = Colors.grey.shade400;
+      ping2Color = Colors.grey.shade400;
     } else if (ping2 < 50) {
-      pingColor2 = AppColors.pingExcellent;
+      ping2Color = AppColors.pingExcellent;
     } else if (ping2 < 120) {
-      pingColor2 = AppColors.pingGood;
+      ping2Color = AppColors.pingGood;
     } else if (ping2 < 250) {
-      pingColor2 = AppColors.pingMedium;
+      ping2Color = AppColors.pingMedium;
     } else if (ping2 < 500) {
-      pingColor2 = AppColors.pingPoor;
+      ping2Color = AppColors.pingPoor;
     } else {
-      pingColor2 = AppColors.pingBad;
+      ping2Color = AppColors.pingBad;
     }
     final isUserDns = _isUserDns(record);
     return ClipRect(
@@ -395,7 +396,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                         Icon(
                                           Icons.speed,
                                           size: 18,
-                                          color: pingColor2,
+                                          color: ping2Color,
                                         ),
                                         const SizedBox(width: 2),
                                         ping2 == -2
@@ -413,7 +414,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                                 ? Text(
                                                     '---',
                                                     style: TextStyle(
-                                                      color: pingColor2,
+                                                      color: ping2Color,
                                                       fontWeight:
                                                           FontWeight.bold,
                                                       fontSize: 13,
@@ -424,7 +425,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                                 : Text(
                                                     '$ping2 ms',
                                                     style: TextStyle(
-                                                      color: pingColor2,
+                                                      color: ping2Color,
                                                       fontWeight:
                                                           FontWeight.bold,
                                                       fontSize: 13,
@@ -500,12 +501,10 @@ class _DnsListPageState extends State<DnsListPage> {
   String? _selectedDnsId;
   Map<String, int> _pingCache = {};
   bool _isLoading = false;
-  // String? _message; // Removed unused field
   bool _loadingList = true;
   String? _loadError;
-
-  // Sorting
-  String _sortType = 'ping'; // 'default', 'ping', 'name'
+  String _sortType = 'ping';
+  DateTime? _lastAutoPing;
 
   void _sortDnsRecords() {
     setState(() {
@@ -521,11 +520,10 @@ class _DnsListPageState extends State<DnsListPage> {
           int pingB1 = _pingCache['${b.id}_1'] ?? _pingCache[b.id] ?? 999999;
           int pingB2 = _pingCache['${b.id}_2'] ?? 999999;
 
-          // تبدیل پینگ‌ها به مقادیر قابل مقایسه
           int getPingValue(int ping) {
-            if (ping == -2) return 999998; // در حال تست
-            if (ping == -1) return 999999; // تایم‌اوت
-            return ping; // پینگ عادی
+            if (ping == -2) return 999998;
+            if (ping == -1) return 999999;
+            return ping;
           }
 
           final bestPingA = min(getPingValue(pingA1), getPingValue(pingA2));
@@ -541,8 +539,6 @@ class _DnsListPageState extends State<DnsListPage> {
     });
   }
 
-  DateTime? _lastAutoPing;
-
   @override
   void initState() {
     super.initState();
@@ -556,7 +552,6 @@ class _DnsListPageState extends State<DnsListPage> {
       if (_sortType == 'ping') {
         _sortDnsRecords();
       }
-      // زمان آخرین پینگ خودکار را از SharedPreferences بخوان
       final prefs = await SharedPreferences.getInstance();
       final lastPingStr = prefs.getString('last_auto_ping');
       if (lastPingStr != null) {
@@ -565,7 +560,6 @@ class _DnsListPageState extends State<DnsListPage> {
         } catch (_) {}
       }
       final now = DateTime.now();
-      // اگر اولین ورود یا بیش از ۱ ساعت گذشته بود، پینگ خودکار انجام بده
       if (_lastAutoPing == null ||
           now.difference(_lastAutoPing!).inHours >= 1) {
         await _testAllDns(auto: true);
@@ -575,8 +569,6 @@ class _DnsListPageState extends State<DnsListPage> {
     });
   }
 
-  // --- Place fetchDnsListWithTimer after initState and after class variables ---
-  /// دریافت لیست از API فقط هر ۶ ساعت یکبار (مگر اینکه کش خالی باشد یا force=true)
   Future<void> fetchDnsListWithTimer({bool force = false}) async {
     final prefs = await SharedPreferences.getInstance();
     final lastFetchStr = prefs.getString('last_dns_api_fetch');
@@ -595,13 +587,11 @@ class _DnsListPageState extends State<DnsListPage> {
       shouldFetch = true;
     }
     if (shouldFetch) {
-      // دریافت لیست جدید از API
       final response = await _dnsApiService.getAllDnsRecords();
       List<DnsRecord> apiRecords = [];
       if (response.status && response.data != null) {
         apiRecords = response.data!;
       }
-      // دریافت DNSهای دستی
       final userDnsJson = prefs.getString('user_dns_list');
       List<DnsRecord> userDnsRecords = [];
       if (userDnsJson != null) {
@@ -610,9 +600,7 @@ class _DnsListPageState extends State<DnsListPage> {
           userDnsRecords = userList.map((e) => DnsRecord.fromJson(e)).toList();
         } catch (_) {}
       }
-      // لیست جدید = API + DNSهای دستی
       List<DnsRecord> newRecords = [...apiRecords, ...userDnsRecords];
-      // حذف موارد تکراری بر اساس ip1+ip2
       final seen = <String>{};
       newRecords = newRecords.where((r) {
         final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
@@ -625,7 +613,6 @@ class _DnsListPageState extends State<DnsListPage> {
         _loadingList = false;
         _sortDnsRecords();
       });
-      // بروزرسانی کش و زمان آخرین دریافت
       prefs.setString(
         'cached_dns_list',
         jsonEncode(newRecords.map((e) => e.toJson()).toList()),
@@ -636,7 +623,6 @@ class _DnsListPageState extends State<DnsListPage> {
       );
       prefs.setString('last_dns_api_fetch', now.toIso8601String());
     } else {
-      // فقط کش و DNSهای دستی را نمایش بده
       List<DnsRecord> cachedRecords = [];
       if (cachedJson != null) {
         try {
@@ -653,7 +639,6 @@ class _DnsListPageState extends State<DnsListPage> {
         } catch (_) {}
       }
       List<DnsRecord> allRecords = [...cachedRecords, ...userDnsRecords];
-      // حذف موارد تکراری بر اساس ip1+ip2
       final seen = <String>{};
       allRecords = allRecords.where((r) {
         final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
@@ -687,9 +672,7 @@ class _DnsListPageState extends State<DnsListPage> {
         final List<dynamic> jsonList = List.from(jsonDecode(cached));
         List<DnsRecord> records =
             jsonList.map((e) => DnsRecord.fromJson(e)).toList();
-        // Add user DNS records (persistent)
         records.addAll(userDnsRecords);
-        // Remove duplicates by ip1+ip2
         final seen = <String>{};
         records = records.where((r) {
           final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
@@ -697,7 +680,6 @@ class _DnsListPageState extends State<DnsListPage> {
           seen.add(key);
           return true;
         }).toList();
-        // Restore order if available
         if (cachedOrder.isNotEmpty) {
           records.sort((a, b) {
             int ia = cachedOrder.indexOf(a.id);
@@ -715,7 +697,6 @@ class _DnsListPageState extends State<DnsListPage> {
         });
       } catch (_) {}
     } else if (userDnsRecords.isNotEmpty) {
-      // If no cached list, but user DNS exists
       final pingCache = await DnsPingHelper.loadPingCache();
       setState(() {
         _dnsRecords = userDnsRecords;
@@ -741,10 +722,8 @@ class _DnsListPageState extends State<DnsListPage> {
     final response = await _dnsApiService.getAllDnsRecords();
     List<DnsRecord> records = [];
     if (response.status && response.data != null) {
-      // دریافت لیست از API
       records = response.data!;
     }
-    // دریافت DNSهای کاربر از کش
     final prefs = await SharedPreferences.getInstance();
     final userDnsJson = prefs.getString('user_dns_list');
     List<DnsRecord> userDnsRecords = [];
@@ -754,9 +733,7 @@ class _DnsListPageState extends State<DnsListPage> {
         userDnsRecords = userList.map((e) => DnsRecord.fromJson(e)).toList();
       } catch (_) {}
     }
-    // اضافه کردن DNSهای کاربر به لیست اصلی
     records.addAll(userDnsRecords);
-    // حذف موارد تکراری بر اساس ip1+ip2
     final seen = <String>{};
     records = records.where((r) {
       final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
@@ -770,7 +747,6 @@ class _DnsListPageState extends State<DnsListPage> {
         _loadingList = false;
         _sortDnsRecords();
       });
-      // ذخیره لیست ترکیبی در کش
       prefs.setString(
         'cached_dns_list',
         jsonEncode(records.map((e) => e.toJson()).toList()),
@@ -794,7 +770,6 @@ class _DnsListPageState extends State<DnsListPage> {
   bool _testDialogOpen = false;
 
   Future<void> _connectToDns(DnsRecord record) async {
-    // اگر تست پینگ در حال اجراست، اجازه انتخاب نده و اسنک‌بار نمایش بده
     if (_testDialogOpen) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -806,25 +781,18 @@ class _DnsListPageState extends State<DnsListPage> {
       }
       return;
     }
-    // توقف تست پینگ هنگام انتخاب DNS فقط روی اندروید و iOS
-    // جلوگیری از کرش روی ویندوز
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       DnsPingHelper.cancelPingTest();
     }
     setState(() {
       _selectedDnsId = record.id;
     });
-    // Persist selected DNS
     final prefs = await SharedPreferences.getInstance();
     prefs.setString('cached_selected_dns', record.id);
-
-    // فقط انتخاب و بازگشت به صفحه قبلی، روند اتصال در صفحه قبلی انجام شود
     if (mounted) {
       Navigator.pop(context, record);
     }
   }
-
-  // Map<String, int> _pingCache = {}; // Removed duplicate declaration
 
   Future<void> _testAllDns({bool auto = false}) async {
     if (!mounted) return;
@@ -844,6 +812,7 @@ class _DnsListPageState extends State<DnsListPage> {
             ),
           );
         }
+        setState(() => _testDialogOpen = false);
         return;
       }
 
@@ -857,10 +826,11 @@ class _DnsListPageState extends State<DnsListPage> {
             ),
           );
         }
+        setState(() => _testDialogOpen = false);
         return;
       }
 
-      // نمایش پیشرفت
+      // نمایش دیالوگ پیشرفت در حالت غیر خودکار
       double progress = 0;
       if (!auto && mounted) {
         showDialog(
@@ -876,17 +846,28 @@ class _DnsListPageState extends State<DnsListPage> {
                 Text('${(progress * 100).toInt()}%'),
               ],
             ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  DnsPingHelper.cancelPingTest();
+                  Navigator.of(context).pop();
+                },
+                child: Text(context.tr('cancel')),
+              ),
+            ],
           ),
         );
       }
 
-      // اجرای تست‌ها
+      // اجرای تست همه DNS‌ها با استفاده از DnsTestManager
       final results = await DnsTestManager.testMultipleDns(
         _dnsRecords,
-        showProgress: true,
+        showProgress: !auto,
         onProgress: (p) {
-          progress = p;
           if (!auto && mounted) {
+            setState(() {
+              progress = p;
+            });
             Navigator.of(context).pop();
             showDialog(
               context: context,
@@ -901,6 +882,15 @@ class _DnsListPageState extends State<DnsListPage> {
                     Text('${(p * 100).toInt()}%'),
                   ],
                 ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      DnsPingHelper.cancelPingTest();
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(context.tr('cancel')),
+                  ),
+                ],
               ),
             );
           }
@@ -910,32 +900,31 @@ class _DnsListPageState extends State<DnsListPage> {
       if (!mounted) return;
 
       // بستن دیالوگ پیشرفت
-      if (!auto) {
+      if (!auto && Navigator.canPop(context)) {
         Navigator.of(context).pop();
       }
 
-      // بروزرسانی نتایج
+      // به‌روزرسانی کش پینگ
       setState(() {
         _pingCache = results;
         _sortDnsRecords();
       });
 
-      // نمایش نتایج
+      // ذخیره نتایج در SharedPreferences
+      await DnsTestManager.savePingCache(results);
+
+      // نمایش نتایج در حالت غیر خودکار
       if (!auto && mounted) {
         final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
         if (!dontShow) {
-          final List<String> resultTexts = _dnsRecords.map((record) {
-            final ping1 = results['${record.id}_1'];
-            final ping2 = results['${record.id}_2'];
-            String pingText = '';
-            if (ping1 != null && ping1 >= 0) {
-              pingText += '${ping1}ms';
-            }
-            if (ping2 != null && ping2 >= 0) {
-              if (pingText.isNotEmpty) pingText += ' / ';
-              pingText += '${ping2}ms';
-            }
-            return '${record.label}: $pingText';
+          final List<String> resultTexts = _dnsRecords.asMap().entries.map((entry) {
+            final index = entry.key;
+            final record = entry.value;
+            final ping1 = results['${record.id}_1'] ?? -1;
+            final ping2 = results['${record.id}_2'] ?? -1;
+            return '${index + 1}. ${record.label}\n'
+                'DNS1: ${ping1 >= 0 ? '✅' : '❌'} (پینگ: ${ping1 >= 0 ? '$ping1 ms' : '---'})\n'
+                'DNS2: ${ping2 >= 0 ? '✅' : '❌'} (پینگ: ${ping2 >= 0 ? '$ping2 ms' : '---'})';
           }).toList();
 
           showDialog(
@@ -984,62 +973,53 @@ class _DnsListPageState extends State<DnsListPage> {
     }
   }
 
-  /// تست ترتیبی DNS ها بر اساس کمترین پینگ در تست قبلی
   Future<void> _testSequentialDns() async {
     if (!mounted) return;
-
-    // بررسی وضعیت شبکه
-    final hasNetwork = await DnsTestManager.checkNetworkStatus();
-    if (!hasNetwork) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.tr('noInternetConnection')),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    // بررسی محدودیت زمانی
-    if (!DnsTestManager.canRunTest()) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.tr('waitBeforeNextTest')),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-      return;
-    }
-
+    final prefs = await SharedPreferences.getInstance();
     setState(() => _testDialogOpen = true);
 
     try {
-      if (!mounted) return;
+      final hasNetwork = await DnsTestManager.checkNetworkStatus();
+      if (!hasNetwork) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.tr('noInternetConnection')),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
-      // مرتب‌سازی اولیه DNS ها بر اساس لایک و نتایج قبلی
+      if (!DnsTestManager.canRunTest()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.tr('waitBeforeNextTest')),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
       final sortedRecords = List<DnsRecord>.from(_dnsRecords);
       sortedRecords.sort((a, b) {
-        // اول بر اساس لایک مرتب می‌کنیم
         final aLiked = _likedDnsIds.contains(a.id);
         final bLiked = _likedDnsIds.contains(b.id);
         if (aLiked && !bLiked) return -1;
         if (!aLiked && bLiked) return 1;
 
-        // سپس بر اساس پینگ مرتب می‌کنیم
         final pingA1 = _pingCache['${a.id}_1'] ?? 999999;
         final pingA2 = _pingCache['${a.id}_2'] ?? 999999;
         final pingB1 = _pingCache['${b.id}_1'] ?? 999999;
         final pingB2 = _pingCache['${b.id}_2'] ?? 999999;
 
-        // تبدیل پینگ‌ها به مقادیر قابل مقایسه
         int getPingValue(int ping) {
-          if (ping == -2) return 999998; // در حال تست
-          if (ping == -1) return 999999; // تایم‌اوت
-          return ping; // پینگ عادی
+          if (ping == -2) return 999998;
+          if (ping == -1) return 999999;
+          return ping;
         }
 
         final bestPingA = getPingValue(pingA1 < pingA2 ? pingA1 : pingA2);
@@ -1048,11 +1028,9 @@ class _DnsListPageState extends State<DnsListPage> {
         return bestPingA.compareTo(bestPingB);
       });
 
-      // تست تک تک DNS ها به ترتیب
       for (final record in sortedRecords) {
         if (!mounted || !_testDialogOpen) break;
 
-        // نشان دادن وضعیت در حال تست
         setState(() {
           _pingCache['${record.id}_1'] = -2;
           if (record.ip2.isNotEmpty) {
@@ -1060,7 +1038,6 @@ class _DnsListPageState extends State<DnsListPage> {
           }
         });
 
-        // تست هر دو IP به صورت همزمان
         final results = await Future.wait([
           DnsTestManager.testSingleDns(record.ip1),
           if (record.ip2.isNotEmpty) DnsTestManager.testSingleDns(record.ip2),
@@ -1068,25 +1045,19 @@ class _DnsListPageState extends State<DnsListPage> {
 
         if (!mounted || !_testDialogOpen) break;
 
-        // بروزرسانی نتایج
         setState(() {
           _pingCache['${record.id}_1'] = results[0] ?? -1;
           if (results.length > 1) {
             _pingCache['${record.id}_2'] = results[1] ?? -1;
           }
-          _sortDnsRecords(); // مرتب‌سازی بعد از هر بروزرسانی
+          _sortDnsRecords();
         });
 
-        // مکث کوتاه بین تست‌ها
         await Future.delayed(const Duration(milliseconds: 100));
       }
 
       _sortDnsRecords();
-
-      // ذخیره نتایج در کش
-      if (mounted) {
-        await DnsTestManager.savePingCache(_pingCache);
-      }
+      await DnsTestManager.savePingCache(_pingCache);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1103,11 +1074,8 @@ class _DnsListPageState extends State<DnsListPage> {
     }
   }
 
-  /// تست پیشرفته DNS با محاسبه میانگین پینگ، پکت از دست رفته و امتیازدهی
   Future<void> _testAdvancedDns() async {
     final prefs = await SharedPreferences.getInstance();
-
-    // دریافت تعداد تست از کاربر
     int? testCount = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1154,67 +1122,78 @@ class _DnsListPageState extends State<DnsListPage> {
       ),
     );
 
-    if (testCount == null) return; // کاربر لغو کرده است
+    if (testCount == null) return;
 
-    // final result = await DnsPingHelper.testAdvancedDns(
-    //   context: context,
-    //   dnsRecords: _dnsRecords,
-    //   sortType: _sortType,
-    //   sortDnsRecords: _sortDnsRecords,
-    //   testCount: testCount,
-    //   mounted: mounted,
-    //   showDialogCallback: (List<String> results) async {
-    //     if (!mounted) return;
-    //     // اگر کاربر قبلا گزینه دیگر نشان نده را زده بود، دیالوگ را نمایش نده
-    //     final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
-    //     if (dontShow) return;
-    //     await showDialog(
-    //       context: context,
-    //       barrierDismissible: true,
-    //       builder: (context) => GestureDetector(
-    //         behavior: HitTestBehavior.opaque,
-    //         onTap: () {
-    //           Navigator.of(context).pop();
-    //         },
-    //         child: AlertDialog(
-    //           title: Text(context.tr('advancedTest')),
-    //           content: SizedBox(
-    //             width: double.maxFinite,
-    //             child: ListView(
-    //               shrinkWrap: true,
-    //               children: results.map((e) => Text(e)).toList(),
-    //             ),
-    //           ),
-    //           actions: [
-    //             TextButton(
-    //               onPressed: () => Navigator.pop(context),
-    //               child: Text(context.tr('close')),
-    //             ),
-    //             TextButton(
-    //               onPressed: () async {
-    //                 await prefs.setBool('dont_show_dns_test_dialog', true);
-    //                 if (Navigator.canPop(context)) {
-    //                   Navigator.pop(context);
-    //                 }
-    //               },
-    //               child: Text(context.tr('dontShowAgain')),
-    //             ),
-    //           ],
-    //         ),
-    //       ),
-    //     );
-    //   },
-    //   setTestDialogOpen: (v) {
-    //     if (!mounted) return;
-    //     setState(() => _testDialogOpen = v);
-    //   },
-    // );
+    setState(() => _testDialogOpen = true);
 
-    // if (!mounted) return;
-    // setState(() {
-    //   _pingCache = result['pingCache'];
-    //   _sortDnsRecords();
-    // });
+    try {
+      final results = await DnsPingHelper.testSequentialDns(
+        context: context,
+        dnsRecords: _dnsRecords,
+        sortType: _sortType,
+        sortDnsRecords: _sortDnsRecords,
+        testCount: testCount,
+        mounted: mounted,
+        showDialogCallback: (List<String> results) async {
+          if (!mounted) return;
+          final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
+          if (dontShow) return;
+          await showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(context.tr('advancedTest')),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 300,
+                child: ListView(
+                  children: results.map((e) => Text(e)).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(context.tr('close')),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await prefs.setBool('dont_show_dns_test_dialog', true);
+                    if (mounted && Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: Text(context.tr('dontShowAgain')),
+                ),
+              ],
+            ),
+          );
+        },
+        setTestDialogOpen: (v) {
+          if (mounted) {
+            setState(() => _testDialogOpen = v);
+          }
+        },
+        setCancelTest: (v) {},
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _pingCache = results;
+        _sortDnsRecords();
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _testDialogOpen = false);
+      }
+    }
   }
 
   String _searchQuery = '';
@@ -1223,14 +1202,12 @@ class _DnsListPageState extends State<DnsListPage> {
 
   List<DnsRecord> get _filteredDnsRecords {
     if (_searchQuery.trim().isEmpty) return _dnsRecords;
-    // Remove all spaces from query and split by space for multi-part search
     final parts =
         _searchQuery.replaceAll(RegExp(r'\s+'), ' ').trim().split(' ');
     return _dnsRecords.where((r) {
       final label = r.label.replaceAll(' ', '').toLowerCase();
       final ip1 = r.ip1.replaceAll(' ', '').toLowerCase();
       final ip2 = r.ip2.replaceAll(' ', '').toLowerCase();
-      // All parts must be found in any field (label, ip1, ip2)
       return parts.every((part) {
         final p = part.replaceAll(' ', '').toLowerCase();
         return label.contains(p) || ip1.contains(p) || ip2.contains(p);
@@ -1249,7 +1226,6 @@ class _DnsListPageState extends State<DnsListPage> {
     }
     userDnsList.removeWhere((e) => e['id'] == record.id);
     await prefs.setString('user_dns_list', jsonEncode(userDnsList));
-    // Remove from liked if present
     final liked = prefs.getStringList('liked_dns_ids') ?? [];
     liked.remove(record.id);
     await prefs.setStringList('liked_dns_ids', liked);
@@ -1265,7 +1241,6 @@ class _DnsListPageState extends State<DnsListPage> {
       builder: (context) => AddDnsDialog(
         initialRecord: record,
         onAdd: (editedRecord) async {
-          // Replace in user_dns_list
           final prefs = await SharedPreferences.getInstance();
           final userDnsJson = prefs.getString('user_dns_list');
           List<dynamic> userDnsList = [];
@@ -1274,7 +1249,6 @@ class _DnsListPageState extends State<DnsListPage> {
               userDnsList = List.from(jsonDecode(userDnsJson));
             } catch (_) {}
           }
-          // Remove all previous versions by id and by ip1+ip2
           userDnsList.removeWhere((e) {
             final key =
                 (e['ip1'] + '_' + e['ip2']).replaceAll(' ', '').toLowerCase();
@@ -1285,14 +1259,11 @@ class _DnsListPageState extends State<DnsListPage> {
           });
           userDnsList.add(editedRecord.toJson());
           await prefs.setString('user_dns_list', jsonEncode(userDnsList));
-
-          // Add to liked_dns_ids if not already present
           final liked = prefs.getStringList('liked_dns_ids') ?? [];
           if (!liked.contains(editedRecord.id)) {
             liked.add(editedRecord.id);
             await prefs.setStringList('liked_dns_ids', liked);
           }
-
           await _loadCachedDnsList();
           await _loadUserDnsIds();
           setState(() {
@@ -1352,10 +1323,8 @@ class _DnsListPageState extends State<DnsListPage> {
                     ),
                     tooltip: context.tr('cancelAllDnsTest'),
                     onPressed: () {
-                      setState(() {
-                        // _cancelTest = true;
-                        _testDialogOpen = false;
-                      });
+                      DnsPingHelper.cancelPingTest();
+                      setState(() => _testDialogOpen = false);
                     },
                   )
                 : PopupMenuButton<String>(
@@ -1565,7 +1534,6 @@ class _DnsListPageState extends State<DnsListPage> {
                                         Theme.of(context).platform ==
                                             TargetPlatform.windows;
                                     if (isWide) {
-                                      // اگر خیلی عریض بود سه ستونه، اگر فقط عریض بود دو ستونه
                                       int columns =
                                           constraints.maxWidth > 1050 ? 3 : 2;
                                       return GridView.builder(
@@ -1576,8 +1544,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                           crossAxisCount: columns,
                                           crossAxisSpacing: 8,
                                           mainAxisSpacing: 8,
-                                          mainAxisExtent:
-                                              140, // ارتفاع ثابت برای هر آیتم
+                                          mainAxisExtent: 140,
                                         ),
                                         itemCount: _filteredDnsRecords.length,
                                         itemBuilder: (context, index) =>
@@ -1588,7 +1555,6 @@ class _DnsListPageState extends State<DnsListPage> {
                                         ),
                                       );
                                     } else {
-                                      // حالت معمول لیست
                                       return ListView.separated(
                                         physics:
                                             const AlwaysScrollableScrollPhysics(),
@@ -1710,7 +1676,6 @@ class _DnsListPageState extends State<DnsListPage> {
               context: context,
               builder: (context) => AddDnsDialog(
                 onAdd: (newRecord) async {
-                  // Like the DNS if not already liked
                   final prefs = await SharedPreferences.getInstance();
                   final liked = prefs.getStringList('liked_dns_ids') ?? [];
                   if (!liked.contains(newRecord.id)) {
@@ -1724,7 +1689,6 @@ class _DnsListPageState extends State<DnsListPage> {
                 },
               ),
             );
-            // اگر رکوردی از دیالوگ برگشت (در حالت وصل شدن به DNS موجود)
             if (result is DnsRecord) {
               _connectToDns(result);
             }

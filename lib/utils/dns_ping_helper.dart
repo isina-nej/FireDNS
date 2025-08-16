@@ -45,47 +45,78 @@ class DnsPingHelper {
     final records = data['dnsRecords'] as List;
     final pingCache = Map<String, int>.from(data['pingCache'] as Map);
     final results = <String>[];
-    final futures = <Future>[];
+    final allFutures = <Future<Map<String, dynamic>>>[];
 
     for (int index = 0; index < records.length; index++) {
       final record = records[index];
+      final id = record['id'];
+      final label = record['label'];
       final ip1 = record['ip1'];
       final ip2 = record['ip2'];
 
-      futures.add(Future(() async {
-        try {
-          final [ping1, ping2] = await Future.wait([
-            ping(ip1).timeout(const Duration(seconds: 1)),
-            ping(ip2).timeout(const Duration(seconds: 1)),
-          ]);
-
-          pingCache['${record["id"]}_1'] = ping1;
-          pingCache['${record["id"]}_2'] = ping2;
-
-          return {
+      allFutures.add(ping(ip1).timeout(const Duration(seconds: 1)).then((ping1) => {
+            'id': id,
+            'which': 1,
+            'ping': ping1,
             'index': index,
-            'label': record['label'],
-            'ping1': ping1,
-            'ping2': ping2,
-            'isReachable1': ping1 >= 0,
-            'isReachable2': ping2 >= 0,
-          };
-        } catch (e) {
-          pingCache['${record["id"]}_1'] = -1;
-          pingCache['${record["id"]}_2'] = -1;
-          return {
+            'label': label,
+          }).catchError((e) => {
+            'id': id,
+            'which': 1,
+            'ping': -1,
             'index': index,
-            'label': record['label'],
-            'error': true,
-          };
-        }
-      }));
+            'label': label,
+          }));
+
+      allFutures.add(ping(ip2).timeout(const Duration(seconds: 1)).then((ping2) => {
+            'id': id,
+            'which': 2,
+            'ping': ping2,
+            'index': index,
+            'label': label,
+          }).catchError((e) => {
+            'id': id,
+            'which': 2,
+            'ping': -1,
+            'index': index,
+            'label': label,
+          }));
     }
 
-    final responses = await Future.wait(futures);
-    responses.sort((a, b) => (a['index'] as int).compareTo(b['index'] as int));
+    final allResponses = await Future.wait(allFutures);
 
-    for (final response in responses) {
+    // گروه‌بندی نتایج بر اساس id
+    final pingsPerId = <String, Map<int, int>>{};
+
+    for (final resp in allResponses) {
+      final id = resp['id'] as String;
+      final which = resp['which'] as int;
+      final ping = resp['ping'] as int;
+      pingsPerId.putIfAbsent(id, () => {});
+      pingsPerId[id]![which] = ping;
+      pingCache['${id}_$which'] = ping;
+    }
+
+    // ساخت نتایج بر اساس ترتیب اصلی
+    final sortedResponses = <Map<String, dynamic>>[];
+    for (int index = 0; index < records.length; index++) {
+      final record = records[index];
+      final id = record['id'] as String;
+      final pings = pingsPerId[id] ?? {1: -1, 2: -1};
+      final ping1 = pings[1] ?? -1;
+      final ping2 = pings[2] ?? -1;
+      sortedResponses.add({
+        'index': index,
+        'label': record['label'],
+        'ping1': ping1,
+        'ping2': ping2,
+        'isReachable1': ping1 >= 0,
+        'isReachable2': ping2 >= 0,
+        'error': ping1 == -1 && ping2 == -1,
+      });
+    }
+
+    for (final response in sortedResponses) {
       if (response['error'] == true) {
         results.add(
           '${response["index"] + 1}. ${response["label"]}\n'
