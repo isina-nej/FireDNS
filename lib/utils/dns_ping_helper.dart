@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:isolate';
 import '../path/path.dart'; // Assuming DnsService and DnsStatus are defined here
+import '../constants/dns_constants.dart'; // برای DnsConstants.methodChannel
 
 class DnsPingHelper {
+  static const platform = MethodChannel(DnsConstants.methodChannel); // استفاده از channel موجود
   static bool cancelRequested = false;
   static int testCount = 5; // تعداد تست برای تست پیشرفته
 
@@ -26,6 +29,16 @@ class DnsPingHelper {
     };
   }
 
+  // تابع پینگ با Method Channel
+  static Future<int> ping(String ip) async {
+    try {
+      final result = await platform.invokeMethod('ping', {'ip': ip});
+      return result is int && result >= 0 ? result : -1;
+    } catch (_) {
+      return -1;
+    }
+  }
+
   // تابع اصلی تست پینگ در Isolate
   static Future<Map<String, dynamic>> _isolatePingTest(
       Map<String, dynamic> data) async {
@@ -41,19 +54,21 @@ class DnsPingHelper {
 
       futures.add(Future(() async {
         try {
-          final dnsResults = await Future.wait([
-            DnsService.testDns(ip1).timeout(const Duration(seconds: 2)),
-            DnsService.testDns(ip2).timeout(const Duration(seconds: 2)),
+          final [ping1, ping2] = await Future.wait([
+            ping(ip1).timeout(const Duration(seconds: 1)),
+            ping(ip2).timeout(const Duration(seconds: 1)),
           ]);
 
-          pingCache['${record["id"]}_1'] = dnsResults[0].ping;
-          pingCache['${record["id"]}_2'] = dnsResults[1].ping;
+          pingCache['${record["id"]}_1'] = ping1;
+          pingCache['${record["id"]}_2'] = ping2;
 
           return {
             'index': index,
             'label': record['label'],
-            'status1': dnsResults[0],
-            'status2': dnsResults[1],
+            'ping1': ping1,
+            'ping2': ping2,
+            'isReachable1': ping1 >= 0,
+            'isReachable2': ping2 >= 0,
           };
         } catch (e) {
           pingCache['${record["id"]}_1'] = -1;
@@ -77,12 +92,14 @@ class DnsPingHelper {
           'DNS1: ❌ (پینگ: --- ms)\nDNS2: ❌ (پینگ: --- ms)',
         );
       } else {
-        final status1 = response['status1'];
-        final status2 = response['status2'];
+        final ping1 = response['ping1'] as int;
+        final ping2 = response['ping2'] as int;
+        final isReachable1 = response['isReachable1'] as bool;
+        final isReachable2 = response['isReachable2'] as bool;
         results.add(
           '${response["index"] + 1}. ${response["label"]}\n'
-          'DNS1: ${status1.isReachable ? '✅' : '❌'} (پینگ: ${status1.ping > 0 ? status1.ping : "---"} ms)\n'
-          'DNS2: ${status2.isReachable ? '✅' : '❌'} (پینگ: ${status2.ping > 0 ? status2.ping : "---"} ms)',
+          'DNS1: ${isReachable1 ? '✅' : '❌'} (پینگ: ${ping1 >= 0 ? ping1 : "---"} ms)\n'
+          'DNS2: ${isReachable2 ? '✅' : '❌'} (پینگ: ${ping2 >= 0 ? ping2 : "---"} ms)',
         );
       }
     }
@@ -120,19 +137,6 @@ class DnsPingHelper {
     cancelRequested = true;
   }
 
-  /// تست پینگ یک IP (IPv4 یا IPv6) و بازگشت مقدار پینگ یا -1 در صورت عدم دسترسی
-  static Future<int> ping(String ip) async {
-    try {
-      final isIPv6 = ip.contains(':') && !ip.contains('.');
-      final status = isIPv6
-          ? await DnsService.testDnsIPv6(ip)
-          : await DnsService.testDns(ip);
-      return status.isReachable && status.ping > 0 ? status.ping : -1;
-    } catch (_) {
-      return -1;
-    }
-  }
-
   static Future<Map<String, int>> testAllDns({
     required BuildContext context,
     required List dnsRecords,
@@ -145,7 +149,7 @@ class DnsPingHelper {
     Function? setCancelTest,
   }) async {
     cancelRequested = false;
-    Map<String, int> pingCache = await loadPingCache(); // Load existing cache
+    Map<String, int> pingCache = await loadPingCache();
 
     if (dnsRecords.isEmpty) return pingCache;
 
@@ -237,6 +241,7 @@ class DnsPingHelper {
     setCancelTest?.call(false);
 
     final List<String> results = [];
+    final futures = <Future>[];
 
     // مرتب‌سازی DNS ها بر اساس پینگ قبلی
     List sortedRecords = List.from(dnsRecords);
@@ -255,9 +260,6 @@ class DnsPingHelper {
       r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$',
     );
 
-    final futures = <Future>[];
-
-    // تست هر DNS به ترتیب اما به صورت موازی برای سرعت بیشتر
     for (int i = 0; i < sortedRecords.length && i < testCount; i++) {
       if (cancelRequested) break;
 
@@ -277,28 +279,26 @@ class DnsPingHelper {
           return;
         }
 
-        // تست DNS1 و DNS2 به صورت همزمان
-        final [status1, status2] = await Future.wait([
-          DnsService.testDns(ip1).timeout(
-            const Duration(seconds: 2),
-            onTimeout: () => DnsStatus(-1, false),
+        final [ping1, ping2] = await Future.wait([
+          ping(ip1).timeout(
+            const Duration(seconds: 1),
+            onTimeout: () => -1,
           ),
-          DnsService.testDns(ip2).timeout(
-            const Duration(seconds: 2),
-            onTimeout: () => DnsStatus(-1, false),
+          ping(ip2).timeout(
+            const Duration(seconds: 1),
+            onTimeout: () => -1,
           ),
         ]);
 
-        pingCache['${record.id}_1'] = status1.ping;
-        pingCache['${record.id}_2'] = status2.ping;
+        pingCache['${record.id}_1'] = ping1;
+        pingCache['${record.id}_2'] = ping2;
 
         results.add(
-          '${index + 1}. ${record.label}\nDNS1: ${status1.isReachable ? '✅' : '❌'} (پینگ: ${status1.ping > 0 ? status1.ping : '---'} ms)\nDNS2: ${status2.isReachable ? '✅' : '❌'} (پینگ: ${status2.ping > 0 ? status2.ping : '---'} ms)',
+          '${index + 1}. ${record.label}\nDNS1: ${ping1 >= 0 ? '✅' : '❌'} (پینگ: ${ping1 >= 0 ? ping1 : '---'} ms)\nDNS2: ${ping2 >= 0 ? '✅' : '❌'} (پینگ: ${ping2 >= 0 ? ping2 : '---'} ms)',
         );
 
         if (sortType == 'ping' && mounted) sortDnsRecords();
 
-        // ذخیره موقت نتایج
         final prefs = await SharedPreferences.getInstance();
         prefs.setString('cached_ping_cache', jsonEncode(pingCache));
       }));

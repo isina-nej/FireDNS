@@ -36,6 +36,7 @@ dependencies:
   webview_flutter: ^4.13.0
   flutter_speed_test_plus: ^1.0.10
   pool: ^1.5.1
+  dart_ping: ^9.0.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

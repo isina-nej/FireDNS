@@ -1,3 +1,4 @@
+// AppStatusReceiver.kt (unchanged, as no errors mentioned for this file)
 package com.example.firedns
 
 import android.content.BroadcastReceiver
@@ -67,7 +68,7 @@ class AppStatusReceiver : BroadcastReceiver() {
         try {
             // بررسی وضعیت باتری قبل از راه‌اندازی سرویس
             val batteryStatus = context.registerReceiver(
-                null, 
+                null,
                 IntentFilter(Intent.ACTION_BATTERY_CHANGED)
             )
             
