@@ -1,14 +1,14 @@
 /// مدل داده‌های سشن کاربر
 class SessionData {
   final String jwt;
-  final String user;
+  final Map<String, dynamic> user;
 
   const SessionData({required this.jwt, required this.user});
 
   factory SessionData.fromJson(Map<String, dynamic> json) {
     return SessionData(
       jwt: json['jwt'] as String,
-      user: json['user'] as String,
+      user: json['user'] as Map<String, dynamic>,
     );
   }
 

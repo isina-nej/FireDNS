@@ -10,6 +10,8 @@ import 'services/notification_service.dart';
 import 'services/dns_test_settings_service.dart';
 import 'dart:io' show Platform;
 import 'screens/homepage_android.dart' as android;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'api/services/session_api_service.dart';
 // import 'screens/homepage_windows.dart' as windows;
 import 'utils/update_checker.dart';
 import 'screens/force_update_page.dart';
@@ -36,6 +38,35 @@ void main() async {
   // راه‌اندازی FCM
   final fcmService = FirebaseMessagingService();
   await fcmService.initialize();
+
+  // ارسال FCM و دریافت JWT فقط یک بار پس از نصب
+  final prefs = await SharedPreferences.getInstance();
+  final isRegistered = prefs.getBool('fcm_registered') ?? false;
+  if (!isRegistered) {
+    // دریافت توکن FCM
+    final fcmToken = await FirebaseMessaging.instance.getToken();
+    if (fcmToken != null) {
+      // ارسال به سرور و دریافت JWT
+      final sessionApi = SessionApiService();
+      final response = await sessionApi.initSession(fcmToken);
+      if (response.data != null) {
+        final jwt = response.data!.jwt;
+        // ذخیره امن JWT
+        await prefs.setString('jwt', jwt);
+        // ثبت ارسال FCM
+        await prefs.setBool('fcm_registered', true);
+        // پرینت برای دیباگ
+        debugPrint('JWT دریافت شده: $jwt');
+        print('JWT دریافت شده: $jwt');
+      } else {
+        debugPrint('دریافت JWT ناموفق بود: ${response.errorMessage}');
+        print('دریافت JWT ناموفق بود: ${response.errorMessage}');
+      }
+    } else {
+      debugPrint('توکن FCM دریافت نشد');
+      print('توکن FCM دریافت نشد');
+    }
+  }
 
   final themeManager = ThemeManager();
   await themeManager.loadThemeMode();
