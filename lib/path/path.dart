@@ -49,3 +49,4 @@ export '../widgets/add_dns_dialog.dart';
 
 export '../widgets/dns_info_popup.dart';
 
+export '../services/dns_test_settings_service.dart';

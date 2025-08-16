@@ -114,9 +114,8 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
             status = "در حال تست دانلود...";
             showDownloadGauge = true;
             // Track download stats
-            maxDownload = downloadSpeed > maxDownload
-                ? downloadSpeed
-                : maxDownload;
+            maxDownload =
+                downloadSpeed > maxDownload ? downloadSpeed : maxDownload;
             sumDownload += downloadSpeed;
             downloadCount++;
             avgDownload = sumDownload / downloadCount;
@@ -180,9 +179,8 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
     final isDark = themeManager.isDarkModeActive(context);
 
     return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.darkBackground
-          : const Color(0xFFF7F8FA),
+      backgroundColor:
+          isDark ? AppColors.darkBackground : const Color(0xFFF7F8FA),
       appBar: AppBar(
         title: Text(
           'اسپید تست',
@@ -326,9 +324,9 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                               value: lastPingStatus == null
                                   ? '...'
                                   : lastPingStatus!.isReachable &&
-                                        lastPingStatus!.ping >= 0
-                                  ? '${lastPingStatus!.ping} ms'
-                                  : 'نامشخص',
+                                          lastPingStatus!.ping >= 0
+                                      ? '${lastPingStatus!.ping} ms'
+                                      : 'نامشخص',
                             ),
                             InfoTile(
                               icon: Icons.cloud,
@@ -433,7 +431,17 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: _startSpeedTest,
+                              onPressed: () async {
+                                setState(() {
+                                  lastPingStatus = null;
+                                  ping = 0;
+                                  userIp = 'در حال دریافت...';
+                                  server = 'fast.com';
+                                });
+                                await _fetchNetworkInfo();
+                                await _fetchPing();
+                                _startSpeedTest();
+                              },
                               icon: const Icon(Icons.refresh),
                               label: const Text('تست مجدد'),
                               style: ElevatedButton.styleFrom(

@@ -8,14 +8,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/dns_ping_helper.dart';
 import '../utils/dns_test_manager.dart';
 import 'package:provider/provider.dart';
-import '../styles/theme_manager.dart';
-import '../styles/app_colors.dart';
 import '../widgets/animated_overflow_label.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class DnsListPage extends StatefulWidget {
-  const DnsListPage({Key? key}) : super(key: key);
+  const DnsListPage({super.key});
 
   @override
   State<DnsListPage> createState() => _DnsListPageState();
@@ -58,10 +56,8 @@ class _DnsListPageState extends State<DnsListPage> {
       final ping1 = await DnsPingHelper.ping(record.ip1);
       final ping2 = await DnsPingHelper.ping(record.ip2);
       setState(() {
-        _pingCache['${record.id}_1'] =
-            (ping1 == null || ping1 < 0) ? -1 : ping1;
-        _pingCache['${record.id}_2'] =
-            (ping2 == null || ping2 < 0) ? -1 : ping2;
+        _pingCache['${record.id}_1'] = (ping1 < 0) ? -1 : ping1;
+        _pingCache['${record.id}_2'] = (ping2 < 0) ? -1 : ping2;
         _sortDnsRecords();
       });
     }
@@ -102,7 +98,7 @@ class _DnsListPageState extends State<DnsListPage> {
           elevation: isSelected ? 4 : 1,
           color: isDark
               ? (isSelected
-                  ? AppColors.darkCardBackground.withOpacity(0.8)
+                  ? AppColors.darkCardBackground.withAlpha((0.8 * 255).round())
                   : AppColors.darkCardBackground)
               : (isSelected ? AppColors.selectedLight : Colors.white),
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -122,7 +118,8 @@ class _DnsListPageState extends State<DnsListPage> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withOpacity(0.08),
+                      color:
+                          AppColors.primaryBlue.withAlpha((0.08 * 255).round()),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.center,
@@ -500,7 +497,7 @@ class _DnsListPageState extends State<DnsListPage> {
   List<DnsRecord> _dnsRecords = [];
   String? _selectedDnsId;
   Map<String, int> _pingCache = {};
-  bool _isLoading = false;
+  final bool _isLoading = false;
   bool _loadingList = true;
   String? _loadError;
   String _sortType = 'ping';
@@ -539,6 +536,8 @@ class _DnsListPageState extends State<DnsListPage> {
     });
   }
 
+  String _testType = 'auto';
+
   @override
   void initState() {
     super.initState();
@@ -553,6 +552,7 @@ class _DnsListPageState extends State<DnsListPage> {
         _sortDnsRecords();
       }
       final prefs = await SharedPreferences.getInstance();
+      _testType = prefs.getString('dns_test_type') ?? 'auto';
       final lastPingStr = prefs.getString('last_auto_ping');
       if (lastPingStr != null) {
         try {
@@ -603,7 +603,7 @@ class _DnsListPageState extends State<DnsListPage> {
       List<DnsRecord> newRecords = [...apiRecords, ...userDnsRecords];
       final seen = <String>{};
       newRecords = newRecords.where((r) {
-        final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
+        final key = '${r.ip1}_${r.ip2}'.replaceAll(' ', '').toLowerCase();
         if (seen.contains(key)) return false;
         seen.add(key);
         return true;
@@ -641,7 +641,7 @@ class _DnsListPageState extends State<DnsListPage> {
       List<DnsRecord> allRecords = [...cachedRecords, ...userDnsRecords];
       final seen = <String>{};
       allRecords = allRecords.where((r) {
-        final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
+        final key = '${r.ip1}_${r.ip2}'.replaceAll(' ', '').toLowerCase();
         if (seen.contains(key)) return false;
         seen.add(key);
         return true;
@@ -917,7 +917,8 @@ class _DnsListPageState extends State<DnsListPage> {
       if (!auto && mounted) {
         final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
         if (!dontShow) {
-          final List<String> resultTexts = _dnsRecords.asMap().entries.map((entry) {
+          final List<String> resultTexts =
+              _dnsRecords.asMap().entries.map((entry) {
             final index = entry.key;
             final record = entry.value;
             final ping1 = results['${record.id}_1'] ?? -1;
@@ -975,7 +976,6 @@ class _DnsListPageState extends State<DnsListPage> {
 
   Future<void> _testSequentialDns() async {
     if (!mounted) return;
-    final prefs = await SharedPreferences.getInstance();
     setState(() => _testDialogOpen = true);
 
     try {
@@ -1075,9 +1075,11 @@ class _DnsListPageState extends State<DnsListPage> {
   }
 
   Future<void> _testAdvancedDns() async {
+    if (!mounted) return;
+    final ctx = context;
     final prefs = await SharedPreferences.getInstance();
     int? testCount = await showDialog<int>(
-      context: context,
+      context: ctx,
       builder: (context) => AlertDialog(
         title: Text(context.tr('advancedTest')),
         content: Column(
@@ -1279,18 +1281,17 @@ class _DnsListPageState extends State<DnsListPage> {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
 
-    return WillPopScope(
-      onWillPop: () async {
-        if (_testDialogOpen) {
+    return PopScope(
+      canPop: !_testDialogOpen,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(context.tr('waitForPingTest')),
               duration: const Duration(seconds: 2),
             ),
           );
-          return false;
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor:
@@ -1327,65 +1328,121 @@ class _DnsListPageState extends State<DnsListPage> {
                       setState(() => _testDialogOpen = false);
                     },
                   )
-                : PopupMenuButton<String>(
-                    icon: const Icon(Icons.wifi_tethering),
-                    tooltip: context.tr('dnsTest'),
-                    color: isDark ? AppColors.darkCardBackground : Colors.white,
-                    enabled: !_loadingList && _dnsRecords.isNotEmpty,
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'simultaneous',
-                        child: SizedBox(
-                          width: 180,
-                          child: Text(
-                            context.tr('simultaneousTest'),
-                            style: TextStyle(
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : const Color(0xFF222B45),
+                : (_testType == 'auto'
+                    ? PopupMenuButton<String>(
+                        icon: Icon(
+                          Icons.wifi_tethering,
+                          color: isDark
+                              ? AppColors.brightBlue
+                              : AppColors.primaryBlue,
+                          size: 28,
+                        ),
+                        tooltip: context.tr('dnsTest'),
+                        color: isDark
+                            ? AppColors.darkCardBackground
+                            : Colors.white,
+                        enabled: !_loadingList && _dnsRecords.isNotEmpty,
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'simultaneous',
+                            child: SizedBox(
+                              width: 180,
+                              child: Text(
+                                context.tr('simultaneousTest'),
+                                style: TextStyle(
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : const Color(0xFF222B45),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'sequential',
-                        child: SizedBox(
-                          width: 180,
-                          child: Text(
-                            context.tr('sequentialTest'),
-                            style: TextStyle(
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : const Color(0xFF222B45),
+                          PopupMenuItem(
+                            value: 'sequential',
+                            child: SizedBox(
+                              width: 180,
+                              child: Text(
+                                context.tr('sequentialTest'),
+                                style: TextStyle(
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : const Color(0xFF222B45),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'advanced',
-                        child: SizedBox(
-                          width: 180,
-                          child: Text(
-                            context.tr('advancedTest'),
-                            style: TextStyle(
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : const Color(0xFF222B45),
+                          PopupMenuItem(
+                            value: 'advanced',
+                            child: SizedBox(
+                              width: 180,
+                              child: Text(
+                                context.tr('advancedTest'),
+                                style: TextStyle(
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : const Color(0xFF222B45),
+                                ),
+                              ),
                             ),
                           ),
+                        ],
+                        onSelected: (value) async {
+                          if (value == 'simultaneous') {
+                            await _testAllDns();
+                          } else if (value == 'sequential') {
+                            await _testSequentialDns();
+                          } else if (value == 'advanced') {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: Text(context.tr('advancedTest')),
+                                content: Text(context.tr('comingSoon')),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    child: Text(context.tr('close')),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        },
+                      )
+                    : IconButton(
+                        icon: Icon(
+                          Icons.wifi_tethering,
+                          color: isDark
+                              ? AppColors.brightBlue
+                              : AppColors.primaryBlue,
+                          size: 28,
                         ),
-                      ),
-                    ],
-                    onSelected: (value) async {
-                      if (value == 'simultaneous') {
-                        await _testAllDns();
-                      } else if (value == 'sequential') {
-                        await _testSequentialDns();
-                      } else if (value == 'advanced') {
-                        await _testAdvancedDns();
-                      }
-                    },
-                  ),
+                        tooltip: context.tr('dnsTest'),
+                        onPressed: !_loadingList && _dnsRecords.isNotEmpty
+                            ? () async {
+                                if (_testType == 'simultaneous') {
+                                  await _testAllDns();
+                                } else if (_testType == 'sequential') {
+                                  await _testSequentialDns();
+                                } else if (_testType == 'advanced') {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text(context.tr('advancedTest')),
+                                      content: Text(context.tr('comingSoon')),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(),
+                                          child: Text(context.tr('close')),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                              }
+                            : null,
+                      )),
             PopupMenuButton<String>(
               icon: const Icon(Icons.sort),
               tooltip: context.tr('sort'),
@@ -1503,13 +1560,16 @@ class _DnsListPageState extends State<DnsListPage> {
                     ),
                   );
                 } else if (value == 'refreshDns') {
+                  final ctx = context;
                   await fetchDnsListWithTimer(force: true);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(context.tr('dnsListUpdated')),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(
+                        content: Text(ctx.tr('dnsListUpdated')),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
                 }
               },
             ),

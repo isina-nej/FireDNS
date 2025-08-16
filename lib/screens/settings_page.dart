@@ -126,8 +126,8 @@ class _SettingsPageState extends State<SettingsPage> {
               _buildSettingItem(
                 icon: Icons.info_outline,
                 title: context.tr('appVersion'),
-                subtitle: '1.0.0',
-                onTap: () {},
+                subtitle: '2.0.0',
+                // onTap: () {},
               ),
             ],
           ),
@@ -368,9 +368,20 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             _buildTestTypeOption(context, 'auto', dnsTestSettingsService),
             _buildTestTypeOption(
-                context, 'simultaneous', dnsTestSettingsService),
-            _buildTestTypeOption(context, 'sequential', dnsTestSettingsService),
-            _buildTestTypeOption(context, 'advanced', dnsTestSettingsService),
+              context,
+              'simultaneous',
+              dnsTestSettingsService,
+              subtitle: context.tr('highSpeed'),
+              subtitleIcon: Icons.flash_on,
+            ),
+            _buildTestTypeOption(
+              context,
+              'sequential',
+              dnsTestSettingsService,
+              subtitle: context.tr('highAccuracy'),
+              subtitleIcon: Icons.verified,
+            ),
+            _buildAdvancedTestTypeOption(context),
           ],
         ),
         actions: [
@@ -388,8 +399,13 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildTestTypeOption(BuildContext context, String type,
-      DnsTestSettingsService dnsTestSettingsService) {
+  Widget _buildTestTypeOption(
+    BuildContext context,
+    String type,
+    DnsTestSettingsService dnsTestSettingsService, {
+    String? subtitle,
+    IconData? subtitleIcon,
+  }) {
     final isDark = Provider.of<ThemeManager>(context, listen: false)
         .isDarkModeActive(context);
     final isSelected = dnsTestSettingsService.testType == type;
@@ -402,16 +418,74 @@ class _SettingsPageState extends State<SettingsPage> {
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
+      subtitle: subtitle != null
+          ? Row(
+              children: [
+                if (subtitleIcon != null)
+                  Icon(subtitleIcon,
+                      size: 16,
+                      color: isDark
+                          ? AppColors.brightBlue
+                          : AppColors.primaryBlue),
+                const SizedBox(width: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: isDark ? AppColors.darkTextSecondary : Colors.grey,
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            )
+          : null,
       trailing: isSelected
           ? Icon(
               Icons.check_circle,
               color: isDark ? AppColors.brightBlue : Colors.blue,
             )
           : null,
-      onTap: () async {
-        await dnsTestSettingsService.setTestType(type);
-        Navigator.pop(context);
+      onTap: type == 'advanced'
+          ? null
+          : () async {
+              await dnsTestSettingsService.setTestType(type);
+              Navigator.pop(context);
+            },
+      enabled: type != 'advanced',
+    );
+  }
+
+  Widget _buildAdvancedTestTypeOption(BuildContext context) {
+    final isDark = Provider.of<ThemeManager>(context, listen: false)
+        .isDarkModeActive(context);
+    return GestureDetector(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('comingSoon')),
+            duration: const Duration(seconds: 2),
+          ),
+        );
       },
+      child: AbsorbPointer(
+        child: ListTile(
+          title: Text(
+            context.tr('advancedTest'),
+            style: TextStyle(
+              color: isDark ? AppColors.darkTextSecondary : Colors.grey,
+              fontWeight: FontWeight.normal,
+            ),
+          ),
+          subtitle: Text(
+            context.tr('comingSoon'),
+            style: TextStyle(
+              color: isDark ? AppColors.darkTextSecondary : Colors.grey,
+              fontSize: 12,
+            ),
+          ),
+          enabled: false,
+        ),
+      ),
     );
   }
 

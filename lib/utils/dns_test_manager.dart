@@ -7,7 +7,7 @@ import '../api/models/dns_record.dart';
 import 'dns_ping_helper.dart';
 
 class DnsTestManager {
-  static const int timeout = 5; // timeout به ثانیه
+  static const int timeout = 2; // timeout به ثانیه
   static const int maxConcurrentTests = 200; // حداکثر تست همزمان
   static const Duration cacheExpiration = Duration(hours: 1); // مدت اعتبار کش
   static const Duration throttleInterval =
@@ -157,4 +157,5 @@ class DnsTestManager {
 
     return results;
   }
+  
 }

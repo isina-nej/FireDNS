@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import '../../path/path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/session_data.dart';
 
 /// سرویس مدیریت سشن و احراز هویت
 class SessionApiService {
   late final ApiClient _apiClient;
+  String? _jwt;
 
   SessionApiService({ApiClient? apiClient}) {
     _apiClient = apiClient ?? ApiClient();
@@ -18,7 +20,20 @@ class SessionApiService {
         body: {'deviceId': deviceId},
         fromJson: (data) => SessionData.fromJson(data),
       );
-
+      // ذخیره jwt در متغیر داخلی و SharedPreferences
+      if (response.data != null) {
+        _jwt = response.data!.jwt;
+        // ذخیره در SharedPreferences
+        // import 'package:shared_preferences/shared_preferences.dart';
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('jwt', _jwt!);
+        } catch (e) {
+          debugPrint('Error saving jwt: $e');
+        }
+        // ست کردن jwt در ApiClient
+        _apiClient.setJwt(_jwt!);
+      }
       return response;
     } catch (e) {
       debugPrint('Error initializing session: $e');
@@ -28,6 +43,7 @@ class SessionApiService {
         errorCode: 'SESSION_INIT_ERROR',
       );
     }
+    // ...existing code...
   }
 
   /// تمدید سشن

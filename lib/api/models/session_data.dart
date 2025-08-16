@@ -1,23 +1,23 @@
 /// مدل داده‌های سشن کاربر
 class SessionData {
-  final String userId;
-  final String sessionToken;
+  final String jwt;
+  final String user;
 
-  const SessionData({required this.userId, required this.sessionToken});
+  const SessionData({required this.jwt, required this.user});
 
   factory SessionData.fromJson(Map<String, dynamic> json) {
     return SessionData(
-      userId: json['userId'] as String,
-      sessionToken: json['sessionToken'] as String,
+      jwt: json['jwt'] as String,
+      user: json['user'] as String,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'userId': userId, 'sessionToken': sessionToken};
+    return {'jwt': jwt, 'user': user};
   }
 
   @override
   String toString() {
-    return 'SessionData(userId: $userId, sessionToken: $sessionToken)';
+    return 'SessionData(jwt: $jwt, user: $user)';
   }
 }
