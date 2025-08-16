@@ -53,4 +53,24 @@ flutter:
     - assets/icone/laptop.json
     - assets/icone/settings.json
     - assets/config/firebase-service-account.json
-
+  fonts:
+      - family: IranSansX
+        fonts:
+          - asset: assets/font/IranSansX/IRANSansX-Black.ttf
+            weight: 900
+          - asset: assets/font/IranSansX/IRANSansX-Bold.ttf
+            weight: 700
+          - asset: assets/font/IranSansX/IRANSansX-DemiBold.ttf
+            weight: 600
+          - asset: assets/font/IranSansX/IRANSansX-ExtraBold.ttf
+            weight: 800
+          - asset: assets/font/IranSansX/IRANSansX-Light.ttf
+            weight: 300
+          - asset: assets/font/IranSansX/IRANSansX-Medium.ttf
+            weight: 500
+          - asset: assets/font/IranSansX/IRANSansX-Regular.ttf
+            weight: 400
+          - asset: assets/font/IranSansX/IRANSansX-Thin.ttf
+            weight: 100
+          - asset: assets/font/IranSansX/IRANSansX-UltraLight.ttf
+            weight: 200

@@ -15,6 +15,7 @@ import 'api/services/session_api_service.dart';
 // import 'screens/homepage_windows.dart' as windows;
 import 'utils/update_checker.dart';
 import 'screens/force_update_page.dart';
+import 'api/services/fcm_api_service.dart';
 
 // Background message handler برای FCM
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -58,6 +59,22 @@ void main() async {
         // پرینت برای دیباگ
         debugPrint('JWT دریافت شده: $jwt');
         print('JWT دریافت شده: $jwt');
+
+        // ارسال FCM به سرور
+        final fcmApi = FcmApiService();
+        final deviceId = fcmToken;
+        final fcmTokenKey = fcmToken;
+        final platform = Platform.isAndroid
+            ? 'android'
+            : Platform.isIOS
+                ? 'ios'
+                : 'other';
+        final fcmResponse = await fcmApi.registerFcmToken(
+          deviceId: deviceId,
+          fcmToken: fcmTokenKey,
+          platform: platform,
+        );
+        debugPrint('ثبت FCM سمت سرور: ${fcmResponse.toJson()}');
       } else {
         debugPrint('دریافت JWT ناموفق بود: ${response.errorMessage}');
         print('دریافت JWT ناموفق بود: ${response.errorMessage}');
@@ -134,8 +151,60 @@ class FireDNSApp extends StatelessWidget {
             supportedLocales: LanguageManager.supportedLocales,
 
             // تنظیمات تم
-            theme: themeManager.lightTheme,
-            darkTheme: themeManager.darkTheme,
+            theme: themeManager.lightTheme.copyWith(
+              textTheme: themeManager.lightTheme.textTheme
+                  .apply(
+                    fontFamily: 'IranSansX',
+                    bodyColor:
+                        themeManager.lightTheme.textTheme.bodyLarge?.color,
+                    displayColor:
+                        themeManager.lightTheme.textTheme.displayLarge?.color,
+                  )
+                  .copyWith(
+                    bodyLarge: TextStyle(fontFamily: 'IranSansX'),
+                    bodyMedium: TextStyle(fontFamily: 'IranSansX'),
+                    titleLarge: TextStyle(fontFamily: 'IranSansX'),
+                    titleMedium: TextStyle(fontFamily: 'IranSansX'),
+                    titleSmall: TextStyle(fontFamily: 'IranSansX'),
+                    labelLarge: TextStyle(fontFamily: 'IranSansX'),
+                  ),
+              primaryTextTheme: themeManager.lightTheme.primaryTextTheme.apply(
+                fontFamily: 'IranSansX',
+              ),
+              appBarTheme: themeManager.lightTheme.appBarTheme.copyWith(
+                titleTextStyle: TextStyle(
+                    fontFamily: 'IranSansX',
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+            darkTheme: themeManager.darkTheme.copyWith(
+              textTheme: themeManager.darkTheme.textTheme
+                  .apply(
+                    fontFamily: 'IranSansX',
+                    bodyColor:
+                        themeManager.darkTheme.textTheme.bodyLarge?.color,
+                    displayColor:
+                        themeManager.darkTheme.textTheme.displayLarge?.color,
+                  )
+                  .copyWith(
+                    bodyLarge: TextStyle(fontFamily: 'IranSansX'),
+                    bodyMedium: TextStyle(fontFamily: 'IranSansX'),
+                    titleLarge: TextStyle(fontFamily: 'IranSansX'),
+                    titleMedium: TextStyle(fontFamily: 'IranSansX'),
+                    titleSmall: TextStyle(fontFamily: 'IranSansX'),
+                    labelLarge: TextStyle(fontFamily: 'IranSansX'),
+                  ),
+              primaryTextTheme: themeManager.darkTheme.primaryTextTheme.apply(
+                fontFamily: 'IranSansX',
+              ),
+              appBarTheme: themeManager.darkTheme.appBarTheme.copyWith(
+                titleTextStyle: TextStyle(
+                    fontFamily: 'IranSansX',
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
             themeMode: themeManager.themeMode,
 
             // تنظیمات جهت متن
@@ -153,7 +222,6 @@ class FireDNSApp extends StatelessWidget {
                   )
                 : (Platform.isWindows
                     ? android.FireDNSHomePage(title: context.tr('appTitle'))
-                    //windows.FireDNSHomePage(title: context.tr('appTitle'))
                     : android.FireDNSHomePage(title: context.tr('appTitle'))),
             debugShowCheckedModeBanner: false,
           );

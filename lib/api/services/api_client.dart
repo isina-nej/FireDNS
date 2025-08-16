@@ -8,7 +8,7 @@ import '../../path/path.dart';
 class ApiClient {
   // متد برای ست کردن jwt
   void setJwt(String jwt) {
-    _jwt = jwt;
+    ApiClient._jwt = jwt;
   }
 
   static const String _baseUrl = 'https://api.fire-dns.ir';
@@ -16,7 +16,7 @@ class ApiClient {
 
   final http.Client _client;
   final Map<String, String> _defaultHeaders;
-  String? _jwt;
+  static String? _jwt;
 
   ApiClient({http.Client? client})
       : _client = client ?? http.Client(),
@@ -35,8 +35,8 @@ class ApiClient {
     try {
       final uri = _buildUri(endpoint, queryParameters);
       final mergedHeaders = {..._defaultHeaders, ...?headers};
-      if (_jwt != null) {
-        mergedHeaders['Authorization'] = 'Bearer $_jwt';
+      if (ApiClient._jwt != null) {
+        mergedHeaders['Authorization'] = 'Bearer ${ApiClient._jwt}';
       }
 
       debugPrint('GET Request: $uri');
@@ -62,18 +62,21 @@ class ApiClient {
     try {
       final uri = _buildUri(endpoint);
       final mergedHeaders = {..._defaultHeaders, ...?headers};
-      if (_jwt != null) {
-        mergedHeaders['Authorization'] = 'Bearer $_jwt';
+      if (ApiClient._jwt != null) {
+        mergedHeaders['Authorization'] = 'Bearer ${ApiClient._jwt}';
       }
       final jsonBody = body != null ? jsonEncode(body) : null;
 
-      debugPrint('POST Request: $uri');
-      debugPrint('Headers: $mergedHeaders');
-      debugPrint('Body: $jsonBody');
+      debugPrint('[APIClient][POST] Request: $uri');
+      debugPrint('[APIClient][POST] Headers: $mergedHeaders');
+      debugPrint('[APIClient][POST] Body: $jsonBody');
 
       final response = await _client
           .post(uri, headers: mergedHeaders, body: jsonBody)
           .timeout(_timeout);
+
+      debugPrint('[APIClient][POST] Response Status: ${response.statusCode}');
+      debugPrint('[APIClient][POST] Response Body: ${response.body}');
 
       return _handleResponse<T>(response, fromJson);
     } catch (e) {
@@ -92,8 +95,8 @@ class ApiClient {
     try {
       final uri = _buildUri(endpoint);
       final mergedHeaders = {..._defaultHeaders, ...?headers};
-      if (_jwt != null) {
-        mergedHeaders['Authorization'] = 'Bearer $_jwt';
+      if (ApiClient._jwt != null) {
+        mergedHeaders['Authorization'] = 'Bearer ${ApiClient._jwt}';
       }
       final jsonBody = body != null ? jsonEncode(body) : null;
 
@@ -122,8 +125,8 @@ class ApiClient {
     try {
       final uri = _buildUri(endpoint);
       final mergedHeaders = {..._defaultHeaders, ...?headers};
-      if (_jwt != null) {
-        mergedHeaders['Authorization'] = 'Bearer $_jwt';
+      if (ApiClient._jwt != null) {
+        mergedHeaders['Authorization'] = 'Bearer ${ApiClient._jwt}';
       }
       final jsonBody = body != null ? jsonEncode(body) : null;
 
@@ -151,8 +154,8 @@ class ApiClient {
     try {
       final uri = _buildUri(endpoint);
       final mergedHeaders = {..._defaultHeaders, ...?headers};
-      if (_jwt != null) {
-        mergedHeaders['Authorization'] = 'Bearer $_jwt';
+      if (ApiClient._jwt != null) {
+        mergedHeaders['Authorization'] = 'Bearer ${ApiClient._jwt}';
       }
 
       debugPrint('DELETE Request: $uri');

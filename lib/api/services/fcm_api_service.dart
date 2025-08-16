@@ -23,23 +23,32 @@ class FcmApiService {
 
   /// ثبت توکن FCM
   Future<ApiResponse<bool>> registerFcmToken({
-    required String userId,
     required String deviceId,
-    required String token,
+    required String fcmToken,
     required String platform,
   }) async {
     try {
+      final requestBody = {
+        'deviceId': deviceId,
+        'fcmToken': fcmToken,
+        'platform': platform,
+      };
+      debugPrint('[FCM_REGISTER] زمان ارسال: ${DateTime.now()}');
+      debugPrint('[FCM_REGISTER] داده ارسالی: $requestBody');
+      debugPrint(
+          '[FCM_REGISTER] هدرهای پیش‌فرض: Content-Type: application/json, Accept: application/json');
+      // JWT فقط اگر قبلاً ست شده باشد در هدر Authorization قرار می‌گیرد و قابل دسترسی مستقیم نیست
       final response = await _apiClient.post<bool>(
         '/api/fcm/register',
-        body: {
-          'userId': userId,
-          'deviceId': deviceId,
-          'token': token,
-          'platform': platform,
-        },
+        body: requestBody,
         fromJson: (data) => true,
       );
-
+      debugPrint('[FCM_REGISTER] زمان دریافت پاسخ: ${DateTime.now()}');
+      debugPrint('[FCM_REGISTER] پاسخ دریافتی: ${response.toJson()}');
+      if (!response.status) {
+        debugPrint(
+            '[FCM_REGISTER] خطا: ${response.message} | کد خطا: ${response.errorCode}');
+      }
       return response;
     } catch (e) {
       debugPrint('Error registering FCM token: $e');

@@ -38,6 +38,7 @@ class _SettingsPageState extends State<SettingsPage> {
         title: Text(
           context.tr('settings'),
           style: TextStyle(
+            fontFamily: 'IranSansX',
             color: isDark ? AppColors.darkTextPrimary : Colors.black,
             fontSize: 20,
             fontWeight: FontWeight.w600,

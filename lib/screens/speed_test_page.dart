@@ -185,6 +185,7 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
         title: Text(
           'اسپید تست',
           style: TextStyle(
+            fontFamily: 'IranSansX',
             fontWeight: FontWeight.bold,
             color: isDark ? AppColors.darkTextPrimary : Colors.black,
           ),
