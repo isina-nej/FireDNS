@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter/gestures.dart';
 import 'dart:convert';
+import 'dart:math';
 import '../path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/dns_ping_helper.dart';
+import '../utils/dns_test_manager.dart';
 import 'package:provider/provider.dart';
 import '../styles/theme_manager.dart';
 import '../styles/app_colors.dart';
@@ -55,12 +57,10 @@ class _DnsListPageState extends State<DnsListPage> {
       final ping1 = await DnsPingHelper.ping(record.ip1);
       final ping2 = await DnsPingHelper.ping(record.ip2);
       setState(() {
-        _pingCache['${record.id}_1'] = (ping1 == null || ping1 < 0)
-            ? -1
-            : ping1;
-        _pingCache['${record.id}_2'] = (ping2 == null || ping2 < 0)
-            ? -1
-            : ping2;
+        _pingCache['${record.id}_1'] =
+            (ping1 == null || ping1 < 0) ? -1 : ping1;
+        _pingCache['${record.id}_2'] =
+            (ping2 == null || ping2 < 0) ? -1 : ping2;
         _sortDnsRecords();
       });
     }
@@ -101,8 +101,8 @@ class _DnsListPageState extends State<DnsListPage> {
           elevation: isSelected ? 4 : 1,
           color: isDark
               ? (isSelected
-                    ? AppColors.darkCardBackground.withOpacity(0.8)
-                    : AppColors.darkCardBackground)
+                  ? AppColors.darkCardBackground.withOpacity(0.8)
+                  : AppColors.darkCardBackground)
               : (isSelected ? AppColors.selectedLight : Colors.white),
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
@@ -165,8 +165,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                       maxLines: 1,
                                       textDirection: TextDirection.ltr,
                                     )..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow =
-                                        textPainter.width >
+                                    final isOverflow = textPainter.width >
                                         constraints.maxWidth;
                                     if (isOverflow) {
                                       return AnimatedOverflowLabel(
@@ -241,8 +240,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                       maxLines: 1,
                                       textDirection: TextDirection.ltr,
                                     )..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow =
-                                        textPainter.width >
+                                    final isOverflow = textPainter.width >
                                         constraints.maxWidth;
                                     if (isOverflow) {
                                       return AnimatedOverflowLabel(
@@ -287,32 +285,34 @@ class _DnsListPageState extends State<DnsListPage> {
                                                 height: 18,
                                                 child:
                                                     CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                    ),
+                                                  strokeWidth: 2,
+                                                ),
                                               )
                                             : (ping == -1 ||
-                                                  ping < 0 ||
-                                                  ping >= 1000)
-                                            ? Text(
-                                                '---',
-                                                style: TextStyle(
-                                                  color: pingColor,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                  decoration:
-                                                      TextDecoration.underline,
-                                                ),
-                                              )
-                                            : Text(
-                                                '$ping ms',
-                                                style: TextStyle(
-                                                  color: pingColor,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                  decoration:
-                                                      TextDecoration.underline,
-                                                ),
-                                              ),
+                                                    ping < 0 ||
+                                                    ping >= 1000)
+                                                ? Text(
+                                                    '---',
+                                                    style: TextStyle(
+                                                      color: pingColor,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                      decoration: TextDecoration
+                                                          .underline,
+                                                    ),
+                                                  )
+                                                : Text(
+                                                    '$ping ms',
+                                                    style: TextStyle(
+                                                      color: pingColor,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                      decoration: TextDecoration
+                                                          .underline,
+                                                    ),
+                                                  ),
                                         if (ping > 0 && ping < 80)
                                           Container(
                                             margin: const EdgeInsets.only(
@@ -359,8 +359,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                       maxLines: 1,
                                       textDirection: TextDirection.ltr,
                                     )..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow =
-                                        textPainter.width >
+                                    final isOverflow = textPainter.width >
                                         constraints.maxWidth;
                                     if (isOverflow) {
                                       return AnimatedOverflowLabel(
@@ -405,32 +404,34 @@ class _DnsListPageState extends State<DnsListPage> {
                                                 height: 18,
                                                 child:
                                                     CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                    ),
+                                                  strokeWidth: 2,
+                                                ),
                                               )
                                             : (ping2 == -1 ||
-                                                  ping2 < 0 ||
-                                                  ping2 >= 1000)
-                                            ? Text(
-                                                '---',
-                                                style: TextStyle(
-                                                  color: pingColor2,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                  decoration:
-                                                      TextDecoration.underline,
-                                                ),
-                                              )
-                                            : Text(
-                                                '$ping2 ms',
-                                                style: TextStyle(
-                                                  color: pingColor2,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                  decoration:
-                                                      TextDecoration.underline,
-                                                ),
-                                              ),
+                                                    ping2 < 0 ||
+                                                    ping2 >= 1000)
+                                                ? Text(
+                                                    '---',
+                                                    style: TextStyle(
+                                                      color: pingColor2,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                      decoration: TextDecoration
+                                                          .underline,
+                                                    ),
+                                                  )
+                                                : Text(
+                                                    '$ping2 ms',
+                                                    style: TextStyle(
+                                                      color: pingColor2,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                      decoration: TextDecoration
+                                                          .underline,
+                                                    ),
+                                                  ),
                                         if (ping2 > 0 && ping2 < 80)
                                           Container(
                                             margin: const EdgeInsets.only(
@@ -513,23 +514,24 @@ class _DnsListPageState extends State<DnsListPage> {
         final bLiked = _likedDnsIds.contains(b.id);
         if (aLiked && !bLiked) return -1;
         if (!aLiked && bLiked) return 1;
+
         if (_sortType == 'ping') {
           int pingA1 = _pingCache['${a.id}_1'] ?? _pingCache[a.id] ?? 999999;
           int pingA2 = _pingCache['${a.id}_2'] ?? 999999;
           int pingB1 = _pingCache['${b.id}_1'] ?? _pingCache[b.id] ?? 999999;
           int pingB2 = _pingCache['${b.id}_2'] ?? 999999;
 
-          int sortA = pingA1 >= 0
-              ? pingA1
-              : pingA2 >= 0
-              ? pingA2
-              : 999999;
-          int sortB = pingB1 >= 0
-              ? pingB1
-              : pingB2 >= 0
-              ? pingB2
-              : 999999;
-          return sortA.compareTo(sortB);
+          // تبدیل پینگ‌ها به مقادیر قابل مقایسه
+          int getPingValue(int ping) {
+            if (ping == -2) return 999998; // در حال تست
+            if (ping == -1) return 999999; // تایم‌اوت
+            return ping; // پینگ عادی
+          }
+
+          final bestPingA = min(getPingValue(pingA1), getPingValue(pingA2));
+          final bestPingB = min(getPingValue(pingB1), getPingValue(pingB2));
+
+          return bestPingA.compareTo(bestPingB);
         } else if (_sortType == 'name') {
           return a.label.compareTo(b.label);
         } else {
@@ -683,9 +685,8 @@ class _DnsListPageState extends State<DnsListPage> {
     if (cached != null) {
       try {
         final List<dynamic> jsonList = List.from(jsonDecode(cached));
-        List<DnsRecord> records = jsonList
-            .map((e) => DnsRecord.fromJson(e))
-            .toList();
+        List<DnsRecord> records =
+            jsonList.map((e) => DnsRecord.fromJson(e)).toList();
         // Add user DNS records (persistent)
         records.addAll(userDnsRecords);
         // Remove duplicates by ip1+ip2
@@ -826,34 +827,126 @@ class _DnsListPageState extends State<DnsListPage> {
   // Map<String, int> _pingCache = {}; // Removed duplicate declaration
 
   Future<void> _testAllDns({bool auto = false}) async {
+    if (!mounted) return;
+
     final prefs = await SharedPreferences.getInstance();
-    final pingCache = await DnsPingHelper.testAllDns(
-      context: context,
-      dnsRecords: _dnsRecords,
-      sortType: _sortType,
-      sortDnsRecords: _sortDnsRecords,
-      auto: auto,
-      mounted: mounted,
-      showDialogCallback: (List<String> results) async {
-        if (!mounted) return;
-        // اگر کاربر قبلا گزینه دیگر نشان نده را زده بود، دیالوگ را نمایش نده
-        final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
-        if (dontShow) return;
-        await showDialog(
+    setState(() => _testDialogOpen = true);
+
+    try {
+      // بررسی وضعیت شبکه
+      final hasNetwork = await DnsTestManager.checkNetworkStatus();
+      if (!hasNetwork) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.tr('noInternetConnection')),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // بررسی محدودیت زمانی بین تست‌ها
+      if (!DnsTestManager.canRunTest() && !auto) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.tr('waitBeforeNextTest')),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      // نمایش پیشرفت
+      double progress = 0;
+      if (!auto && mounted) {
+        showDialog(
           context: context,
-          barrierDismissible: true,
-          builder: (context) => GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              Navigator.of(context).pop();
-            },
-            child: AlertDialog(
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Text(context.tr('testingDns')),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text('${(progress * 100).toInt()}%'),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // اجرای تست‌ها
+      final results = await DnsTestManager.testMultipleDns(
+        _dnsRecords,
+        showProgress: true,
+        onProgress: (p) {
+          progress = p;
+          if (!auto && mounted) {
+            Navigator.of(context).pop();
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => AlertDialog(
+                title: Text(context.tr('testingDns')),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text('${(p * 100).toInt()}%'),
+                  ],
+                ),
+              ),
+            );
+          }
+        },
+      );
+
+      if (!mounted) return;
+
+      // بستن دیالوگ پیشرفت
+      if (!auto) {
+        Navigator.of(context).pop();
+      }
+
+      // بروزرسانی نتایج
+      setState(() {
+        _pingCache = results;
+        _sortDnsRecords();
+      });
+
+      // نمایش نتایج
+      if (!auto && mounted) {
+        final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
+        if (!dontShow) {
+          final List<String> resultTexts = _dnsRecords.map((record) {
+            final ping1 = results['${record.id}_1'];
+            final ping2 = results['${record.id}_2'];
+            String pingText = '';
+            if (ping1 != null && ping1 >= 0) {
+              pingText += '${ping1}ms';
+            }
+            if (ping2 != null && ping2 >= 0) {
+              if (pingText.isNotEmpty) pingText += ' / ';
+              pingText += '${ping2}ms';
+            }
+            return '${record.label}: $pingText';
+          }).toList();
+
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
               title: Text(context.tr('testResultAllDns')),
               content: SizedBox(
                 width: double.maxFinite,
+                height: 300,
                 child: ListView(
-                  shrinkWrap: true,
-                  children: results.map((e) => Text(e)).toList(),
+                  children: resultTexts.map((e) => Text(e)).toList(),
                 ),
               ),
               actions: [
@@ -864,7 +957,7 @@ class _DnsListPageState extends State<DnsListPage> {
                 TextButton(
                   onPressed: () async {
                     await prefs.setBool('dont_show_dns_test_dialog', true);
-                    if (Navigator.canPop(context)) {
+                    if (mounted && Navigator.canPop(context)) {
                       Navigator.pop(context);
                     }
                   },
@@ -872,127 +965,148 @@ class _DnsListPageState extends State<DnsListPage> {
                 ),
               ],
             ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
           ),
         );
-      },
-      setTestDialogOpen: (v) {
-        if (!mounted) return;
-        setState(() => _testDialogOpen = v);
-      },
-      // setCancelTest: (v) => setState(() => _cancelTest = v),
-    );
-    if (!mounted) return;
-    setState(() {
-      _pingCache = pingCache;
-      _sortDnsRecords();
-    });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _testDialogOpen = false);
+      }
+    }
   }
-  
+
   /// تست ترتیبی DNS ها بر اساس کمترین پینگ در تست قبلی
   Future<void> _testSequentialDns() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    // دریافت تعداد تست از کاربر
-    int? testCount = await showDialog<int>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.tr('sequentialTest')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(context.tr('sequentialTestDescription')),
-            const SizedBox(height: 16),
-            Text(context.tr('testCount')),
-            Slider(
-              value: 5,
-              min: 1,
-              max: 20,
-              divisions: 19,
-              label: '5',
-              onChanged: (value) {},
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.tr('cancel')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 5),
-            child: Text(context.tr('ok')),
-          ),
-        ],
-      ),
-    );
-    
-    if (testCount == null) return; // کاربر لغو کرده است
-    
-    final pingCache = await DnsPingHelper.testSequentialDns(
-      context: context,
-      dnsRecords: _dnsRecords,
-      sortType: _sortType,
-      sortDnsRecords: _sortDnsRecords,
-      testCount: testCount,
-      mounted: mounted,
-      showDialogCallback: (List<String> results) async {
-        if (!mounted) return;
-        // اگر کاربر قبلا گزینه دیگر نشان نده را زده بود، دیالوگ را نمایش نده
-        final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
-        if (dontShow) return;
-        await showDialog(
-          context: context,
-          barrierDismissible: true,
-          builder: (context) => GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              Navigator.of(context).pop();
-            },
-            child: AlertDialog(
-              title: Text(context.tr('sequentialTest')),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView(
-                  shrinkWrap: true,
-                  children: results.map((e) => Text(e)).toList(),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(context.tr('close')),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await prefs.setBool('dont_show_dns_test_dialog', true);
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: Text(context.tr('dontShowAgain')),
-                ),
-              ],
-            ),
+    if (!mounted) return;
+
+    // بررسی وضعیت شبکه
+    final hasNetwork = await DnsTestManager.checkNetworkStatus();
+    if (!hasNetwork) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('noInternetConnection')),
+            backgroundColor: Colors.red,
           ),
         );
-      },
-      setTestDialogOpen: (v) {
-        if (!mounted) return;
-        setState(() => _testDialogOpen = v);
-      },
-    );
-    
-    if (!mounted) return;
-    setState(() {
-      _pingCache = pingCache;
+      }
+      return;
+    }
+
+    // بررسی محدودیت زمانی
+    if (!DnsTestManager.canRunTest()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('waitBeforeNextTest')),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _testDialogOpen = true);
+
+    try {
+      if (!mounted) return;
+
+      // مرتب‌سازی اولیه DNS ها بر اساس لایک و نتایج قبلی
+      final sortedRecords = List<DnsRecord>.from(_dnsRecords);
+      sortedRecords.sort((a, b) {
+        // اول بر اساس لایک مرتب می‌کنیم
+        final aLiked = _likedDnsIds.contains(a.id);
+        final bLiked = _likedDnsIds.contains(b.id);
+        if (aLiked && !bLiked) return -1;
+        if (!aLiked && bLiked) return 1;
+
+        // سپس بر اساس پینگ مرتب می‌کنیم
+        final pingA1 = _pingCache['${a.id}_1'] ?? 999999;
+        final pingA2 = _pingCache['${a.id}_2'] ?? 999999;
+        final pingB1 = _pingCache['${b.id}_1'] ?? 999999;
+        final pingB2 = _pingCache['${b.id}_2'] ?? 999999;
+
+        // تبدیل پینگ‌ها به مقادیر قابل مقایسه
+        int getPingValue(int ping) {
+          if (ping == -2) return 999998; // در حال تست
+          if (ping == -1) return 999999; // تایم‌اوت
+          return ping; // پینگ عادی
+        }
+
+        final bestPingA = getPingValue(pingA1 < pingA2 ? pingA1 : pingA2);
+        final bestPingB = getPingValue(pingB1 < pingB2 ? pingB1 : pingB2);
+
+        return bestPingA.compareTo(bestPingB);
+      });
+
+      // تست تک تک DNS ها به ترتیب
+      for (final record in sortedRecords) {
+        if (!mounted || !_testDialogOpen) break;
+
+        // نشان دادن وضعیت در حال تست
+        setState(() {
+          _pingCache['${record.id}_1'] = -2;
+          if (record.ip2.isNotEmpty) {
+            _pingCache['${record.id}_2'] = -2;
+          }
+        });
+
+        // تست هر دو IP به صورت همزمان
+        final results = await Future.wait([
+          DnsTestManager.testSingleDns(record.ip1),
+          if (record.ip2.isNotEmpty) DnsTestManager.testSingleDns(record.ip2),
+        ]);
+
+        if (!mounted || !_testDialogOpen) break;
+
+        // بروزرسانی نتایج
+        setState(() {
+          _pingCache['${record.id}_1'] = results[0] ?? -1;
+          if (results.length > 1) {
+            _pingCache['${record.id}_2'] = results[1] ?? -1;
+          }
+          _sortDnsRecords(); // مرتب‌سازی بعد از هر بروزرسانی
+        });
+
+        // مکث کوتاه بین تست‌ها
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+
       _sortDnsRecords();
-    });
+
+      // ذخیره نتایج در کش
+      if (mounted) {
+        await DnsTestManager.savePingCache(_pingCache);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _testDialogOpen = false);
+      }
+    }
   }
-  
+
   /// تست پیشرفته DNS با محاسبه میانگین پینگ، پکت از دست رفته و امتیازدهی
   Future<void> _testAdvancedDns() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // دریافت تعداد تست از کاربر
     int? testCount = await showDialog<int>(
       context: context,
@@ -1039,68 +1153,68 @@ class _DnsListPageState extends State<DnsListPage> {
         ],
       ),
     );
-    
+
     if (testCount == null) return; // کاربر لغو کرده است
-    
-    final result = await DnsPingHelper.testAdvancedDns(
-      context: context,
-      dnsRecords: _dnsRecords,
-      sortType: _sortType,
-      sortDnsRecords: _sortDnsRecords,
-      testCount: testCount,
-      mounted: mounted,
-      showDialogCallback: (List<String> results) async {
-        if (!mounted) return;
-        // اگر کاربر قبلا گزینه دیگر نشان نده را زده بود، دیالوگ را نمایش نده
-        final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
-        if (dontShow) return;
-        await showDialog(
-          context: context,
-          barrierDismissible: true,
-          builder: (context) => GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              Navigator.of(context).pop();
-            },
-            child: AlertDialog(
-              title: Text(context.tr('advancedTest')),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView(
-                  shrinkWrap: true,
-                  children: results.map((e) => Text(e)).toList(),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(context.tr('close')),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await prefs.setBool('dont_show_dns_test_dialog', true);
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: Text(context.tr('dontShowAgain')),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-      setTestDialogOpen: (v) {
-        if (!mounted) return;
-        setState(() => _testDialogOpen = v);
-      },
-    );
-    
-    if (!mounted) return;
-    setState(() {
-      _pingCache = result['pingCache'];
-      _sortDnsRecords();
-    });
+
+    // final result = await DnsPingHelper.testAdvancedDns(
+    //   context: context,
+    //   dnsRecords: _dnsRecords,
+    //   sortType: _sortType,
+    //   sortDnsRecords: _sortDnsRecords,
+    //   testCount: testCount,
+    //   mounted: mounted,
+    //   showDialogCallback: (List<String> results) async {
+    //     if (!mounted) return;
+    //     // اگر کاربر قبلا گزینه دیگر نشان نده را زده بود، دیالوگ را نمایش نده
+    //     final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
+    //     if (dontShow) return;
+    //     await showDialog(
+    //       context: context,
+    //       barrierDismissible: true,
+    //       builder: (context) => GestureDetector(
+    //         behavior: HitTestBehavior.opaque,
+    //         onTap: () {
+    //           Navigator.of(context).pop();
+    //         },
+    //         child: AlertDialog(
+    //           title: Text(context.tr('advancedTest')),
+    //           content: SizedBox(
+    //             width: double.maxFinite,
+    //             child: ListView(
+    //               shrinkWrap: true,
+    //               children: results.map((e) => Text(e)).toList(),
+    //             ),
+    //           ),
+    //           actions: [
+    //             TextButton(
+    //               onPressed: () => Navigator.pop(context),
+    //               child: Text(context.tr('close')),
+    //             ),
+    //             TextButton(
+    //               onPressed: () async {
+    //                 await prefs.setBool('dont_show_dns_test_dialog', true);
+    //                 if (Navigator.canPop(context)) {
+    //                   Navigator.pop(context);
+    //                 }
+    //               },
+    //               child: Text(context.tr('dontShowAgain')),
+    //             ),
+    //           ],
+    //         ),
+    //       ),
+    //     );
+    //   },
+    //   setTestDialogOpen: (v) {
+    //     if (!mounted) return;
+    //     setState(() => _testDialogOpen = v);
+    //   },
+    // );
+
+    // if (!mounted) return;
+    // setState(() {
+    //   _pingCache = result['pingCache'];
+    //   _sortDnsRecords();
+    // });
   }
 
   String _searchQuery = '';
@@ -1110,10 +1224,8 @@ class _DnsListPageState extends State<DnsListPage> {
   List<DnsRecord> get _filteredDnsRecords {
     if (_searchQuery.trim().isEmpty) return _dnsRecords;
     // Remove all spaces from query and split by space for multi-part search
-    final parts = _searchQuery
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim()
-        .split(' ');
+    final parts =
+        _searchQuery.replaceAll(RegExp(r'\s+'), ' ').trim().split(' ');
     return _dnsRecords.where((r) {
       final label = r.label.replaceAll(' ', '').toLowerCase();
       final ip1 = r.ip1.replaceAll(' ', '').toLowerCase();
@@ -1164,9 +1276,8 @@ class _DnsListPageState extends State<DnsListPage> {
           }
           // Remove all previous versions by id and by ip1+ip2
           userDnsList.removeWhere((e) {
-            final key = (e['ip1'] + '_' + e['ip2'])
-                .replaceAll(' ', '')
-                .toLowerCase();
+            final key =
+                (e['ip1'] + '_' + e['ip2']).replaceAll(' ', '').toLowerCase();
             final editedKey = (editedRecord.ip1 + '_' + editedRecord.ip2)
                 .replaceAll(' ', '')
                 .toLowerCase();
@@ -1211,9 +1322,8 @@ class _DnsListPageState extends State<DnsListPage> {
         return true;
       },
       child: Scaffold(
-        backgroundColor: isDark
-            ? AppColors.darkBackground
-            : const Color(0xFFF7F8FA),
+        backgroundColor:
+            isDark ? AppColors.darkBackground : const Color(0xFFF7F8FA),
         appBar: AppBar(
           elevation: 0,
           backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,
@@ -1443,64 +1553,62 @@ class _DnsListPageState extends State<DnsListPage> {
               _loadingList
                   ? const Center(child: CircularProgressIndicator())
                   : _loadError != null
-                  ? Center(child: Text(_loadError!))
-                  : RefreshIndicator(
-                      onRefresh: _fetchDnsList,
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final isWide =
-                                    constraints.maxWidth > 600 &&
-                                    Theme.of(context).platform ==
-                                        TargetPlatform.windows;
-                                if (isWide) {
-                                  // اگر خیلی عریض بود سه ستونه، اگر فقط عریض بود دو ستونه
-                                  int columns = constraints.maxWidth > 1050
-                                      ? 3
-                                      : 2;
-                                  return GridView.builder(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(),
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
+                      ? Center(child: Text(_loadError!))
+                      : RefreshIndicator(
+                          onRefresh: _fetchDnsList,
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final isWide = constraints.maxWidth > 600 &&
+                                        Theme.of(context).platform ==
+                                            TargetPlatform.windows;
+                                    if (isWide) {
+                                      // اگر خیلی عریض بود سه ستونه، اگر فقط عریض بود دو ستونه
+                                      int columns =
+                                          constraints.maxWidth > 1050 ? 3 : 2;
+                                      return GridView.builder(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
+                                        gridDelegate:
+                                            SliverGridDelegateWithFixedCrossAxisCount(
                                           crossAxisCount: columns,
                                           crossAxisSpacing: 8,
                                           mainAxisSpacing: 8,
                                           mainAxisExtent:
                                               140, // ارتفاع ثابت برای هر آیتم
                                         ),
-                                    itemCount: _filteredDnsRecords.length,
-                                    itemBuilder: (context, index) =>
-                                        _buildDnsCard(
+                                        itemCount: _filteredDnsRecords.length,
+                                        itemBuilder: (context, index) =>
+                                            _buildDnsCard(
                                           context,
                                           _filteredDnsRecords[index],
                                           index,
                                         ),
-                                  );
-                                } else {
-                                  // حالت معمول لیست
-                                  return ListView.separated(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(),
-                                    itemCount: _filteredDnsRecords.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 8),
-                                    itemBuilder: (context, index) =>
-                                        _buildDnsCard(
+                                      );
+                                    } else {
+                                      // حالت معمول لیست
+                                      return ListView.separated(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
+                                        itemCount: _filteredDnsRecords.length,
+                                        separatorBuilder: (_, __) =>
+                                            const SizedBox(height: 8),
+                                        itemBuilder: (context, index) =>
+                                            _buildDnsCard(
                                           context,
                                           _filteredDnsRecords[index],
                                           index,
                                         ),
-                                  );
-                                }
-                              },
-                            ),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
               if (_showSearch)
                 Positioned.fill(
                   child: GestureDetector(
@@ -1672,9 +1780,8 @@ class _TestDomainWithAllDnsDialogState
           child: Text(
             context.tr('close'),
             style: TextStyle(
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : const Color(0xFF222B45),
+              color:
+                  isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45),
             ),
           ),
         ),
@@ -1741,11 +1848,12 @@ class _DnsTestTileState extends State<_DnsTestTile> {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : status != null
-          ? Text(
-              status.toString(),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            )
-          : Text(context.tr('error'), style: const TextStyle(color: Colors.red)),
+              ? Text(
+                  status.toString(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                )
+              : Text(context.tr('error'),
+                  style: const TextStyle(color: Colors.red)),
     );
   }
 }
