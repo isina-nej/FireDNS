@@ -9,9 +9,10 @@ class AboutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
-    
+
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF5F5F5),
+      backgroundColor:
+          isDark ? AppColors.darkBackground : const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
         elevation: 0,
@@ -25,10 +26,8 @@ class AboutPage extends StatelessWidget {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back, 
-            color: isDark ? AppColors.darkIconPrimary : Colors.black54
-          ),
+          icon: Icon(Icons.arrow_back,
+              color: isDark ? AppColors.darkIconPrimary : Colors.black54),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -52,17 +51,17 @@ class AboutPage extends StatelessWidget {
             context.tr('appName'),
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 24, 
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               color: isDark ? AppColors.darkTextPrimary : Colors.black,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            '${context.tr('appVersion')} 1.0.0',
+            '${context.tr('appVersion')} 2.0.0',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 16, 
+              fontSize: 16,
               color: isDark ? AppColors.darkTextSecondary : Colors.grey,
             ),
           ),
@@ -71,16 +70,17 @@ class AboutPage extends StatelessWidget {
             context.tr('appDescription'),
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 16, 
+              fontSize: 16,
               height: 1.5,
               color: isDark ? AppColors.darkTextPrimary : Colors.black87,
             ),
           ),
           const SizedBox(height: 32),
-          _buildInfoRow(context, Icons.email, context.tr('supportEmail'), context.tr('supportEmailAddress')),
+          _buildInfoRow(context, Icons.email, context.tr('supportEmail'),
+              context.tr('supportEmailAddress')),
           const SizedBox(height: 16),
-          _buildInfoRow(context, Icons.web, context.tr('website'), context.tr('websiteAddress')),
-          
+          _buildInfoRow(context, Icons.web, context.tr('website'),
+              context.tr('websiteAddress')),
           const SizedBox(height: 48),
           Container(
             padding: const EdgeInsets.all(16),
@@ -113,7 +113,9 @@ class AboutPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     height: 1.5,
-                    color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade700,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : Colors.grey.shade700,
                   ),
                 ),
               ],
@@ -124,16 +126,14 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(BuildContext context, IconData icon, String title, String value) {
+  Widget _buildInfoRow(
+      BuildContext context, IconData icon, String title, String value) {
     final isDark = Provider.of<ThemeManager>(context).isDarkModeActive(context);
-    
+
     return Row(
       children: [
-        Icon(
-          icon, 
-          color: isDark ? AppColors.brightBlue : Colors.blue, 
-          size: 24
-        ),
+        Icon(icon,
+            color: isDark ? AppColors.brightBlue : Colors.blue, size: 24),
         const SizedBox(width: 16),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,7 +141,7 @@ class AboutPage extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
-                fontSize: 14, 
+                fontSize: 14,
                 color: isDark ? AppColors.darkTextSecondary : Colors.grey,
               ),
             ),
@@ -149,7 +149,7 @@ class AboutPage extends StatelessWidget {
             Text(
               value,
               style: TextStyle(
-                fontSize: 16, 
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: isDark ? AppColors.darkTextPrimary : Colors.black87,
               ),

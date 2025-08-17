@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class UpdateChecker {
   /// نسخه فعلی برنامه را اینجا وارد کنید
-  static const String currentVersion = '1.0.0+1';
+  static const String currentVersion = '2.0.0+1';
 
   /// آدرس API یا فایل نسخه جدید (مثلاً روی سرور یا گیت‌هاب)
   static const String versionCheckUrl =
@@ -28,16 +28,10 @@ class UpdateChecker {
 
   /// مقایسه نسخه‌ها (برمی‌گرداند: 1 اگر فعلی جدیدتر، 0 برابر، -1 اگر قدیمی‌تر)
   static int _compareVersions(String v1, String v2) {
-    final parts1 = v1
-        .split(RegExp(r'[.+]'))
-        .map(int.tryParse)
-        .whereType<int>()
-        .toList();
-    final parts2 = v2
-        .split(RegExp(r'[.+]'))
-        .map(int.tryParse)
-        .whereType<int>()
-        .toList();
+    final parts1 =
+        v1.split(RegExp(r'[.+]')).map(int.tryParse).whereType<int>().toList();
+    final parts2 =
+        v2.split(RegExp(r'[.+]')).map(int.tryParse).whereType<int>().toList();
     for (int i = 0; i < parts1.length && i < parts2.length; i++) {
       if (parts1[i] > parts2[i]) return 1;
       if (parts1[i] < parts2[i]) return -1;

@@ -4,26 +4,34 @@ import 'force_update_page.dart';
 
 void main() {
   group('ForceUpdatePage', () {
-    testWidgets('shows basic update page elements', (WidgetTester tester) async {
+    testWidgets('shows basic update page elements',
+        (WidgetTester tester) async {
       // Act
       await tester.pumpWidget(
         MaterialApp(
-          home: ForceUpdatePage(updateUrl: 'https://example.com/download', currentAppVersion: '1.0.0'),
+          home: ForceUpdatePage(
+              updateUrl: 'https://example.com/download',
+              currentAppVersion: '2.0.0'),
         ),
       );
 
       // Assert
       expect(find.text('نسخه جدید برنامه در دسترس است!'), findsOneWidget);
-      expect(find.text('برای ادامه استفاده، لطفاً برنامه را به‌روزرسانی کنید.'), findsOneWidget);
+      expect(find.text('برای ادامه استفاده، لطفاً برنامه را به‌روزرسانی کنید.'),
+          findsOneWidget);
       expect(find.byIcon(Icons.system_update), findsOneWidget);
-      expect(find.widgetWithText(ElevatedButton, 'دریافت نسخه جدید'), findsOneWidget);
+      expect(find.widgetWithText(ElevatedButton, 'دریافت نسخه جدید'),
+          findsOneWidget);
     });
 
-    testWidgets('shows loading indicator initially', (WidgetTester tester) async {
+    testWidgets('shows loading indicator initially',
+        (WidgetTester tester) async {
       // Act
       await tester.pumpWidget(
         MaterialApp(
-          home: ForceUpdatePage(updateUrl: 'https://example.com/download', currentAppVersion: '1.0.0'),
+          home: ForceUpdatePage(
+              updateUrl: 'https://example.com/download',
+              currentAppVersion: '2.0.0'),
         ),
       );
 
@@ -38,7 +46,8 @@ void main() {
       // - No skip options are available
     });
 
-    testWidgets('shows important update UI with skip option', (WidgetTester tester) async {
+    testWidgets('shows important update UI with skip option',
+        (WidgetTester tester) async {
       // TODO: Implement this test when mocking is properly set up
       // This test would verify that for important updates:
       // - The "Download Update" button is shown
@@ -46,7 +55,8 @@ void main() {
       // - No "Don't show again" option is available
     });
 
-    testWidgets('shows minor update UI with skip and dismiss options', (WidgetTester tester) async {
+    testWidgets('shows minor update UI with skip and dismiss options',
+        (WidgetTester tester) async {
       // TODO: Implement this test when mocking is properly set up
       // This test would verify that for minor updates:
       // - The "Download Update" button is shown
