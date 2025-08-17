@@ -1,6 +1,6 @@
+// lib/pages/dns_list_page.dart
+
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
-import 'package:flutter/gestures.dart';
 import 'dart:convert';
 import 'dart:math';
 import '../path/path.dart';
@@ -8,9 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/dns_ping_helper.dart';
 import '../utils/dns_test_manager.dart';
 import 'package:provider/provider.dart';
-import '../widgets/animated_overflow_label.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../widgets/dns_card.dart'; // Import the extracted DNS card widget
 
 class DnsListPage extends StatefulWidget {
   const DnsListPage({super.key});
@@ -40,436 +40,6 @@ class _DnsListPageState extends State<DnsListPage> {
   }
 
   bool _isUserDns(DnsRecord record) => _userDnsIds.contains(record.id);
-
-  Widget _buildDnsCard(BuildContext context, DnsRecord record, int index) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
-    final isSelected = _selectedDnsId == record.id;
-    final ping = _pingCache['${record.id}_1'] ?? _pingCache[record.id];
-    final ping2 = _pingCache['${record.id}_2'] ?? _pingCache[record.id];
-
-    Future<void> _rePingBoth() async {
-      setState(() {
-        _pingCache['${record.id}_1'] = -2; // انتظار (لودینگ)
-        _pingCache['${record.id}_2'] = -2;
-      });
-      final ping1 = await DnsPingHelper.ping(record.ip1);
-      final ping2 = await DnsPingHelper.ping(record.ip2);
-      setState(() {
-        _pingCache['${record.id}_1'] = (ping1 < 0) ? -1 : ping1;
-        _pingCache['${record.id}_2'] = (ping2 < 0) ? -1 : ping2;
-        _sortDnsRecords();
-      });
-    }
-
-    Color pingColor;
-    if (ping == null || ping < 0) {
-      pingColor = Colors.grey.shade400;
-    } else if (ping < 50) {
-      pingColor = AppColors.pingExcellent;
-    } else if (ping < 120) {
-      pingColor = AppColors.pingGood;
-    } else if (ping < 250) {
-      pingColor = AppColors.pingMedium;
-    } else if (ping < 500) {
-      pingColor = AppColors.pingPoor;
-    } else {
-      pingColor = AppColors.pingBad;
-    }
-    Color ping2Color;
-    if (ping2 == null || ping2 < 0) {
-      ping2Color = Colors.grey.shade400;
-    } else if (ping2 < 50) {
-      ping2Color = AppColors.pingExcellent;
-    } else if (ping2 < 120) {
-      ping2Color = AppColors.pingGood;
-    } else if (ping2 < 250) {
-      ping2Color = AppColors.pingMedium;
-    } else if (ping2 < 500) {
-      ping2Color = AppColors.pingPoor;
-    } else {
-      ping2Color = AppColors.pingBad;
-    }
-    final isUserDns = _isUserDns(record);
-    return ClipRect(
-      child: SizedBox(
-        height: 140,
-        child: Card(
-          elevation: isSelected ? 4 : 1,
-          color: isDark
-              ? (isSelected
-                  ? AppColors.darkCardBackground.withAlpha((0.8 * 255).round())
-                  : AppColors.darkCardBackground)
-              : (isSelected ? AppColors.selectedLight : Colors.white),
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: _isLoading ? null : () => _connectToDns(record),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color:
-                          AppColors.primaryBlue.withAlpha((0.08 * 255).round()),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${index + 1}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : const Color(0xFF5A9CFF),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const ClampingScrollPhysics(),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final text = record.label;
-                                    final textStyle = TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
-                                      color: isDark
-                                          ? AppColors.darkTextPrimary
-                                          : const Color(0xFF222B45),
-                                    );
-                                    final textPainter = TextPainter(
-                                      text: TextSpan(
-                                        text: text,
-                                        style: textStyle,
-                                      ),
-                                      maxLines: 1,
-                                      textDirection: TextDirection.ltr,
-                                    )..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow = textPainter.width >
-                                        constraints.maxWidth;
-                                    if (isOverflow) {
-                                      return AnimatedOverflowLabel(
-                                        label: text,
-                                        width: constraints.maxWidth,
-                                        style: textStyle,
-                                      );
-                                    } else {
-                                      return Text(text, style: textStyle);
-                                    }
-                                  },
-                                ),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  _likedDnsIds.contains(record.id)
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  color: _likedDnsIds.contains(record.id)
-                                      ? Colors.red
-                                      : Colors.grey.shade400,
-                                ),
-                                tooltip: _likedDnsIds.contains(record.id)
-                                    ? context.tr('removeFromFavorites')
-                                    : context.tr('addToFavorites'),
-                                onPressed: () => _toggleLikeDns(record.id),
-                              ),
-                              if (isUserDns) ...[
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    color: Colors.blue,
-                                  ),
-                                  tooltip: context.tr('edit'),
-                                  onPressed: () => _editUserDns(record),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
-                                  tooltip: context.tr('delete'),
-                                  onPressed: () => _deleteUserDns(record),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.dns,
-                                size: 18,
-                                color: isDark
-                                    ? AppColors.darkIconPrimary
-                                    : const Color(0xFF5A9CFF),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final text = record.ip1;
-                                    final textStyle = const TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF607D8B),
-                                    );
-                                    final textPainter = TextPainter(
-                                      text: TextSpan(
-                                        text: text,
-                                        style: textStyle,
-                                      ),
-                                      maxLines: 1,
-                                      textDirection: TextDirection.ltr,
-                                    )..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow = textPainter.width >
-                                        constraints.maxWidth;
-                                    if (isOverflow) {
-                                      return AnimatedOverflowLabel(
-                                        label: text,
-                                        width: constraints.maxWidth,
-                                        style: textStyle,
-                                      );
-                                    } else {
-                                      return Text(text, style: textStyle);
-                                    }
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              if (ping != null)
-                                Listener(
-                                  behavior: HitTestBehavior.opaque,
-                                  onPointerDown: (event) {
-                                    if (Theme.of(context).platform ==
-                                        TargetPlatform.windows) {
-                                      if (event.kind ==
-                                          PointerDeviceKind.mouse) {
-                                        _rePingBoth();
-                                      }
-                                    }
-                                  },
-                                  child: GestureDetector(
-                                    onTap: _rePingBoth,
-                                    behavior: HitTestBehavior.opaque,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.speed,
-                                          size: 18,
-                                          color: pingColor,
-                                        ),
-                                        const SizedBox(width: 2),
-                                        ping == -2
-                                            ? const SizedBox(
-                                                width: 18,
-                                                height: 18,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                ),
-                                              )
-                                            : (ping == -1 ||
-                                                    ping < 0 ||
-                                                    ping >= 1000)
-                                                ? Text(
-                                                    '---',
-                                                    style: TextStyle(
-                                                      color: pingColor,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 13,
-                                                      decoration: TextDecoration
-                                                          .underline,
-                                                    ),
-                                                  )
-                                                : Text(
-                                                    '$ping ms',
-                                                    style: TextStyle(
-                                                      color: pingColor,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 13,
-                                                      decoration: TextDecoration
-                                                          .underline,
-                                                    ),
-                                                  ),
-                                        if (ping > 0 && ping < 80)
-                                          Container(
-                                            margin: const EdgeInsets.only(
-                                              left: 2,
-                                            ),
-                                            width: 22,
-                                            height: 22,
-                                            child: Lottie.asset(
-                                              'assets/icone/Fire.json',
-                                              repeat: true,
-                                              animate: true,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.dns_outlined,
-                                size: 18,
-                                color: isDark
-                                    ? AppColors.darkIconSecondary
-                                    : const Color(0xFFB0BEC5),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final text = record.ip2;
-                                    final textStyle = const TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF90A4AE),
-                                    );
-                                    final textPainter = TextPainter(
-                                      text: TextSpan(
-                                        text: text,
-                                        style: textStyle,
-                                      ),
-                                      maxLines: 1,
-                                      textDirection: TextDirection.ltr,
-                                    )..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow = textPainter.width >
-                                        constraints.maxWidth;
-                                    if (isOverflow) {
-                                      return AnimatedOverflowLabel(
-                                        label: text,
-                                        width: constraints.maxWidth,
-                                        style: textStyle,
-                                      );
-                                    } else {
-                                      return Text(text, style: textStyle);
-                                    }
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              if (ping2 != null)
-                                Listener(
-                                  behavior: HitTestBehavior.opaque,
-                                  onPointerDown: (event) {
-                                    if (Theme.of(context).platform ==
-                                        TargetPlatform.windows) {
-                                      if (event.kind ==
-                                          PointerDeviceKind.mouse) {
-                                        _rePingBoth();
-                                      }
-                                    }
-                                  },
-                                  child: GestureDetector(
-                                    onTap: _rePingBoth,
-                                    behavior: HitTestBehavior.opaque,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.speed,
-                                          size: 18,
-                                          color: ping2Color,
-                                        ),
-                                        const SizedBox(width: 2),
-                                        ping2 == -2
-                                            ? const SizedBox(
-                                                width: 18,
-                                                height: 18,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                ),
-                                              )
-                                            : (ping2 == -1 ||
-                                                    ping2 < 0 ||
-                                                    ping2 >= 1000)
-                                                ? Text(
-                                                    '---',
-                                                    style: TextStyle(
-                                                      color: ping2Color,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 13,
-                                                      decoration: TextDecoration
-                                                          .underline,
-                                                    ),
-                                                  )
-                                                : Text(
-                                                    '$ping2 ms',
-                                                    style: TextStyle(
-                                                      color: ping2Color,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 13,
-                                                      decoration: TextDecoration
-                                                          .underline,
-                                                    ),
-                                                  ),
-                                        if (ping2 > 0 && ping2 < 80)
-                                          Container(
-                                            margin: const EdgeInsets.only(
-                                              left: 2,
-                                            ),
-                                            width: 22,
-                                            height: 22,
-                                            child: Lottie.asset(
-                                              'assets/icone/Fire.json',
-                                              repeat: true,
-                                              animate: true,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (isSelected && _isLoading)
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8, top: 8),
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   Set<String> _likedDnsIds = {};
   Future<void> _loadLikedDns() async {
@@ -675,7 +245,7 @@ class _DnsListPageState extends State<DnsListPage> {
         records.addAll(userDnsRecords);
         final seen = <String>{};
         records = records.where((r) {
-          final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
+          final key = '${r.ip1}_${r.ip2}'.replaceAll(' ', '').toLowerCase();
           if (seen.contains(key)) return false;
           seen.add(key);
           return true;
@@ -1281,17 +851,18 @@ class _DnsListPageState extends State<DnsListPage> {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
 
-    return PopScope(
-      canPop: !_testDialogOpen,
-      onPopInvoked: (didPop) {
-        if (!didPop) {
+    return WillPopScope(
+      onWillPop: () async {
+        if (_testDialogOpen) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(context.tr('waitForPingTest')),
               duration: const Duration(seconds: 2),
             ),
           );
+          return false;
         }
+        return true;
       },
       child: Scaffold(
         backgroundColor:
@@ -1608,10 +1179,40 @@ class _DnsListPageState extends State<DnsListPage> {
                                         ),
                                         itemCount: _filteredDnsRecords.length,
                                         itemBuilder: (context, index) =>
-                                            _buildDnsCard(
-                                          context,
-                                          _filteredDnsRecords[index],
-                                          index,
+                                            DnsCard(
+                                          record: _filteredDnsRecords[index],
+                                          index: index,
+                                          isSelected: _selectedDnsId ==
+                                              _filteredDnsRecords[index].id,
+                                          pingCache: _pingCache,
+                                          isUserDns: _isUserDns(
+                                              _filteredDnsRecords[index]),
+                                          onConnect: _connectToDns,
+                                          likedDnsIds: _likedDnsIds.toList(),
+                                          onRePing: (record) async {
+                                            setState(() {
+                                              _pingCache['${record.id}_1'] =
+                                                  -2; // انتظار (لودینگ)
+                                              _pingCache['${record.id}_2'] = -2;
+                                            });
+                                            final ping1 =
+                                                await DnsPingHelper.ping(
+                                                    record.ip1);
+                                            final ping2 =
+                                                await DnsPingHelper.ping(
+                                                    record.ip2);
+                                            setState(() {
+                                              _pingCache['${record.id}_1'] =
+                                                  (ping1 < 0) ? -1 : ping1;
+                                              _pingCache['${record.id}_2'] =
+                                                  (ping2 < 0) ? -1 : ping2;
+                                              _sortDnsRecords();
+                                            });
+                                          },
+                                          onToggleLike: _toggleLikeDns,
+                                          onEdit: _editUserDns,
+                                          onDelete: _deleteUserDns,
+                                          isLoading: _isLoading,
                                         ),
                                       );
                                     } else {
@@ -1622,10 +1223,40 @@ class _DnsListPageState extends State<DnsListPage> {
                                         separatorBuilder: (_, __) =>
                                             const SizedBox(height: 8),
                                         itemBuilder: (context, index) =>
-                                            _buildDnsCard(
-                                          context,
-                                          _filteredDnsRecords[index],
-                                          index,
+                                            DnsCard(
+                                          record: _filteredDnsRecords[index],
+                                          index: index,
+                                          isSelected: _selectedDnsId ==
+                                              _filteredDnsRecords[index].id,
+                                          pingCache: _pingCache,
+                                          isUserDns: _isUserDns(
+                                              _filteredDnsRecords[index]),
+                                          onConnect: _connectToDns,
+                                          likedDnsIds: _likedDnsIds.toList(),
+                                          onRePing: (record) async {
+                                            setState(() {
+                                              _pingCache['${record.id}_1'] =
+                                                  -2; // انتظار (لودینگ)
+                                              _pingCache['${record.id}_2'] = -2;
+                                            });
+                                            final ping1 =
+                                                await DnsPingHelper.ping(
+                                                    record.ip1);
+                                            final ping2 =
+                                                await DnsPingHelper.ping(
+                                                    record.ip2);
+                                            setState(() {
+                                              _pingCache['${record.id}_1'] =
+                                                  (ping1 < 0) ? -1 : ping1;
+                                              _pingCache['${record.id}_2'] =
+                                                  (ping2 < 0) ? -1 : ping2;
+                                              _sortDnsRecords();
+                                            });
+                                          },
+                                          onToggleLike: _toggleLikeDns,
+                                          onEdit: _editUserDns,
+                                          onDelete: _deleteUserDns,
+                                          isLoading: _isLoading,
                                         ),
                                       );
                                     }
@@ -1757,129 +1388,6 @@ class _DnsListPageState extends State<DnsListPage> {
           },
         ),
       ),
-    );
-  }
-}
-
-class _TestDomainWithAllDnsDialog extends StatefulWidget {
-  final String domain;
-  final List<DnsRecord> dnsRecords;
-  const _TestDomainWithAllDnsDialog({
-    required this.domain,
-    required this.dnsRecords,
-  });
-
-  @override
-  State<_TestDomainWithAllDnsDialog> createState() =>
-      _TestDomainWithAllDnsDialogState();
-}
-
-class _TestDomainWithAllDnsDialogState
-    extends State<_TestDomainWithAllDnsDialog> {
-  @override
-  Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
-
-    return AlertDialog(
-      backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,
-      title: Text(
-        '${context.tr('testDomainWithAllDns')}: "${widget.domain}"',
-        style: TextStyle(
-          color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45),
-        ),
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: widget.dnsRecords.length,
-          itemBuilder: (context, index) {
-            final record = widget.dnsRecords[index];
-            return _DnsTestTile(domain: widget.domain, record: record);
-          },
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(
-            context.tr('close'),
-            style: TextStyle(
-              color:
-                  isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DnsTestTile extends StatefulWidget {
-  final String domain;
-  final DnsRecord record;
-  const _DnsTestTile({required this.domain, required this.record});
-
-  @override
-  State<_DnsTestTile> createState() => _DnsTestTileState();
-}
-
-class _DnsTestTileState extends State<_DnsTestTile> {
-  dynamic status;
-  bool _loading = true;
-
-  late final ThemeManager themeManager;
-  late final bool isDark;
-
-  @override
-  void initState() {
-    themeManager = Provider.of<ThemeManager>(context, listen: false);
-    isDark = themeManager.isDarkModeActive(context);
-    super.initState();
-    _runTest();
-  }
-
-  Future<void> _runTest() async {
-    final result = await DnsService.testDnsWithDns(
-      widget.domain,
-      widget.record.ip1,
-    );
-    if (!mounted) return;
-    setState(() {
-      status = result;
-      _loading = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(
-        widget.record.label,
-        style: TextStyle(
-          color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45),
-        ),
-      ),
-      subtitle: Text(
-        widget.record.ip1,
-        style: TextStyle(
-          color: isDark ? AppColors.darkTextSecondary : Colors.grey[600],
-        ),
-      ),
-      trailing: _loading
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : status != null
-              ? Text(
-                  status.toString(),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                )
-              : Text(context.tr('error'),
-                  style: const TextStyle(color: Colors.red)),
     );
   }
 }
