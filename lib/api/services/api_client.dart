@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../../path/path.dart';
 
+const String baseApiUrl = 'https://api.fire-dns.ir';
+
 /// کلاس مدیریت درخواست‌های HTTP
 class ApiClient {
   // متد برای ست کردن jwt
@@ -11,7 +13,7 @@ class ApiClient {
     ApiClient._jwt = jwt;
   }
 
-  static const String _baseUrl = 'https://api.fire-dns.ir';
+  static const String baseUrl = baseApiUrl;
   static const Duration _timeout = Duration(seconds: 30);
 
   final http.Client _client;
@@ -174,7 +176,7 @@ class ApiClient {
   /// ساخت URI
   Uri _buildUri(String endpoint, [Map<String, String>? queryParameters]) {
     final path = endpoint.startsWith('/') ? endpoint : '/$endpoint';
-    final uri = Uri.parse('$_baseUrl$path');
+    final uri = Uri.parse('$baseUrl$path');
 
     if (queryParameters != null && queryParameters.isNotEmpty) {
       return uri.replace(queryParameters: queryParameters);

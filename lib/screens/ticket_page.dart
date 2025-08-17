@@ -5,6 +5,10 @@ import 'package:provider/provider.dart';
 import 'dart:ui';
 import '../l10n/localization_extension.dart';
 
+import '../utils/ticket_logger.dart';
+import '../api/services/ticket_service.dart';
+import '../api/services/api_client.dart';
+
 class TicketPage extends StatefulWidget {
   const TicketPage({Key? key}) : super(key: key);
 
@@ -27,6 +31,7 @@ class _TicketPageState extends State<TicketPage>
   @override
   void initState() {
     super.initState();
+    TicketLogger.logStep('Initialize Ticket Page');
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -38,11 +43,33 @@ class _TicketPageState extends State<TicketPage>
     _subjectController.dispose();
     _messageController.dispose();
     _animationController.dispose();
+    TicketLogger.logStep('Dispose Ticket Page');
     super.dispose();
   }
 
+  final TicketService _ticketService;
+
+  _TicketPageState() : _ticketService = TicketService(ApiClient());
+
   Future<void> _submitTicket() async {
+    TicketLogger.resetStepCount();
+    TicketLogger.logStep(context.tr('ticketSubmission'));
+
+    // Validate form fields
     if (!_formKey.currentState!.validate()) {
+      TicketLogger.logValidation('subject', _subjectController.text.isNotEmpty,
+          errorMessage: _subjectController.text.isEmpty
+              ? context.tr('pleaseEnterSubject')
+              : null);
+      TicketLogger.logValidation(
+          'message',
+          _messageController.text.isNotEmpty &&
+              _messageController.text.length >= 10,
+          errorMessage: _messageController.text.isEmpty
+              ? context.tr('pleaseEnterMessage')
+              : _messageController.text.length < 10
+                  ? context.tr('minimumMessageLength')
+                  : null);
       return;
     }
 
@@ -53,28 +80,52 @@ class _TicketPageState extends State<TicketPage>
       _errorMessage = '';
     });
 
-    // شبیه‌سازی ارسال تیکت به سرور
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      TicketLogger.logNetworkRequest('Ticket', data: {
+        'type': _ticketType,
+        'subject': _subjectController.text,
+        'message': _messageController.text
+      });
 
-    // در اینجا باید کد واقعی ارسال تیکت به سرور قرار گیرد
-    // به عنوان مثال، می‌توانیم از یک سرویس API استفاده کنیم
+      // شبیه‌سازی ارسال تیکت به سرور
+      await Future.delayed(const Duration(seconds: 2));
 
-    // شبیه‌سازی پاسخ موفق یا خطا (به صورت تصادفی)
-    final bool isSuccessful = DateTime.now().millisecondsSinceEpoch % 2 == 0;
+      TicketLogger.logStep(context.tr('ticketSentToServer'));
 
-    setState(() {
-      _isLoading = false;
-      if (isSuccessful) {
-        _isSuccess = true;
-        _animationController.forward();
-      } else {
+      // شبیه‌سازی پاسخ موفق یا خطا (به صورت تصادفی)
+      final isSuccess = DateTime.now().millisecondsSinceEpoch % 2 == 0;
+
+      TicketLogger.logNetworkResponse('Ticket', isSuccess,
+          message: isSuccess
+              ? context.tr('successfulSubmission')
+              : context.tr('submissionFailed'));
+
+      setState(() {
+        _isLoading = false;
+        if (isSuccess) {
+          _isSuccess = true;
+          _animationController.forward();
+          TicketLogger.logStep(context.tr('successfulSubmission'));
+        } else {
+          _isError = true;
+          _errorMessage = context.tr('ticketError');
+          TicketLogger.logStep(context.tr('submissionFailed'));
+        }
+      });
+    } catch (error, stackTrace) {
+      TicketLogger.logError(error.toString(),
+          stackTrace: stackTrace.toString());
+      setState(() {
+        _isLoading = false;
         _isError = true;
-        _errorMessage = context.tr('ticketError');
-      }
-    });
+        _errorMessage = context.tr('networkError');
+        TicketLogger.logStep(context.tr('connectionError'));
+      });
+    }
   }
 
   void _resetForm() {
+    TicketLogger.logStep(context.tr('formReset'));
     setState(() {
       _subjectController.clear();
       _messageController.clear();
@@ -352,7 +403,7 @@ class _TicketPageState extends State<TicketPage>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'گزارش خطا',
+                              context.tr('bugReport'),
                               style: TextStyle(
                                 color: isDark
                                     ? AppColors.darkTextPrimary
@@ -386,7 +437,7 @@ class _TicketPageState extends State<TicketPage>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'پیشنهاد',
+                              context.tr('suggestion'),
                               style: TextStyle(
                                 color: isDark
                                     ? AppColors.darkTextPrimary
@@ -451,7 +502,7 @@ class _TicketPageState extends State<TicketPage>
                 TextFormField(
                   controller: _subjectController,
                   decoration: InputDecoration(
-                    hintText: 'موضوع تیکت را وارد کنید',
+                    hintText: context.tr('enterTicketSubject'),
                     hintStyle: TextStyle(
                       color: isDark
                           ? AppColors.darkTextSecondary.withOpacity(0.5)
@@ -475,7 +526,7 @@ class _TicketPageState extends State<TicketPage>
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'لطفاً موضوع تیکت را وارد کنید';
+                      return context.tr('pleaseEnterSubject');
                     }
                     return null;
                   },
@@ -521,7 +572,7 @@ class _TicketPageState extends State<TicketPage>
                 TextFormField(
                   controller: _messageController,
                   decoration: InputDecoration(
-                    hintText: 'متن پیام خود را وارد کنید',
+                    hintText: context.tr('enterTicketMessage'),
                     hintStyle: TextStyle(
                       color: isDark
                           ? AppColors.darkTextSecondary.withOpacity(0.5)
@@ -546,10 +597,10 @@ class _TicketPageState extends State<TicketPage>
                   maxLines: 5,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'لطفاً متن پیام را وارد کنید';
+                      return context.tr('pleaseEnterMessage');
                     }
                     if (value.length < 10) {
-                      return 'متن پیام باید حداقل 10 کاراکتر باشد';
+                      return context.tr('minimumMessageLength');
                     }
                     return null;
                   },
