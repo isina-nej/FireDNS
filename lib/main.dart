@@ -9,10 +9,8 @@ import 'services/firebase_messaging_service.dart';
 import 'services/notification_service.dart';
 import 'services/dns_test_settings_service.dart';
 import 'dart:io' show Platform;
-import 'screens/homepage_android.dart' as android;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api/services/session_api_service.dart';
-// import 'screens/homepage_windows.dart' as windows;
 import 'utils/update_checker.dart';
 import 'screens/force_update_page.dart';
 import 'api/services/fcm_api_service.dart';
@@ -258,9 +256,7 @@ class FireDNSApp extends StatelessWidget {
                     updateUrl: UpdateChecker.updateUrl,
                     currentAppVersion: UpdateChecker.currentVersion,
                   )
-                : (Platform.isWindows
-                    ? android.FireDNSHomePage(title: context.tr('appTitle'))
-                    : android.FireDNSHomePage(title: context.tr('appTitle'))),
+                : (FireDNSHomePage(title: context.tr('appTitle'))),
             debugShowCheckedModeBanner: false,
           );
         },

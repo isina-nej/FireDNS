@@ -1,1207 +1,709 @@
-// import 'package:flutter/material.dart';
+// lib/pages/fire_dns_home_page.dart
+
+import 'package:flutter/material.dart';
 // import 'package:lottie/lottie.dart';
-// import 'dart:async';
-// import '../path/path.dart';
-// import 'dns_list.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-// import 'dart:convert';
-// import 'dart:io';
-// import '../utils/windows_dns_helper.dart';
-// import '../components/set_dns_button.dart';
-// import '../utils/windows_dns_setter.dart';
+import 'dart:async';
+import '../path/path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import '../api/services/dns_usage_api_service.dart';
+import '../api/models/dns_usage_request.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import '../widgets/notification_bell.dart';
+import '../widgets/custom_drawer.dart';
+import 'dart:io' show Platform;
 
-// /// صفحه اصلی برنامه Fire DNS
-// class FireDNSHomePage extends StatefulWidget {
-//   final String title;
 
-//   const FireDNSHomePage({Key? key, required this.title}) : super(key: key);
+class FireDNSHomePage extends StatefulWidget {
+  final String title;
 
-//   @override
-//   State<FireDNSHomePage> createState() => _FireDNSHomePageState();
-// }
+  const FireDNSHomePage({Key? key, required this.title}) : super(key: key);
 
-// class _FireDNSHomePageState extends State<FireDNSHomePage>
-//     with WidgetsBindingObserver {
-//   // وضعیت موفقیت ست شدن DNS برای انیمیشن دکمه
-//   bool _dnsSetSuccess = false;
-//   bool _dnsSetLoading = false;
-//   // تابع سایز ریسپانسیو فقط برای ویندوز
-//   double responsiveSize(
-//     double base,
-//     BuildContext context, {
-//     double min = 12,
-//     double max = 40,
-//     bool scaleByHeight = false,
-//   }) {
-//     if (!Platform.isWindows) return base;
-//     final width = MediaQuery.of(context).size.width;
-//     final height = MediaQuery.of(context).size.height;
-//     double scale;
-//     if (scaleByHeight) {
-//       scale = height / 800;
-//     } else {
-//       scale = ((width / 600) + (height / 800)) / 2;
-//     }
-//     double value = base * scale;
-//     return value.clamp(min, max);
-//   }
+  @override
+  State<FireDNSHomePage> createState() => _FireDNSHomePageState();
+}
 
-//   String? _selectedDnsLabel;
-//   String? _selectedDnsIp;
-//   // Controllers
-//   late final TextEditingController _dns1Controller;
-//   late final TextEditingController _dns2Controller;
-//   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+class _FireDNSHomePageState extends State<FireDNSHomePage>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  late ThemeManager _themeManager;
+  late final AnimationController _lottieController;
 
-//   // State variables
-//   bool _vpnActive = false;
-//   bool _vpnLoading = false;
-//   bool _autoPingEnabled = false;
+  String? _selectedDnsLabel;
+  String? _selectedDnsIp;
+  // Controllers
+  late final TextEditingController _dns1Controller;
+  late final TextEditingController _dns2Controller;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-//   // Stream subscriptions
-//   StreamSubscription<bool>? _vpnStatusSubscription;
-//   StreamSubscription<Map<String, int>>? _dataUsageSubscription;
-//   StreamSubscription<Map<String, DnsStatus>>? _pingResultSubscription;
+  // State variables
+  bool _vpnActive = false;
+  bool _vpnLoading = false;
+  bool _autoPingEnabled = false;
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     _initializeControllers();
-//     _initializeObserver();
-//     _initializeServices();
-//     setState(() {
-//       _vpnLoading = true;
-//     });
-//     _checkInitialStatus();
-//     _loadSelectedDnsLabel();
-//   }
+  // SnackBar management
+  DateTime? _lastSnackBarTime;
+  String? _lastSnackBarMessage;
 
-//   Future<void> _loadSelectedDnsLabel() async {
-//     // خواندن دی‌ان‌اس انتخابی از کش
-//     final prefs = await SharedPreferences.getInstance();
-//     final cachedDnsList = prefs.getString('cached_dns_list');
-//     final selectedId = prefs.getString('cached_selected_dns');
-//     if (cachedDnsList != null && selectedId != null) {
-//       try {
-//         final List<dynamic> jsonList = List.from(jsonDecode(cachedDnsList));
-//         final records = jsonList.map((e) => DnsRecord.fromJson(e)).toList();
-//         DnsRecord? selected;
-//         try {
-//           selected = records.firstWhere((r) => r.id == selectedId);
-//         } catch (_) {
-//           selected = records.isNotEmpty ? records.first : null;
-//         }
-//         setState(() {
-//           _selectedDnsLabel = selected?.label;
-//           _selectedDnsIp = selected != null
-//               ? (selected.ip1.isNotEmpty ? selected.ip1 : selected.ip2)
-//               : null;
-//         });
-//       } catch (_) {
-//         setState(() {
-//           _selectedDnsLabel = null;
-//           _selectedDnsIp = null;
-//         });
-//       }
-//     } else {
-//       setState(() {
-//         _selectedDnsLabel = null;
-//         _selectedDnsIp = null;
-//       });
-//     }
-//   }
+  // Stream subscriptions
+  StreamSubscription<bool>? _vpnStatusSubscription;
+  StreamSubscription<Map<String, int>>? _dataUsageSubscription;
+  StreamSubscription<Map<String, DnsStatus>>? _pingResultSubscription;
 
-//   @override
-//   void dispose() {
-//     _disposeControllers();
-//     _disposeObserver();
-//     _disposeServices();
-//     super.dispose();
-//   }
+  @override
+  void initState() {
+    super.initState();
+    _themeManager = Provider.of<ThemeManager>(context, listen: false);
+    _lottieController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+      upperBound: 1,
+      lowerBound: 0,
+    );
+    _initializeControllers();
+    _initializeObserver();
+    _initializeServices();
+    _themeManager.loadThemeMode();
+    setState(() {
+      _vpnLoading = false;
+      _vpnActive = false;
+    });
+    _loadSelectedDnsLabel();
+  }
 
-//   void _initializeControllers() {
-//     _dns1Controller = TextEditingController(
-//       text: DnsConstants.defaultPrimaryDns,
-//     );
-//     _dns2Controller = TextEditingController(
-//       text: DnsConstants.defaultSecondaryDns,
-//     );
-//   }
+  Future<void> _loadSelectedDnsLabel() async {
+    // خواندن دی‌ان‌اس انتخابی از کش
+    final prefs = await SharedPreferences.getInstance();
+    final cachedDnsList = prefs.getString('cached_dns_list');
+    final selectedId = prefs.getString('cached_selected_dns');
+    if (cachedDnsList != null && selectedId != null) {
+      try {
+        final List<dynamic> jsonList = List.from(jsonDecode(cachedDnsList));
+        final records = jsonList.map((e) => DnsRecord.fromJson(e)).toList();
+        DnsRecord? selected;
+        try {
+          selected = records.firstWhere((r) => r.id == selectedId);
+        } catch (_) {
+          selected = records.isNotEmpty ? records.first : null;
+        }
 
-//   void _initializeObserver() {
-//     WidgetsBinding.instance.addObserver(this);
-//   }
+        if (selected != null) {
+          _setSelectedDns(selected);
+        } else {
+          _setSelectedDns(null);
+        }
+      } catch (e) {
+        debugPrint('Error loading selected DNS: $e');
+        _setSelectedDns(null);
+      }
+    } else {
+      _setSelectedDns(null);
+    }
+  }
 
-//   void _initializeServices() {
-//     VpnStatusService.startListening();
+  void _setSelectedDns(DnsRecord? selected) {
+    setState(() {
+      if (selected != null) {
+        _selectedDnsLabel = selected.label;
+        _selectedDnsIp =
+            selected.ip1.isNotEmpty ? selected.ip1 : selected.ip2;
+        // مهم: به‌روزرسانی DNS controllers با مقادیر جدید
+        _dns1Controller.text = selected.ip1;
+        _dns2Controller.text = selected.ip2;
+      } else {
+        _selectedDnsLabel = null;
+        _selectedDnsIp = null;
+      }
+    });
+  }
 
-//     _vpnStatusSubscription = VpnStatusService.vpnStatusStream.listen((
-//       isActive,
-//     ) {
-//       if (mounted) {
-//         setState(() {
-//           _vpnActive = isActive;
-//         });
-//       }
-//     });
+  @override
+  void dispose() {
+    _disposeControllers();
+    _disposeObserver();
+    _disposeServices();
+    _themeManager.dispose();
+    _lottieController.dispose();
+    super.dispose();
+  }
 
-//     _dataUsageSubscription = VpnStatusService.dataUsageStream.listen(
-//       (usage) {},
-//     );
-//   }
+  void _initializeControllers() {
+    _dns1Controller = TextEditingController(
+      text: DnsConstants.defaultPrimaryDns,
+    );
+    _dns2Controller = TextEditingController(
+      text: DnsConstants.defaultSecondaryDns,
+    );
+  }
 
-//   void _disposeControllers() {
-//     _dns1Controller.dispose();
-//     _dns2Controller.dispose();
-//   }
+  void _initializeObserver() {
+    WidgetsBinding.instance.addObserver(this);
+  }
 
-//   void _disposeObserver() {
-//     WidgetsBinding.instance.removeObserver(this);
-//   }
+  void _initializeServices() {
+    if (Platform.isAndroid) {
+      VpnStatusService.startListening();
+    }
 
-//   void _disposeServices() {
-//     _vpnStatusSubscription?.cancel();
-//     _dataUsageSubscription?.cancel();
-//     _pingResultSubscription?.cancel();
-//     VpnStatusService.stopListening();
-//   }
+    _vpnStatusSubscription = VpnStatusService.vpnStatusStream.listen((
+      isActive,
+    ) {
+      if (mounted) {
+        debugPrint('📡 VPN status changed via stream: $isActive');
 
-//   @override
-//   void didChangeAppLifecycleState(AppLifecycleState state) {
-//     switch (state) {
-//       case AppLifecycleState.resumed:
-//         if (_autoPingEnabled) {}
-//         break;
-//       case AppLifecycleState.paused:
-//       case AppLifecycleState.inactive:
-//       case AppLifecycleState.detached:
-//         break;
-//       default:
-//         break;
-//     }
-//   }
+        if (_vpnActive != isActive) {
+          debugPrint('Status actually changed: $_vpnActive -> $isActive');
+          final wasActive = _vpnActive;
 
-//   Future<void> _checkInitialStatus() async {
-//     try {
-//       final status = await DnsService.getServiceStatus();
-//       _updateVpnState(active: status, loading: false);
-//     } catch (e) {
-//       _updateVpnState(loading: false);
-//       debugPrint('Error checking initial status: $e');
-//     }
-//   }
+          setState(() {
+            _vpnActive = isActive;
+            _vpnLoading = false;
+          });
 
-//   Future<void> _toggleVpn(bool value) async {
-//     if (_vpnLoading) return;
-//     _updateVpnState(loading: true);
-//     value ? await _activateVpn() : await _deactivateVpn();
-//     _updateVpnState(loading: false);
-//   }
+          if (isActive) {
+            _lottieController
+                .animateTo(
+              0.1,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeIn,
+            )
+                .then((_) {
+              if (_vpnActive) {
+                _lottieController.repeat();
+              }
+            });
+          } else {
+            if (_lottieController.isAnimating) {
+              _lottieController
+                  .animateTo(
+                _lottieController.value,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              )
+                  .then((_) {
+                final remaining = 1.0 - (_lottieController.value % 1.0);
+                _lottieController
+                    .animateTo(
+                      _lottieController.value + remaining,
+                      duration: Duration(
+                          milliseconds: (remaining * 1500)
+                              .round()),
+                      curve: Curves.easeInOut,
+                    )
+                    .then((_) => _lottieController.stop());
+              });
+            }
+          }
 
-//   Future<void> _activateVpn() async {
-//     if (Platform.isAndroid) {
-//       final dns1 = _dns1Controller.text.trim();
-//       final dns2 = _dns2Controller.text.trim();
-//       try {
-//         final result = await DnsService.changeDns(dns1, dns2);
-        
-//         // Only show message if there was an error
-//         if (!result.success) {
-//           _showOptimizedMessage(
-//             result.message,
-//             Colors.red,
-//           );
-//         }
-        
-//         // اگر تغییر DNS موفقیت‌آمیز نبود، وضعیت VPN را به‌روز نکن
-//         if (!result.success) {
-//           _updateVpnState(active: false, loading: false);
-//         }
-//       } catch (e) {
-//         _showOptimizedMessage('خطا در فعال‌سازی VPN: $e', Colors.red);
-//         _updateVpnState(active: false, loading: false);
-//       }
-//     } else if (Platform.isWindows) {
-//       await _activateVpnWindows();
-//     }
-//   }
+          if (!_vpnLoading && wasActive != isActive) {
+            // handled by action functions
+          }
+        } else {
+          debugPrint('Status unchanged, just updating loading state');
+          if (_vpnLoading) {
+            setState(() {
+              _vpnLoading = false;
+            });
+          }
+        }
+      }
+    }, onError: (error) {
+      debugPrint('❌ Error in VPN status stream: $error');
+      if (mounted) {
+        setState(() {
+          _vpnLoading = false;
+        });
+      }
+    });
 
-//   Future<void> _activateVpnWindows() async {
-//     // فراخوانی تابع عملیاتی ویندوز
-//     await WindowsDnsHelper.setDns(
-//       _dns1Controller.text.trim(),
-//       _dns2Controller.text.trim(),
-//     );
-//     _showOptimizedMessage('فعالسازی VPN فقط برای اندروید فعال است.', Colors.orange);
-//   }
+    _dataUsageSubscription = VpnStatusService.dataUsageStream.listen(
+      (usage) {},
+    );
+  }
 
-//   Future<void> _deactivateVpn() async {
-//     try {
-//       final success = await DnsService.stopVpn();
-//       _showMessage(
-//         success
-//             ? DnsConstants.errorMessages['vpnDisabled']!
-//             : DnsConstants.errorMessages['vpnDisableError']!,
-//         success ? Colors.green : Colors.red,
-//       );
-//     } catch (e) {
-//       _showMessage('خطا در غیرفعال‌سازی VPN: $e', Colors.red);
-//     }
-//   }
+  void _disposeControllers() {
+    _dns1Controller.dispose();
+    _dns2Controller.dispose();
+  }
 
-//   void _updateVpnState({bool? active, bool? loading}) {
-//     if (!mounted) return;
-//     setState(() {
-//       if (active != null) _vpnActive = active;
-//       if (loading != null) _vpnLoading = loading;
-//     });
-//   }
+  void _disposeObserver() {
+    WidgetsBinding.instance.removeObserver(this);
+  }
 
-//   void _showMessage(String message, Color color) {
-//     if (!mounted) return;
-//     ScaffoldMessenger.of(
-//       context,
-//     ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
-//   }
-  
-//   /// Optimized SnackBar that prevents spam and duplicate messages
-//   void _showOptimizedMessage(String message, Color color) {
-//     if (!mounted) return;
-    
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(
-//         content: Text(message),
-//         backgroundColor: color,
-//         duration: const Duration(seconds: 2),
-//         behavior: SnackBarBehavior.floating,
-//         margin: const EdgeInsets.all(16),
-//       ),
-//     );
-//   }
+  void _disposeServices() {
+    _vpnStatusSubscription?.cancel();
+    _dataUsageSubscription?.cancel();
+    _pingResultSubscription?.cancel();
+    if (Platform.isAndroid) {
+      VpnStatusService.stopListening();
+    }
+  }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       key: _scaffoldKey,
-//       backgroundColor: const Color(0xFFF5F5F5),
-//       appBar: AppBar(
-//         backgroundColor: Colors.white,
-//         elevation: 0,
-//         title: Text(
-//           'Fire DNS',
-//           style: TextStyle(
-//             color: Colors.black,
-//             fontSize: responsiveSize(
-//               20,
-//               context,
-//               min: 16,
-//               max: 48,
-//               scaleByHeight: true,
-//             ),
-//             fontWeight: FontWeight.w600,
-//           ),
-//         ),
-//         centerTitle: true,
-//         toolbarHeight: Platform.isWindows ? 30 : kToolbarHeight,
-//       ),
-//       body: Padding(
-//         padding: const EdgeInsets.all(16),
-//         child: LayoutBuilder(
-//           builder: (context, constraints) {
-//             final double minCardHeight = 170;
-//             final double totalSpacing = 24;
-//             final double availableHeight = constraints.maxHeight - totalSpacing;
-//             double cardHeight = availableHeight / 3;
-//             if (cardHeight < minCardHeight) cardHeight = minCardHeight;
-//             return Padding(
-//               padding: EdgeInsets.all(
-//                 responsiveSize(
-//                   12,
-//                   context,
-//                   min: 4,
-//                   max: 16,
-//                   scaleByHeight: true,
-//                 ),
-//               ),
-//               child: Column(
-//                 mainAxisSize: MainAxisSize.max,
-//                 children: [
-//                   Expanded(
-//                     flex: 12,
-//                     child: _buildConnectionStatusCard(cardHeight),
-//                   ),
-//                   SizedBox(height: 8),
-//                   Expanded(flex: 10, child: _buildSpeedTestCard(cardHeight)),
-//                   SizedBox(height: 8),
-//                   Expanded(
-//                     flex: 10,
-//                     child: _buildConfigurationCard(cardHeight),
-//                   ),
-//                 ],
-//               ),
-//             );
-//           },
-//         ),
-//       ),
-//     );
-//   }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        debugPrint('App resumed');
+        if (_vpnActive) {
+          _checkInitialStatus();
+        }
+        if (_autoPingEnabled) {}
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+        break;
+      default:
+        break;
+    }
+  }
 
-//   /// کارت وضعیت اتصال DNS
-//   Widget _buildConnectionStatusCard(double height) {
-//     return Container(
-//       width: double.infinity,
-//       padding: EdgeInsets.all(
-//         responsiveSize(24, context, min: 10, max: 28, scaleByHeight: true),
-//       ),
-//       decoration: BoxDecoration(
-//         color: const Color(0xFFE8E8E8),
-//         borderRadius: BorderRadius.circular(
-//           responsiveSize(14, context, min: 6, max: 20, scaleByHeight: true),
-//         ),
-//       ),
-//       child: Stack(
-//         children: [
-//           Positioned.fill(
-//             child: LayoutBuilder(
-//               builder: (context, constraints) {
-//                 final double factor = 1.55;
-//                 return Opacity(
-//                   opacity: 0.88,
-//                   child: Center(
-//                     child: OverflowBox(
-//                       maxWidth: constraints.maxWidth * factor,
-//                       maxHeight: constraints.maxHeight * factor,
-//                       alignment: Alignment.center,
-//                       child: ClipRRect(
-//                         borderRadius: BorderRadius.circular(
-//                           responsiveSize(
-//                             24,
-//                             context,
-//                             min: 10,
-//                             max: 40,
-//                             scaleByHeight: true,
-//                           ),
-//                         ),
-//                         child: Lottie.asset(
-//                           'assets/icone/laptop.json',
-//                           width: constraints.maxWidth * factor,
-//                           height: constraints.maxHeight * factor,
-//                           fit: BoxFit.contain,
-//                           alignment: Alignment.center,
-//                           repeat: true,
-//                         ),
-//                       ),
-//                     ),
-//                   ),
-//                 );
-//               },
-//             ),
-//           ),
-//           SingleChildScrollView(
-//             child: Column(
-//               children: [
-//                 Row(
-//                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                   children: [
-//                     SizedBox(
-//                       width: responsiveSize(
-//                         120,
-//                         context,
-//                         min: 60,
-//                         max: 160,
-//                         scaleByHeight: true,
-//                       ),
-//                       height: responsiveSize(
-//                         90,
-//                         context,
-//                         min: 40,
-//                         max: 120,
-//                         scaleByHeight: true,
-//                       ),
-//                     ),
-//                     GestureDetector(
-//                       onTap: _vpnLoading ? null : () => _toggleVpn(!_vpnActive),
-//                       child: Container(
-//                         width: responsiveSize(
-//                           80,
-//                           context,
-//                           min: 40,
-//                           max: 100,
-//                           scaleByHeight: true,
-//                         ),
-//                         height: responsiveSize(
-//                           80,
-//                           context,
-//                           min: 40,
-//                           max: 100,
-//                           scaleByHeight: true,
-//                         ),
-//                         decoration: BoxDecoration(
-//                           color: _vpnActive ? Colors.green : Colors.red,
-//                           shape: BoxShape.circle,
-//                         ),
-//                         child: _vpnLoading
-//                             ? Center(
-//                                 child: SizedBox(
-//                                   width: responsiveSize(
-//                                     36,
-//                                     context,
-//                                     min: 20,
-//                                     max: 40,
-//                                     scaleByHeight: true,
-//                                   ),
-//                                   height: responsiveSize(
-//                                     36,
-//                                     context,
-//                                     min: 20,
-//                                     max: 40,
-//                                     scaleByHeight: true,
-//                                   ),
-//                                   child: CircularProgressIndicator(
-//                                     valueColor: AlwaysStoppedAnimation<Color>(
-//                                       Colors.white,
-//                                     ),
-//                                     strokeWidth: 4,
-//                                   ),
-//                                 ),
-//                               )
-//                             : Icon(
-//                                 Icons.power_settings_new,
-//                                 color: Colors.white,
-//                                 size: responsiveSize(
-//                                   40,
-//                                   context,
-//                                   min: 24,
-//                                   max: 48,
-//                                   scaleByHeight: true,
-//                                 ),
-//                               ),
-//                       ),
-//                     ),
-//                     // دکمه ست کردن DNS فقط برای ویندوز
-//                     if (Platform.isWindows)
-//                       Container(
-//                         margin: EdgeInsets.only(
-//                           left: responsiveSize(
-//                             8,
-//                             context,
-//                             min: 2,
-//                             max: 16,
-//                             scaleByHeight: true,
-//                           ),
-//                         ),
-//                         decoration: BoxDecoration(
-//                           color: _dnsSetSuccess
-//                               ? Colors.green.shade100
-//                               : Colors.blue.shade50,
-//                           borderRadius: BorderRadius.circular(16),
-//                           boxShadow: [
-//                             BoxShadow(
-//                               color: Colors.blue.withOpacity(0.08),
-//                               blurRadius: 8,
-//                               offset: const Offset(0, 2),
-//                             ),
-//                           ],
-//                         ),
-//                         child: AnimatedSwitcher(
-//                           duration: const Duration(milliseconds: 400),
-//                           transitionBuilder: (child, anim) =>
-//                               ScaleTransition(scale: anim, child: child),
-//                           child: _dnsSetSuccess
-//                               ? InkWell(
-//                                   key: const ValueKey('success'),
-//                                   onTap: () async {
-//                                     setState(() {
-//                                       _dnsSetLoading = true;
-//                                     });
-//                                     final result =
-//                                         await WindowsDnsSetter.unsetDns();
-//                                     setState(() {
-//                                       _dnsSetLoading = false;
-//                                       if (result) _dnsSetSuccess = false;
-//                                     });
-//                                     if (result) {
-//                                       _showMessage(
-//                                         'DNS به حالت خودکار برگشت.',
-//                                         Colors.orange,
-//                                       );
-//                                     } else {
-//                                       _showMessage(
-//                                         'خطا در بازگردانی DNS به حالت خودکار!',
-//                                         Colors.red,
-//                                       );
-//                                     }
-//                                   },
-//                                   child: Icon(
-//                                     Icons.check_circle,
-//                                     color: Colors.green,
-//                                     size: responsiveSize(
-//                                       48,
-//                                       context,
-//                                       min: 32,
-//                                       max: 64,
-//                                       scaleByHeight: true,
-//                                     ),
-//                                   ),
-//                                 )
-//                               : _dnsSetLoading
-//                               ? Padding(
-//                                   padding: const EdgeInsets.all(8.0),
-//                                   child: SizedBox(
-//                                     width: responsiveSize(
-//                                       32,
-//                                       context,
-//                                       min: 20,
-//                                       max: 40,
-//                                       scaleByHeight: true,
-//                                     ),
-//                                     height: responsiveSize(
-//                                       32,
-//                                       context,
-//                                       min: 20,
-//                                       max: 40,
-//                                       scaleByHeight: true,
-//                                     ),
-//                                     child: CircularProgressIndicator(),
-//                                   ),
-//                                 )
-//                               : SetDnsButton(
-//                                   key: const ValueKey('button'),
-//                                   onPressed: () async {
-//                                     setState(() {
-//                                       _dnsSetLoading = true;
-//                                     });
-//                                     final result =
-//                                         await WindowsDnsSetter.setDns(
-//                                           _dns1Controller.text.trim(),
-//                                           _dns2Controller.text.trim(),
-//                                         );
-//                                     setState(() {
-//                                       _dnsSetLoading = false;
-//                                       _dnsSetSuccess = result;
-//                                     });
-//                                     if (result) {
-//                                       _showMessage(
-//                                         'DNS با موفقیت روی ویندوز ست شد.',
-//                                         Colors.green,
-//                                       );
-//                                     } else {
-//                                       _showMessage(
-//                                         'خطا در ست کردن DNS ویندوز! (دسترسی ادمین یا خطای سیستم)',
-//                                         Colors.red,
-//                                       );
-//                                     }
-//                                   },
-//                                 ),
-//                         ),
-//                       ),
-//                   ],
-//                 ),
-//                 SizedBox(
-//                   height: responsiveSize(
-//                     30,
-//                     context,
-//                     min: 12,
-//                     max: 40,
-//                     scaleByHeight: true,
-//                   ),
-//                 ),
-//                 Row(
-//                   children: [
-//                     GestureDetector(
-//                       onTap:
-//                           (_selectedDnsLabel != null &&
-//                               _selectedDnsIp != null &&
-//                               _selectedDnsIp!.isNotEmpty)
-//                           ? () {
-//                               showDialog(
-//                                 context: context,
-//                                 builder: (context) => DnsInfoPopup(
-//                                   label: _selectedDnsLabel!,
-//                                   ip: _selectedDnsIp!,
-//                                   ping: null,
-//                                 ),
-//                               );
-//                             }
-//                           : null,
-//                       child: Icon(
-//                         Icons.info_outline,
-//                         size: responsiveSize(
-//                           20,
-//                           context,
-//                           min: 14,
-//                           max: 28,
-//                           scaleByHeight: true,
-//                         ),
-//                         color:
-//                             (_selectedDnsLabel != null &&
-//                                 _selectedDnsIp != null &&
-//                                 _selectedDnsIp!.isNotEmpty)
-//                             ? Colors.blue
-//                             : Colors.grey,
-//                       ),
-//                     ),
-//                     SizedBox(
-//                       width: responsiveSize(
-//                         8,
-//                         context,
-//                         min: 4,
-//                         max: 16,
-//                         scaleByHeight: true,
-//                       ),
-//                     ),
-//                     Text(
-//                       _vpnActive ? 'متصل شد' : 'قطع اتصال',
-//                       style: TextStyle(
-//                         fontSize: responsiveSize(
-//                           24,
-//                           context,
-//                           min: 16,
-//                           max: 48,
-//                           scaleByHeight: true,
-//                         ),
-//                         fontWeight: FontWeight.bold,
-//                         color: Colors.black,
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//                 SizedBox(
-//                   height: responsiveSize(
-//                     8,
-//                     context,
-//                     min: 4,
-//                     max: 16,
-//                     scaleByHeight: true,
-//                   ),
-//                 ),
-//                 if (_selectedDnsLabel != null)
-//                   Row(
-//                     children: [
-//                       Icon(
-//                         Icons.dns,
-//                         size: responsiveSize(
-//                           20,
-//                           context,
-//                           min: 14,
-//                           max: 28,
-//                           scaleByHeight: true,
-//                         ),
-//                         color: _vpnActive ? Colors.green : Colors.blue,
-//                       ),
-//                       SizedBox(
-//                         width: responsiveSize(
-//                           8,
-//                           context,
-//                           min: 4,
-//                           max: 16,
-//                           scaleByHeight: true,
-//                         ),
-//                       ),
-//                       Expanded(
-//                         child: Text(
-//                           'DNS انتخابی: ${_selectedDnsLabel!}' +
-//                               (_selectedDnsIp != null &&
-//                                       _selectedDnsIp!.isNotEmpty
-//                                   ? ' (${_selectedDnsIp!})'
-//                                   : ''),
-//                           style: TextStyle(
-//                             fontSize: responsiveSize(
-//                               16,
-//                               context,
-//                               min: 12,
-//                               max: 30,
-//                               scaleByHeight: true,
-//                             ),
-//                             color: _vpnActive ? Colors.green : Colors.blue,
-//                           ),
-//                           overflow: TextOverflow.ellipsis,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 if (!_vpnActive) ...[
-//                   if (_selectedDnsLabel != null)
-//                     Row(
-//                       children: [
-//                         Icon(
-//                           Icons.dns,
-//                           size: responsiveSize(
-//                             20,
-//                             context,
-//                             min: 14,
-//                             max: 28,
-//                             scaleByHeight: true,
-//                           ),
-//                           color: _vpnActive ? Colors.green : Colors.blue,
-//                         ),
-//                         SizedBox(
-//                           width: responsiveSize(
-//                             8,
-//                             context,
-//                             min: 4,
-//                             max: 16,
-//                             scaleByHeight: true,
-//                           ),
-//                         ),
-//                         Expanded(
-//                           child: Text(
-//                             'DNS انتخابی: ${_selectedDnsLabel!}' +
-//                                 (_selectedDnsIp != null &&
-//                                         _selectedDnsIp!.isNotEmpty
-//                                     ? ' (${_selectedDnsIp!})'
-//                                     : ''),
-//                             style: TextStyle(
-//                               fontSize: responsiveSize(
-//                                 16,
-//                                 context,
-//                                 min: 12,
-//                                 max: 30,
-//                                 scaleByHeight: true,
-//                               ),
-//                               color: _vpnActive ? Colors.green : Colors.blue,
-//                             ),
-//                             overflow: TextOverflow.ellipsis,
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                 ],
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
+  Future<void> _checkInitialStatus() async {
+    if (Platform.isAndroid) {
+      try {
+        final status = await DnsService.getServiceStatus();
+        debugPrint('Initial VPN status check from service: $status');
 
-//   /// کارت تست سرعت
-//   Widget _buildSpeedTestCard(double height) {
-//     return Container(
-//       width: double.infinity,
-//       padding: EdgeInsets.all(
-//         responsiveSize(12, context, min: 6, max: 18, scaleByHeight: true),
-//       ),
-//       decoration: BoxDecoration(
-//         color: Colors.white,
-//         borderRadius: BorderRadius.circular(
-//           responsiveSize(12, context, min: 6, max: 16, scaleByHeight: true),
-//         ),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.grey.withOpacity(0.1),
-//             spreadRadius: 1,
-//             blurRadius: 10,
-//             offset: const Offset(0, 2),
-//           ),
-//         ],
-//       ),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Row(
-//             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//             children: [
-//               // دکمه اجرای تست سرعت
-//               GestureDetector(
-//                 onTap: () {
-//                   if (Platform.isAndroid) {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (context) => const SpeedTestPage(),
-//                       ),
-//                     );
-//                   } else if (Platform.isWindows) {
-//                     _showOptimizedMessage(
-//                       'تست سرعت فقط برای اندروید فعال است.',
-//                       Colors.orange,
-//                     );
-//                   }
-//                 },
-//                 child: Container(
-//                   padding: EdgeInsets.symmetric(
-//                     horizontal: responsiveSize(
-//                       16,
-//                       context,
-//                       min: 8,
-//                       max: 25,
-//                       scaleByHeight: true,
-//                     ),
-//                     vertical: responsiveSize(
-//                       8,
-//                       context,
-//                       min: 4,
-//                       max: 12,
-//                       scaleByHeight: true,
-//                     ),
-//                   ),
-//                   decoration: BoxDecoration(
-//                     color: const Color(0xFF1976D2), // Strong blue
-//                     borderRadius: BorderRadius.circular(
-//                       responsiveSize(
-//                         16,
-//                         context,
-//                         min: 8,
-//                         max: 25,
-//                         scaleByHeight: true,
-//                       ),
-//                     ),
-//                     boxShadow: [
-//                       BoxShadow(
-//                         color: Colors.blue.withOpacity(0.08),
-//                         blurRadius: 8,
-//                         offset: const Offset(0, 2),
-//                       ),
-//                     ],
-//                   ),
-//                   child: Text(
-//                     'شروع تست',
-//                     style: TextStyle(
-//                       fontSize: responsiveSize(
-//                         14,
-//                         context,
-//                         min: 12,
-//                         max: 30,
-//                         scaleByHeight: true,
-//                       ),
-//                       fontWeight: FontWeight.w600,
-//                       color: Colors.white,
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//               // آیکون سرعت
-//               Container(
-//                 width: responsiveSize(
-//                   32,
-//                   context,
-//                   min: 24,
-//                   max: 50,
-//                   scaleByHeight: true,
-//                 ),
-//                 height: responsiveSize(
-//                   32,
-//                   context,
-//                   min: 24,
-//                   max: 50,
-//                   scaleByHeight: true,
-//                 ),
-//                 decoration: const BoxDecoration(
-//                   color: Colors.green,
-//                   shape: BoxShape.circle,
-//                 ),
-//                 child: Icon(
-//                   Icons.speed,
-//                   color: Colors.white,
-//                   size: responsiveSize(
-//                     18,
-//                     context,
-//                     min: 14,
-//                     max: 25,
-//                     scaleByHeight: true,
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
+        if (_vpnActive || status) {
+          setState(() {
+            _vpnActive = status;
+            _vpnLoading = false;
+          });
 
-//           SizedBox(
-//             height: responsiveSize(
-//               12,
-//               context,
-//               min: 4,
-//               max: 20,
-//               scaleByHeight: true,
-//             ),
-//           ),
+          VpnStatusService.notifyVpnStatus(status);
+        }
+      } catch (e) {
+        debugPrint('Error checking initial status: $e');
+        setState() {
+          _vpnActive = false;
+          _vpnLoading = false;
+        };
+      }
+    } else {
+      setState() {
+        _vpnActive = false;
+        _vpnLoading = false;
+      };
+    }
+  }
 
-//           Text(
-//             'تست سرعت اینترنت',
-//             style: TextStyle(
-//               fontSize: responsiveSize(
-//                 18,
-//                 context,
-//                 min: 14,
-//                 max: 48,
-//                 scaleByHeight: true,
-//               ),
-//               fontWeight: FontWeight.bold,
-//               color: Colors.black,
-//             ),
-//           ),
+  Future<void> _toggleVpn(bool value) async {
+    if (_vpnLoading) return;
 
-//           SizedBox(
-//             height: responsiveSize(
-//               8,
-//               context,
-//               min: 2,
-//               max: 10,
-//               scaleByHeight: true,
-//             ),
-//           ),
+    debugPrint('=== Toggle VPN requested ===');
+    debugPrint('Requested value: $value');
+    debugPrint('Current UI state: $_vpnActive');
 
-//           RichText(
-//             text: TextSpan(
-//               style: TextStyle(
-//                 fontSize: responsiveSize(
-//                   15,
-//                   context,
-//                   min: 10,
-//                   max: 30,
-//                   scaleByHeight: true,
-//                 ),
-//                 color: Colors.grey,
-//                 height: 1.5,
-//               ),
-//               children: [
-//                 TextSpan(
-//                   text: 'تست سرعت',
-//                   style: TextStyle(
-//                     color: Colors.green,
-//                     fontWeight: FontWeight.w600,
-//                   ),
-//                 ),
-//                 TextSpan(text: ' سرعت اینترنت شما را بین '),
-//                 TextSpan(
-//                   text: 'دستگاه',
-//                   style: TextStyle(fontWeight: FontWeight.w600),
-//                 ),
-//                 TextSpan(
-//                   text:
-//                       ' و سرور تست اندازه‌گیری می‌کند و از اتصال اینترنت فعلی شما استفاده می‌کند.',
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
+    try {
+      bool actualStatus = false;
+      if (Platform.isAndroid) {
+        actualStatus = await DnsService.getServiceStatus();
+      }
+      debugPrint('Actual service status: $actualStatus');
 
-//   /// کارت پیکربندی
-//   Widget _buildConfigurationCard(double height) {
-//     return Container(
-//       width: double.infinity,
-//       padding: EdgeInsets.all(
-//         responsiveSize(12, context, min: 6, max: 18, scaleByHeight: true),
-//       ),
-//       decoration: BoxDecoration(
-//         color: Colors.white,
-//         borderRadius: BorderRadius.circular(
-//           responsiveSize(12, context, min: 6, max: 16, scaleByHeight: true),
-//         ),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.grey.withOpacity(0.1),
-//             spreadRadius: 1,
-//             blurRadius: 10,
-//             offset: const Offset(0, 2),
-//           ),
-//         ],
-//       ),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Row(
-//             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//             children: [
-//               // دکمه Switch (فعال)
-//               GestureDetector(
-//                 onTap: () async {
-//                   await Navigator.push(
-//                     context,
-//                     MaterialPageRoute(
-//                       builder: (context) => const DnsListPage(),
-//                     ),
-//                   );
-//                   // پس از بازگشت، دی‌ان‌اس انتخابی را مجدداً بارگذاری کن
-//                   await _loadSelectedDnsLabel();
-//                 },
-//                 child: Container(
-//                   padding: EdgeInsets.symmetric(
-//                     horizontal: responsiveSize(
-//                       16,
-//                       context,
-//                       min: 8,
-//                       max: 25,
-//                       scaleByHeight: true,
-//                     ),
-//                     vertical: responsiveSize(
-//                       8,
-//                       context,
-//                       min: 4,
-//                       max: 12,
-//                       scaleByHeight: true,
-//                     ),
-//                   ),
-//                   decoration: BoxDecoration(
-//                     color: const Color(0xFF1976D2), // Strong blue
-//                     borderRadius: BorderRadius.circular(
-//                       responsiveSize(
-//                         16,
-//                         context,
-//                         min: 8,
-//                         max: 25,
-//                         scaleByHeight: true,
-//                       ),
-//                     ),
-//                     boxShadow: [
-//                       BoxShadow(
-//                         color: Colors.blue.withOpacity(0.08),
-//                         blurRadius: 8,
-//                         offset: const Offset(0, 2),
-//                       ),
-//                     ],
-//                   ),
-//                   child: Text(
-//                     'تغییر DNS',
-//                     style: TextStyle(
-//                       fontSize: responsiveSize(
-//                         14,
-//                         context,
-//                         min: 12,
-//                         max: 30,
-//                         scaleByHeight: true,
-//                       ),
-//                       fontWeight: FontWeight.w600,
-//                       color: Colors.white,
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//               // آیکون تنظیمات
-//               Container(
-//                 width: responsiveSize(
-//                   32,
-//                   context,
-//                   min: 24,
-//                   max: 50,
-//                   scaleByHeight: true,
-//                 ),
-//                 height: responsiveSize(
-//                   32,
-//                   context,
-//                   min: 24,
-//                   max: 50,
-//                   scaleByHeight: true,
-//                 ),
-//                 decoration: const BoxDecoration(
-//                   color: Colors.green,
-//                   shape: BoxShape.circle,
-//                 ),
-//                 child: Stack(
-//                   alignment: Alignment.center,
-//                   children: [
-//                     Icon(
-//                       Icons.settings,
-//                       color: Colors.white,
-//                       size: responsiveSize(
-//                         16,
-//                         context,
-//                         min: 12,
-//                         max: 20,
-//                         scaleByHeight: true,
-//                       ),
-//                     ),
-//                     Positioned(
-//                       right: 8,
-//                       top: 8,
-//                       child: Container(
-//                         width: responsiveSize(
-//                           6,
-//                           context,
-//                           min: 4,
-//                           max: 8,
-//                           scaleByHeight: true,
-//                         ),
-//                         height: responsiveSize(
-//                           6,
-//                           context,
-//                           min: 4,
-//                           max: 8,
-//                           scaleByHeight: true,
-//                         ),
-//                         decoration: const BoxDecoration(
-//                           color: Colors.green,
-//                           shape: BoxShape.circle,
-//                         ),
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//             ],
-//           ),
+      if (_vpnActive != actualStatus) {
+        debugPrint('⚠️ UI state mismatch detected!');
+        debugPrint('Correcting UI state: $_vpnActive -> $actualStatus');
+        setState(() {
+          _vpnActive = actualStatus;
+        });
 
-//           SizedBox(
-//             height: responsiveSize(
-//               12,
-//               context,
-//               min: 4,
-//               max: 20,
-//               scaleByHeight: true,
-//             ),
-//           ),
+        if (value == actualStatus) {
+          debugPrint('Requested state matches actual state, no action needed');
+          return;
+        }
+      }
 
-//           Text(
-//             'پیکربندی شبکه',
-//             style: TextStyle(
-//               fontSize: responsiveSize(
-//                 18,
-//                 context,
-//                 min: 14,
-//                 max: 48,
-//                 scaleByHeight: true,
-//               ),
-//               fontWeight: FontWeight.bold,
-//               color: Colors.black,
-//             ),
-//           ),
+      setState(() {
+        _vpnLoading = true;
+      });
 
-//           SizedBox(
-//             height: responsiveSize(
-//               8,
-//               context,
-//               min: 2,
-//               max: 10,
-//               scaleByHeight: true,
-//             ),
-//           ),
+      if (actualStatus) {
+        await _deactivateVpn();
+      } else {
+        await _activateVpn();
+      }
 
-//           RichText(
-//             text: TextSpan(
-//               style: TextStyle(
-//                 fontSize: responsiveSize(
-//                   15,
-//                   context,
-//                   min: 10,
-//                   max: 30,
-//                   scaleByHeight: true,
-//                 ),
-//                 color: Colors.grey,
-//                 height: 1.5,
-//               ),
-//               children: [
-//                 TextSpan(text: 'در این بخش می‌توانید '),
-//                 TextSpan(
-//                   text: 'تنظیمات شبکه',
-//                   style: TextStyle(fontWeight: FontWeight.w600),
-//                 ),
-//                 TextSpan(text: ' خود را شخصی‌سازی کنید و '),
-//                 TextSpan(
-//                   text: 'پیکربندی',
-//                   style: TextStyle(
-//                     color: Colors.green,
-//                     fontWeight: FontWeight.w600,
-//                   ),
-//                 ),
-//                 TextSpan(text: ' مناسب با نیاز اتصال خود را انتخاب نمایید.'),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+      bool newStatus = false;
+      if (Platform.isAndroid) {
+        newStatus = await DnsService.getServiceStatus();
+      }
+      debugPrint('New service status after toggle: $newStatus');
+
+      setState(() {
+        _vpnActive = newStatus;
+        _vpnLoading = false;
+      });
+
+      await _reportDnsUsage(newStatus);
+    } catch (e) {
+      debugPrint('❌ Error in _toggleVpn: $e');
+      setState() {
+        _vpnLoading = false;
+      };
+
+      try {
+        bool actualStatus = false;
+        if (Platform.isAndroid) {
+          actualStatus = await DnsService.getServiceStatus();
+        }
+        setState() {
+          _vpnActive = actualStatus;
+        };
+      } catch (_) {
+        setState() {
+          _vpnActive = false;
+        };
+      }
+    }
+  }
+
+  Future<void> _reportDnsUsage(bool isConnected) async {
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken() ?? '';
+      final dnsUsageService = DnsUsageApiService();
+
+      DeviceInfo deviceInfoData;
+      if (Platform.isAndroid) {
+        final deviceInfo = await DeviceInfoPlugin().androidInfo;
+        deviceInfoData = DeviceInfo(
+          deviceType: 'android',
+          brand: deviceInfo.brand,
+          model: deviceInfo.model,
+          osVersion: deviceInfo.version.release,
+        );
+      } else if (Platform.isWindows) {
+        final deviceInfo = await DeviceInfoPlugin().windowsInfo;
+        deviceInfoData = DeviceInfo(
+          deviceType: 'windows',
+          brand: deviceInfo.computerName,
+          model: deviceInfo.computerName,
+          osVersion: '${deviceInfo.majorVersion}.${deviceInfo.minorVersion}',
+        );
+      } else {
+        deviceInfoData = DeviceInfo(
+          deviceType: 'unknown',
+          brand: 'unknown',
+          model: 'unknown',
+          osVersion: 'unknown',
+        );
+      }
+
+      final connectivity = await Connectivity().checkConnectivity();
+      String? ipAddress;
+      try {
+        final response = await http.get(Uri.parse('https://api.ipify.org'));
+        ipAddress = response.statusCode == 200 ? response.body : null;
+      } catch (_) {}
+
+      final networkInfoData = NetworkInfo(
+        connectionType:
+            connectivity == ConnectivityResult.mobile ? 'mobile' : 'wifi',
+        carrierName:
+            connectivity == ConnectivityResult.mobile ? 'Unknown' : null,
+        ipAddress: ipAddress,
+        mobileNetworkType:
+            connectivity == ConnectivityResult.mobile ? 'Unknown' : null,
+      );
+
+      final request = DnsUsageRequest(
+        fcmToken: fcmToken,
+        dns: DnsInfo(
+          label: _selectedDnsLabel ?? '',
+          ip1: _dns1Controller.text.trim(),
+          ip2: _dns2Controller.text.trim(),
+        ),
+        timestamp: DateTime.now(),
+        connectionType: isConnected
+            ? ConnectionType.connected
+            : ConnectionType.disconnected,
+        networkInfo: networkInfoData,
+      );
+
+      debugPrint('=== ارسال اطلاعات DNS به سرور ===');
+      debugPrint('Device Info: ${deviceInfoData.toJson()}');
+      debugPrint('Network Info: ${networkInfoData.toJson()}');
+      debugPrint('DNS Info: ${request.dns.toJson()}');
+      debugPrint('Connection Type: ${request.connectionType}');
+      debugPrint('Timestamp: ${request.timestamp}');
+
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id') ?? '';
+      debugPrint('User ID: $userId');
+
+      final response = await dnsUsageService.recordDnsUsage(
+        userDnsId: request.dns.label,
+        internetTag: request.networkInfo.connectionType,
+        userId: userId,
+      );
+      if (!response.status) {
+        debugPrint('خطا در ارسال وضعیت اتصال به سرور: ${response.message}');
+      }
+    } catch (e) {
+      debugPrint('خطا در ارسال وضعیت اتصال: $e');
+    }
+  }
+
+  Future<void> _activateVpn() async {
+    if (Platform.isAndroid) {
+      final dns1 = _dns1Controller.text.trim();
+      final dns2 = _dns2Controller.text.trim();
+      try {
+        debugPrint('Activating VPN with DNS1: $dns1, DNS2: $dns2');
+        final result = await DnsService.changeDns(dns1, dns2);
+
+        await Future.delayed(const Duration(milliseconds: 500));
+        final actualStatus = await DnsService.getServiceStatus();
+        debugPrint(
+            'VPN activation result: ${result.success}, actual status: $actualStatus');
+
+        showEnhancedSnackBar(
+          context: context,
+          message: result.message,
+          type: result.success ? SnackBarType.success : SnackBarType.error,
+          lastSnackBarTime: _lastSnackBarTime,
+          lastSnackBarMessage: _lastSnackBarMessage,
+          setLastSnackBarTime: (time) => _lastSnackBarTime = time,
+          setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
+          isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+        );
+
+        setState(() {
+          _vpnActive = actualStatus;
+          _vpnLoading = false;
+        });
+      } catch (e) {
+        debugPrint('Error activating VPN: $e');
+        showEnhancedSnackBar(
+          context: context,
+          message: 'خطا در فعال‌سازی VPN: $e',
+          type: SnackBarType.error,
+          lastSnackBarTime: _lastSnackBarTime,
+          lastSnackBarMessage: _lastSnackBarMessage,
+          setLastSnackBarTime: (time) => _lastSnackBarTime = time,
+          setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
+          isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+        );
+        setState(() {
+          _vpnActive = false;
+          _vpnLoading = false;
+        });
+      }
+    } else {
+      showEnhancedSnackBar(
+        context: context,
+        message: 'این قابلیت بزودی برای ویندوز فعال میشود',
+        type: SnackBarType.info,
+        lastSnackBarTime: _lastSnackBarTime,
+        lastSnackBarMessage: _lastSnackBarMessage,
+        setLastSnackBarTime: (time) => _lastSnackBarTime = time,
+        setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
+        isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+      );
+      setState(() {
+        _vpnLoading = false;
+      });
+    }
+  }
+
+  Future<void> _deactivateVpn() async {
+    if (Platform.isAndroid) {
+      try {
+        debugPrint('Deactivating VPN...');
+        final success = await DnsService.stopVpn();
+
+        await Future.delayed(
+            const Duration(milliseconds: 500));
+        final actualStatus = await DnsService.getServiceStatus();
+        debugPrint(
+            'VPN deactivation success: $success, actual status: $actualStatus');
+
+        showEnhancedSnackBar(
+          context: context,
+          message: success
+              ? DnsConstants.errorMessages['vpnDisabled']!
+              : DnsConstants.errorMessages['vpnDisableError']!,
+          type: success ? SnackBarType.success : SnackBarType.error,
+          lastSnackBarTime: _lastSnackBarTime,
+          lastSnackBarMessage: _lastSnackBarMessage,
+          setLastSnackBarTime: (time) => _lastSnackBarTime = time,
+          setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
+          isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+        );
+
+        setState(() {
+          _vpnActive = actualStatus;
+          _vpnLoading = false;
+        });
+      } catch (e) {
+        debugPrint('Error deactivating VPN: $e');
+        showEnhancedSnackBar(
+          context: context,
+          message: 'خطا در غیرفعال‌سازی VPN: $e',
+          type: SnackBarType.error,
+          lastSnackBarTime: _lastSnackBarTime,
+          lastSnackBarMessage: _lastSnackBarMessage,
+          setLastSnackBarTime: (time) => _lastSnackBarTime = time,
+          setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
+          isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+        );
+
+        try {
+          final actualStatus = await DnsService.getServiceStatus();
+          setState(() {
+            _vpnActive = actualStatus;
+            _vpnLoading = false;
+          });
+        } catch (_) {
+          setState(() {
+            _vpnActive = false;
+            _vpnLoading = false;
+          });
+        }
+      }
+    } else {
+      setState(() {
+        _vpnActive = false;
+        _vpnLoading = false;
+      });
+    }
+  }
+
+  void _handleDnsSelected(DnsRecord result) {
+    setState(() {
+      _selectedDnsLabel = result.label;
+      _selectedDnsIp = result.ip1.isNotEmpty ? result.ip1 : result.ip2;
+      _dns1Controller.text = result.ip1;
+      _dns2Controller.text = result.ip2;
+    });
+  }
+
+  void _showSnackBar(String message) {
+    showEnhancedSnackBar(
+      context: context,
+      message: message,
+      type: SnackBarType.info,
+      lastSnackBarTime: _lastSnackBarTime,
+      lastSnackBarMessage: _lastSnackBarMessage,
+      setLastSnackBarTime: (time) => _lastSnackBarTime = time,
+      setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
+      isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeManager = Provider.of<ThemeManager>(context);
+    final isDark = themeManager.isDarkModeActive(context);
+    return ListenableBuilder(
+      listenable: themeManager,
+      builder: (context, _) => Scaffold(
+        key: _scaffoldKey,
+        drawer: const CustomDrawer(),
+        backgroundColor:
+            isDark ? AppColors.darkBackground : AppColors.backgroundLight,
+        appBar: AppBar(
+          backgroundColor:
+              isDark ? AppColors.darkBackground : AppColors.backgroundLight,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.menu,
+              color: isDark ? AppColors.darkIconPrimary : AppColors.textPrimary,
+            ),
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          ),
+          title: Text(
+            context.tr('appTitle'),
+            style: TextStyle(
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
+          toolbarHeight: kToolbarHeight,
+          actions: [
+            const NotificationBell(),
+            IconButton(
+              icon: CircleAvatar(
+                backgroundColor: AppColors.backgroundGrey,
+                child: Icon(
+                  Icons.person_outline,
+                  color: isDark
+                      ? AppColors.darkIconPrimary
+                      : AppColors.textPrimary,
+                  size: 20,
+                ),
+              ),
+              onPressed: () {
+                _showSnackBar(context.tr('profileComingSoon'));
+              },
+            ),
+          ],
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const minCardHeight = 170.0;
+              const totalSpacing = 24.0;
+              final availableHeight = constraints.maxHeight - totalSpacing;
+              double cardHeight = availableHeight / 3;
+              if (cardHeight < minCardHeight) cardHeight = minCardHeight;
+              const cardPadding = EdgeInsets.all(12);
+              return Padding(
+                padding: cardPadding,
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Expanded(
+                      flex: 12,
+                      child: ConnectionStatusCard(
+                        height: cardHeight,
+                        themeManager: _themeManager,
+                        vpnActive: _vpnActive,
+                        vpnLoading: _vpnLoading,
+                        lottieController: _lottieController,
+                        onToggleVpn: () => _toggleVpn(!_vpnActive),
+                        selectedDnsLabel: _selectedDnsLabel,
+                        selectedDnsIp: _selectedDnsIp,
+                        dns1Controller: _dns1Controller,
+                        dns2Controller: _dns2Controller,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      flex: 10,
+                      child: SpeedTestCard(
+                        height: cardHeight,
+                        themeManager: _themeManager,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      flex: 10,
+                      child: ConfigurationCard(
+                        height: cardHeight,
+                        themeManager: _themeManager,
+                        onDnsSelected: _handleDnsSelected,
+                        vpnActive: _vpnActive,
+                        deactivateVpn: _deactivateVpn,
+                        activateVpn: _activateVpn,
+                        loadSelectedDnsLabel: _loadSelectedDnsLabel,
+                        showSnackBar: _showSnackBar,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -44,9 +44,14 @@ export '../widgets/custom_drawer.dart';
 // utils
 export '../utils/dns_validator.dart';
 export '../utils/format_utils.dart';
-export '../widgets/add_dns_dialog.dart';
+export '../utils/snackbar_utils.dart';
 
-
+// widgets
 export '../widgets/dns_info_popup.dart';
+export '../widgets/add_dns_dialog.dart';
+export '../widgets/connection_status_card.dart';
+export '../widgets/speed_test_card.dart';
+export '../widgets/configuration_card.dart';
+
 
 export '../services/dns_test_settings_service.dart';
