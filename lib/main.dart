@@ -154,26 +154,45 @@ class FireDNSApp extends StatelessWidget {
             theme: themeManager.lightTheme.copyWith(
               textTheme: themeManager.lightTheme.textTheme
                   .apply(
-                    fontFamily: 'IranSansX',
+                    fontFamily:
+                        languageManager.isEnglish ? 'Poppins' : 'IranSansX',
                     bodyColor:
                         themeManager.lightTheme.textTheme.bodyLarge?.color,
                     displayColor:
                         themeManager.lightTheme.textTheme.displayLarge?.color,
                   )
                   .copyWith(
-                    bodyLarge: TextStyle(fontFamily: 'IranSansX'),
-                    bodyMedium: TextStyle(fontFamily: 'IranSansX'),
-                    titleLarge: TextStyle(fontFamily: 'IranSansX'),
-                    titleMedium: TextStyle(fontFamily: 'IranSansX'),
-                    titleSmall: TextStyle(fontFamily: 'IranSansX'),
-                    labelLarge: TextStyle(fontFamily: 'IranSansX'),
+                    bodyLarge: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
+                    bodyMedium: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
+                    titleLarge: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
+                    titleMedium: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
+                    titleSmall: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
+                    labelLarge: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
                   ),
               primaryTextTheme: themeManager.lightTheme.primaryTextTheme.apply(
-                fontFamily: 'IranSansX',
+                fontFamily: languageManager.fontFamily,
               ),
               appBarTheme: themeManager.lightTheme.appBarTheme.copyWith(
                 titleTextStyle: TextStyle(
-                    fontFamily: 'IranSansX',
+                    fontFamily: languageManager.fontFamily,
                     fontSize: 20,
                     fontWeight: FontWeight.bold),
               ),
@@ -181,26 +200,45 @@ class FireDNSApp extends StatelessWidget {
             darkTheme: themeManager.darkTheme.copyWith(
               textTheme: themeManager.darkTheme.textTheme
                   .apply(
-                    fontFamily: 'IranSansX',
+                    fontFamily:
+                        languageManager.isEnglish ? 'Poppins' : 'IranSansX',
                     bodyColor:
                         themeManager.darkTheme.textTheme.bodyLarge?.color,
                     displayColor:
                         themeManager.darkTheme.textTheme.displayLarge?.color,
                   )
                   .copyWith(
-                    bodyLarge: TextStyle(fontFamily: 'IranSansX'),
-                    bodyMedium: TextStyle(fontFamily: 'IranSansX'),
-                    titleLarge: TextStyle(fontFamily: 'IranSansX'),
-                    titleMedium: TextStyle(fontFamily: 'IranSansX'),
-                    titleSmall: TextStyle(fontFamily: 'IranSansX'),
-                    labelLarge: TextStyle(fontFamily: 'IranSansX'),
+                    bodyLarge: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
+                    bodyMedium: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
+                    titleLarge: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
+                    titleMedium: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
+                    titleSmall: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
+                    labelLarge: TextStyle(
+                        fontFamily: languageManager.isEnglish
+                            ? 'Poppins'
+                            : 'IranSansX'),
                   ),
               primaryTextTheme: themeManager.darkTheme.primaryTextTheme.apply(
-                fontFamily: 'IranSansX',
+                fontFamily: languageManager.fontFamily,
               ),
               appBarTheme: themeManager.darkTheme.appBarTheme.copyWith(
                 titleTextStyle: TextStyle(
-                    fontFamily: 'IranSansX',
+                    fontFamily: languageManager.fontFamily,
                     fontSize: 20,
                     fontWeight: FontWeight.bold),
               ),

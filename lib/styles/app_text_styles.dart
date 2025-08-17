@@ -1,224 +1,184 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../path/path.dart';
+import 'app_base_styles.dart';
 
 /// کلاس مدیریت تمام استایل‌های متن و Typography
 class AppTextStyles {
-  // فونت پیش‌فرض
-  static const String _fontFamily = 'System';
-
-  // سایزهای فونت
-  static const double _fontSizeXS = 10.0;
-  static const double _fontSizeS = 12.0;
-  static const double _fontSizeM = 14.0;
-  static const double _fontSizeL = 16.0;
-  static const double _fontSizeXL = 18.0;
-  static const double _fontSizeXXL = 20.0;
-  static const double _fontSizeXXXL = 24.0;
-  static const double _fontSizeGiant = 32.0;
-
-  // وزن‌های فونت
-  static const FontWeight _fontWeightRegular = FontWeight.w400;
-  static const FontWeight _fontWeightMedium = FontWeight.w500;
-  static const FontWeight _fontWeightSemiBold = FontWeight.w600;
-  static const FontWeight _fontWeightBold = FontWeight.w700;
+  // تابع کمکی برای انتخاب فونت مناسب
+  static String _getFont(bool isEnglish) {
+    return isEnglish ? 'Poppins' : 'IranSansX';
+  }
 
   // استایل‌های Title و Header
-  static const TextStyle titleLarge = TextStyle(
-    fontSize: _fontSizeGiant,
-    fontWeight: _fontWeightSemiBold,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle titleLarge(BuildContext context) =>
+      AppBaseStyles.titleLargeBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle titleMedium = TextStyle(
-    fontSize: _fontSizeXXXL,
-    fontWeight: _fontWeightSemiBold,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle titleMedium(BuildContext context) =>
+      AppBaseStyles.titleMediumBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle titleSmall = TextStyle(
-    fontSize: _fontSizeXXL,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle titleSmall(BuildContext context) =>
+      AppBaseStyles.titleSmallBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
   // استایل‌های Header
-  static const TextStyle headlineLarge = TextStyle(
-    fontSize: _fontSizeXXXL,
-    fontWeight: _fontWeightBold,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle headlineLarge(BuildContext context) =>
+      AppBaseStyles.headlineLargeBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle headlineMedium = TextStyle(
-    fontSize: _fontSizeXXL,
-    fontWeight: _fontWeightSemiBold,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle headlineMedium(BuildContext context) =>
+      AppBaseStyles.headlineMediumBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle headlineSmall = TextStyle(
-    fontSize: _fontSizeXL,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle headlineSmall(BuildContext context) =>
+      AppBaseStyles.headlineSmallBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
   // استایل‌های Body Text
-  static const TextStyle bodyLarge = TextStyle(
-    fontSize: _fontSizeL,
-    fontWeight: _fontWeightRegular,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle bodyLarge(BuildContext context) =>
+      AppBaseStyles.bodyLargeBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle bodyMedium = TextStyle(
-    fontSize: _fontSizeM,
-    fontWeight: _fontWeightRegular,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle bodyMedium(BuildContext context) =>
+      AppBaseStyles.bodyMediumBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle bodySmall = TextStyle(
-    fontSize: _fontSizeS,
-    fontWeight: _fontWeightRegular,
-    color: AppColors.textSecondary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle bodySmall(BuildContext context) =>
+      AppBaseStyles.bodySmallBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
   // استایل‌های Label
-  static const TextStyle labelLarge = TextStyle(
-    fontSize: _fontSizeL,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle labelLarge(BuildContext context) =>
+      AppBaseStyles.labelLargeBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle labelMedium = TextStyle(
-    fontSize: _fontSizeM,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle labelMedium(BuildContext context) =>
+      AppBaseStyles.labelMediumBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle labelSmall = TextStyle(
-    fontSize: _fontSizeS,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textSecondary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle labelSmall(BuildContext context) =>
+      AppBaseStyles.labelSmallBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
   // استایل‌های دکمه
-  static const TextStyle buttonLarge = TextStyle(
-    fontSize: _fontSizeL,
-    fontWeight: _fontWeightSemiBold,
-    color: AppColors.textWhite,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle buttonLarge(BuildContext context) =>
+      AppBaseStyles.buttonLargeBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle buttonMedium = TextStyle(
-    fontSize: _fontSizeM,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textWhite,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle buttonMedium(BuildContext context) =>
+      AppBaseStyles.buttonMediumBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle buttonSmall = TextStyle(
-    fontSize: _fontSizeS,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textWhite,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle buttonSmall(BuildContext context) =>
+      AppBaseStyles.buttonSmallBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
   // استایل‌های AppBar
-  static const TextStyle appBarTitle = TextStyle(
-    fontSize: _fontSizeXXL,
-    fontWeight: _fontWeightSemiBold,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle appBarTitle(BuildContext context) =>
+      AppBaseStyles.appBarTitleBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
   // استایل‌های کپشن و توضیحات
-  static const TextStyle caption = TextStyle(
-    fontSize: _fontSizeXS,
-    fontWeight: _fontWeightRegular,
-    color: AppColors.textLight,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle caption(BuildContext context) =>
+      AppBaseStyles.captionBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle overline = TextStyle(
-    fontSize: _fontSizeXS,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textSecondary,
-    fontFamily: _fontFamily,
-    letterSpacing: 0.5,
-  );
+  static TextStyle overline(BuildContext context) =>
+      AppBaseStyles.overlineBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
   // استایل‌های خطا و موفقیت
-  static const TextStyle error = TextStyle(
-    fontSize: _fontSizeM,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textError,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle error(BuildContext context) =>
+      AppBaseStyles.errorBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle success = TextStyle(
-    fontSize: _fontSizeM,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textSuccess,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle success(BuildContext context) =>
+      AppBaseStyles.successBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle warning = TextStyle(
-    fontSize: _fontSizeM,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textWarning,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle warning(BuildContext context) =>
+      AppBaseStyles.warningBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
   // استایل‌های مخصوص DNS و شبکه
-  static const TextStyle dnsValue = TextStyle(
-    fontSize: _fontSizeL,
-    fontWeight: _fontWeightSemiBold,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle dnsValue(BuildContext context) =>
+      AppBaseStyles.dnsValueBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle pingValue = TextStyle(
-    fontSize: _fontSizeXL,
-    fontWeight: _fontWeightBold,
-    color: AppColors.textPrimary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle pingValue(BuildContext context) =>
+      AppBaseStyles.pingValueBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle statusText = TextStyle(
-    fontSize: _fontSizeM,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textSecondary,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle statusText(BuildContext context) =>
+      AppBaseStyles.statusTextBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
   // استایل‌های متن سفید (برای پس‌زمینه‌های تیره)
-  static const TextStyle whiteTitle = TextStyle(
-    fontSize: _fontSizeXL,
-    fontWeight: _fontWeightSemiBold,
-    color: AppColors.textWhite,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle whiteTitle(BuildContext context) =>
+      AppBaseStyles.whiteTitleBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle whiteBody = TextStyle(
-    fontSize: _fontSizeM,
-    fontWeight: _fontWeightMedium,
-    color: AppColors.textWhite,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle whiteBody(BuildContext context) =>
+      AppBaseStyles.whiteBodyBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 
-  static const TextStyle whiteCaption = TextStyle(
-    fontSize: _fontSizeS,
-    fontWeight: _fontWeightRegular,
-    color: AppColors.textWhite,
-    fontFamily: _fontFamily,
-  );
+  static TextStyle whiteCaption(BuildContext context) =>
+      AppBaseStyles.whiteCaptionBase.copyWith(
+        fontFamily: _getFont(
+            Provider.of<LanguageManager>(context, listen: false).isEnglish),
+      );
 }

@@ -1644,7 +1644,8 @@ class _DnsListPageState extends State<DnsListPage> {
                       });
                     },
                     child: Container(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black
+                          .withValues(red: 0, green: 0, blue: 0, alpha: 51),
                       alignment: Alignment.topCenter,
                       child: SafeArea(
                         child: Container(
@@ -1660,7 +1661,8 @@ class _DnsListPageState extends State<DnsListPage> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(
+                                    red: 0, green: 0, blue: 0, alpha: 26),
                                 blurRadius: 8,
                               ),
                             ],

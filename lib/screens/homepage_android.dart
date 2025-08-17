@@ -655,11 +655,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     opacity: value,
                     child: Text(
                       message,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: AppTextStyles.whiteBody(context),
                     ),
                   );
                 },

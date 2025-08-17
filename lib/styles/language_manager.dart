@@ -22,6 +22,9 @@ class LanguageManager extends ChangeNotifier {
           ? TextDirection.rtl
           : TextDirection.ltr;
 
+  /// فونت فعلی براساس زبان
+  String get fontFamily => isEnglish ? 'Poppins' : 'IranSansX';
+
   /// نام زبان فعلی
   String get languageName {
     switch (_locale.languageCode) {

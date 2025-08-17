@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 // import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:sleek_circular_slider/sleek_circular_slider.dart';
 import 'package:flutter_speed_test_plus/flutter_speed_test_plus.dart';
-// import '../path/path.dart';
-
+import '../path/path.dart';
 import 'package:http/http.dart' as http;
 import '../services/dns_service.dart';
 import '../models/dns_status.dart';
@@ -185,7 +184,8 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
         title: Text(
           'اسپید تست',
           style: TextStyle(
-            fontFamily: 'IranSansX',
+            fontFamily:
+                Provider.of<LanguageManager>(context, listen: false).fontFamily,
             fontWeight: FontWeight.bold,
             color: isDark ? AppColors.darkTextPrimary : Colors.black,
           ),

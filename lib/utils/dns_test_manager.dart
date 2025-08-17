@@ -19,7 +19,7 @@ class DnsTestManager {
   static Future<bool> checkNetworkStatus() async {
     try {
       final connectivity = await Connectivity().checkConnectivity();
-      if (connectivity == ConnectivityResult.none) {
+      if ([ConnectivityResult.none].contains(connectivity)) {
         return false;
       }
 
@@ -157,5 +157,4 @@ class DnsTestManager {
 
     return results;
   }
-  
 }

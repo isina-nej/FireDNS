@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../path/path.dart';
+import 'app_base_styles.dart';
 
 /// کلاس مدیریت تم‌های اپلیکیشن
 class AppThemes {
@@ -13,12 +14,10 @@ class AppThemes {
       primary: AppColors.fireRed,
       secondary: AppColors.gradientOrange,
       surface: AppColors.pureWhite,
-      background: AppColors.pureWhite,
       error: AppColors.fireRed,
       onPrimary: AppColors.pureWhite,
       onSecondary: AppColors.pureWhite,
       onSurface: AppColors.textPrimary,
-      onBackground: AppColors.textPrimary,
       onError: AppColors.pureWhite,
     ),
 
@@ -32,7 +31,7 @@ class AppThemes {
       foregroundColor: AppColors.textPrimary,
       elevation: AppSizes.elevationNone,
       centerTitle: true,
-      titleTextStyle: AppTextStyles.appBarTitle,
+      titleTextStyle: AppBaseStyles.appBarTitleBase,
       iconTheme: IconThemeData(
         color: AppColors.textPrimary,
         size: AppSizes.iconL,
@@ -50,12 +49,10 @@ class AppThemes {
       primary: AppColors.fireRed,
       secondary: AppColors.gradientOrange,
       surface: AppColors.darkNavy,
-      background: AppColors.darkNavy,
       error: AppColors.fireRed,
       onPrimary: AppColors.pureWhite,
       onSecondary: AppColors.pureWhite,
       onSurface: AppColors.pureWhite,
-      onBackground: AppColors.pureWhite,
       onError: AppColors.pureWhite,
     ),
 
@@ -69,7 +66,7 @@ class AppThemes {
       foregroundColor: AppColors.pureWhite,
       elevation: AppSizes.elevationNone,
       centerTitle: true,
-      titleTextStyle: AppTextStyles.appBarTitle,
+      titleTextStyle: AppBaseStyles.appBarTitleBase,
       iconTheme: IconThemeData(
         color: AppColors.pureWhite,
         size: AppSizes.iconL,
@@ -100,7 +97,7 @@ class AppThemes {
           horizontal: AppSizes.paddingXL,
           vertical: AppSizes.paddingM,
         ),
-        textStyle: AppTextStyles.buttonMedium,
+        textStyle: AppBaseStyles.buttonBase,
       ),
     ),
 
@@ -119,7 +116,8 @@ class AppThemes {
           horizontal: AppSizes.paddingXL,
           vertical: AppSizes.paddingM,
         ),
-        textStyle: AppTextStyles.buttonMedium,
+        textStyle:
+            AppBaseStyles.buttonBase.copyWith(color: AppColors.gradientOrange),
       ),
     ),
 
@@ -127,7 +125,8 @@ class AppThemes {
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.brightBlue,
-        textStyle: AppTextStyles.buttonMedium,
+        textStyle:
+            AppBaseStyles.buttonBase.copyWith(color: AppColors.brightBlue),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSizes.paddingL,
           vertical: AppSizes.paddingS,
@@ -171,22 +170,23 @@ class AppThemes {
         horizontal: AppSizes.paddingL,
         vertical: AppSizes.paddingM,
       ),
-      hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.softGray),
-      labelStyle: AppTextStyles.labelMedium.copyWith(
+      hintStyle:
+          AppBaseStyles.bodyMediumBase.copyWith(color: AppColors.softGray),
+      labelStyle: AppBaseStyles.labelMediumBase.copyWith(
         color: AppColors.lightGray,
       ),
     ),
 
     // تم سوییچ‌ها
     switchTheme: SwitchThemeData(
-      thumbColor: MaterialStateProperty.resolveWith((states) {
-        if (states.contains(MaterialState.selected)) {
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
           return AppColors.pureWhite;
         }
         return AppColors.softGray;
       }),
-      trackColor: MaterialStateProperty.resolveWith((states) {
-        if (states.contains(MaterialState.selected)) {
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
           return AppColors.fireRed;
         }
         return AppColors.darkNavy;
