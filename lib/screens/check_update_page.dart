@@ -26,7 +26,10 @@ class _CheckUpdatePageState extends State<CheckUpdatePage>
       vsync: this,
       duration: const Duration(seconds: 2),
     );
-    _checkForUpdates();
+    // فراخوانی چک آپدیت را به بعد از ساخت ویجت موکول می‌کنیم تا به context دسترسی داشته باشیم
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForUpdates();
+    });
   }
 
   @override
@@ -80,164 +83,228 @@ class _CheckUpdatePageState extends State<CheckUpdatePage>
     final isDark = themeManager.isDarkModeActive(context);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(
+          color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
+        ),
         title: Text(
           context.tr('checkForUpdates'),
           style: TextStyle(
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
           ),
         ),
-        backgroundColor:
-            isDark ? AppColors.darkBackground : AppColors.backgroundLight,
-        iconTheme: IconThemeData(
-          color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
-        ),
-        elevation: 0,
+        centerTitle: true,
       ),
-      backgroundColor:
-          isDark ? AppColors.darkBackground : AppColors.backgroundLight,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: _isLoading
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      color:
-                          isDark ? AppColors.brightBlue : AppColors.brightBlue,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      context.tr('checkingForUpdates'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [Color(0xFF232526), Color(0xFF414345)]
+                : [Color(0xFFe0eafc), Color(0xFFcfdef3)],
+          ),
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32),
+            child: _isLoading
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        height: 120,
+                        width: 120,
+                        child: Lottie.asset(
+                          'assets/icone/Fire.json', // مسیر صحیح انیمیشن موجود
+                          repeat: true,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                )
-              : _errorMessage.isNotEmpty
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 80,
-                          color: Colors.red,
+                      const SizedBox(height: 32),
+                      Text(
+                        context.tr('checkingForUpdates'),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.brightBlue
+                              : AppColors.brightBlue,
                         ),
-                        const SizedBox(height: 24),
-                        Text(
-                          _errorMessage,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.red,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  )
+                : _errorMessage.isNotEmpty
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 90,
+                            color: Colors.redAccent,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.refresh),
-                          label: Text(context.tr('tryAgain')),
-                          onPressed: _checkForUpdates,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isDark
-                                ? AppColors.brightBlue
-                                : AppColors.brightBlue,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
+                          const SizedBox(height: 24),
+                          Text(
+                            _errorMessage,
+                            style: TextStyle(
+                              fontSize: 17,
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.refresh, size: 26),
+                            label: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(
+                                context.tr('tryAgain'),
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            onPressed: _checkForUpdates,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isDark
+                                  ? AppColors.brightBlue
+                                  : AppColors.brightBlue,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 36, vertical: 12),
+                              elevation: 4,
                             ),
                           ),
-                        ),
-                      ],
-                    )
-                  : _isLatestVersion
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              height: 200,
-                              width: 200,
-                              child: Lottie.asset(
-                                'assets/icone/check_animation.json', // مسیر فایل انیمیشن
-                                controller: _animationController,
-                                repeat: false,
-                                onLoaded: (composition) {
-                                  _animationController.duration =
-                                      composition.duration;
-                                  _animationController.forward();
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: (isDark
-                                    ? AppColors.darkCardBackground
-                                    : AppColors.backgroundWhite),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    context.tr('usingLatestVersion'),
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDark
-                                          ? AppColors.darkTextPrimary
-                                          : AppColors.textPrimary,
+                        ],
+                      )
+                    : _isLatestVersion
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.green.withOpacity(0.2),
+                                      blurRadius: 30,
+                                      spreadRadius: 2,
                                     ),
-                                    textAlign: TextAlign.center,
+                                  ],
+                                ),
+                                child: CircleAvatar(
+                                  radius: 60,
+                                  backgroundColor: Colors.white,
+                                  child: Icon(
+                                    Icons.verified_rounded,
+                                    color: Colors.green,
+                                    size: 70,
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '${context.tr('currentVersion')}: ${UpdateChecker.currentVersion}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: isDark
-                                          ? AppColors.darkTextSecondary
-                                          : AppColors.textSecondary,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.home),
-                              label: Text(context.tr('returnToHome')),
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isDark
-                                    ? AppColors.brightBlue
-                                    : AppColors.brightBlue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
                                 ),
                               ),
-                            ),
-                          ],
-                        )
-                      : const SizedBox(), // این حالت هرگز اتفاق نمی‌افتد چون در صورت وجود آپدیت، به صفحه دیگری منتقل می‌شویم
+                              const SizedBox(height: 24),
+                              Text(
+                                context.tr('usingLatestVersion'),
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? AppColors.brightBlue
+                                      : AppColors.brightBlue,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              Card(
+                                elevation: 6,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                color: isDark
+                                    ? AppColors.darkCardBackground
+                                    : Colors.white,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24, vertical: 18),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.info_outline,
+                                              color: isDark
+                                                  ? AppColors.brightBlue
+                                                  : AppColors.brightBlue),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            '${context.tr('currentVersion')}: ',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: isDark
+                                                  ? AppColors.darkTextPrimary
+                                                  : AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          Text(
+                                            UpdateChecker.currentVersion,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: isDark
+                                                  ? AppColors.brightBlue
+                                                  : AppColors.brightBlue,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.home, size: 26),
+                                label: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Text(
+                                    context.tr('returnToHome'),
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isDark
+                                      ? AppColors.brightBlue
+                                      : AppColors.brightBlue,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 36, vertical: 12),
+                                  elevation: 4,
+                                ),
+                              ),
+                            ],
+                          )
+                        : const SizedBox(),
+          ),
         ),
       ),
     );

@@ -813,9 +813,16 @@ class _DnsListPageState extends State<DnsListPage> {
                               child: Text(
                                 context.tr('simultaneousTest'),
                                 style: TextStyle(
-                                  color: isDark
-                                      ? AppColors.darkTextPrimary
-                                      : const Color(0xFF222B45),
+                                  color: _testType == 'simultaneous'
+                                      ? (isDark
+                                          ? AppColors.brightBlue
+                                          : AppColors.primaryBlue)
+                                      : (isDark
+                                          ? AppColors.darkTextPrimary
+                                          : const Color(0xFF222B45)),
+                                  fontWeight: _testType == 'simultaneous'
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                                 ),
                               ),
                             ),
@@ -827,9 +834,16 @@ class _DnsListPageState extends State<DnsListPage> {
                               child: Text(
                                 context.tr('sequentialTest'),
                                 style: TextStyle(
-                                  color: isDark
-                                      ? AppColors.darkTextPrimary
-                                      : const Color(0xFF222B45),
+                                  color: _testType == 'sequential'
+                                      ? (isDark
+                                          ? AppColors.brightBlue
+                                          : AppColors.primaryBlue)
+                                      : (isDark
+                                          ? AppColors.darkTextPrimary
+                                          : const Color(0xFF222B45)),
+                                  fontWeight: _testType == 'sequential'
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                                 ),
                               ),
                             ),
@@ -841,9 +855,16 @@ class _DnsListPageState extends State<DnsListPage> {
                               child: Text(
                                 context.tr('advancedTest'),
                                 style: TextStyle(
-                                  color: isDark
-                                      ? AppColors.darkTextPrimary
-                                      : const Color(0xFF222B45),
+                                  color: _testType == 'advanced'
+                                      ? (isDark
+                                          ? AppColors.brightBlue
+                                          : AppColors.primaryBlue)
+                                      : (isDark
+                                          ? AppColors.darkTextPrimary
+                                          : const Color(0xFF222B45)),
+                                  fontWeight: _testType == 'advanced'
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                                 ),
                               ),
                             ),
@@ -851,10 +872,13 @@ class _DnsListPageState extends State<DnsListPage> {
                         ],
                         onSelected: (value) async {
                           if (value == 'simultaneous') {
+                            setState(() => _testType = 'simultaneous');
                             await _testAllDns();
                           } else if (value == 'sequential') {
+                            setState(() => _testType = 'sequential');
                             await _testSequentialDns();
                           } else if (value == 'advanced') {
+                            setState(() => _testType = 'advanced');
                             showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
@@ -918,9 +942,16 @@ class _DnsListPageState extends State<DnsListPage> {
                     child: Text(
                       context.tr('default'),
                       style: TextStyle(
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : const Color(0xFF222B45),
+                        color: _sortType == 'default'
+                            ? (isDark
+                                ? AppColors.brightBlue
+                                : AppColors.primaryBlue)
+                            : (isDark
+                                ? AppColors.darkTextPrimary
+                                : const Color(0xFF222B45)),
+                        fontWeight: _sortType == 'default'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -932,9 +963,16 @@ class _DnsListPageState extends State<DnsListPage> {
                     child: Text(
                       context.tr('lowestPing'),
                       style: TextStyle(
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : const Color(0xFF222B45),
+                        color: _sortType == 'ping'
+                            ? (isDark
+                                ? AppColors.brightBlue
+                                : AppColors.primaryBlue)
+                            : (isDark
+                                ? AppColors.darkTextPrimary
+                                : const Color(0xFF222B45)),
+                        fontWeight: _sortType == 'ping'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -946,9 +984,16 @@ class _DnsListPageState extends State<DnsListPage> {
                     child: Text(
                       context.tr('sortByName'),
                       style: TextStyle(
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : const Color(0xFF222B45),
+                        color: _sortType == 'name'
+                            ? (isDark
+                                ? AppColors.brightBlue
+                                : AppColors.primaryBlue)
+                            : (isDark
+                                ? AppColors.darkTextPrimary
+                                : const Color(0xFF222B45)),
+                        fontWeight: _sortType == 'name'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ),

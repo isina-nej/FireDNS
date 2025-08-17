@@ -10,9 +10,10 @@ class DnsTestManager {
   static bool _sequentialTestStopped = false;
   static const int timeout = 2; // timeout به ثانیه
   static const int maxConcurrentTests = 200; // حداکثر تست همزمان
-  static const Duration cacheExpiration = Duration(hours: 24); // مدت اعتبار کش
+  static const Duration cacheExpiration =
+      Duration(hours: 48); // مدت اعتبار کش (هر 48 ساعت)
   static const Duration throttleInterval =
-      Duration(seconds: 10); // حداقل فاصله بین تست‌ها
+      Duration(seconds: 5); // حداقل فاصله بین تست‌ها
 
   static DateTime? _lastTestTime;
 

@@ -126,11 +126,32 @@ class FireDNSApp extends StatefulWidget {
 
 class _FireDNSAppState extends State<FireDNSApp> {
   bool? _needsUpdate;
+  static const Duration updateCheckInterval = Duration(hours: 48); // هر ۴۸ ساعت
 
   @override
   void initState() {
     super.initState();
-    _checkForUpdates();
+    _checkForUpdatesIfNeeded();
+  }
+
+  Future<void> _checkForUpdatesIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastCheckStr = prefs.getString('last_update_check');
+    DateTime? lastCheck;
+    if (lastCheckStr != null) {
+      try {
+        lastCheck = DateTime.parse(lastCheckStr);
+      } catch (_) {}
+    }
+    final now = DateTime.now();
+    if (lastCheck == null || now.difference(lastCheck) > updateCheckInterval) {
+      await _checkForUpdates();
+      await prefs.setString('last_update_check', now.toIso8601String());
+    } else {
+      setState(() {
+        _needsUpdate = false;
+      });
+    }
   }
 
   UpdateInfo? _updateInfo;

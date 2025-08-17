@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import '../path/path.dart';
 import 'package:provider/provider.dart';
+import 'dart:ui';
+import '../l10n/localization_extension.dart';
 
 class TicketPage extends StatefulWidget {
   const TicketPage({Key? key}) : super(key: key);
@@ -10,11 +12,12 @@ class TicketPage extends StatefulWidget {
   State<TicketPage> createState() => _TicketPageState();
 }
 
-class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateMixin {
+class _TicketPageState extends State<TicketPage>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
-  String _ticketType = 'bug'; // 'bug' یا 'suggestion'
+  String _ticketType = 'bug';
   bool _isLoading = false;
   bool _isSuccess = false;
   bool _isError = false;
@@ -55,7 +58,7 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
 
     // در اینجا باید کد واقعی ارسال تیکت به سرور قرار گیرد
     // به عنوان مثال، می‌توانیم از یک سرویس API استفاده کنیم
-    
+
     // شبیه‌سازی پاسخ موفق یا خطا (به صورت تصادفی)
     final bool isSuccessful = DateTime.now().millisecondsSinceEpoch % 2 == 0;
 
@@ -66,7 +69,7 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
         _animationController.forward();
       } else {
         _isError = true;
-        _errorMessage = 'خطا در ارسال تیکت. لطفاً دوباره تلاش کنید.';
+        _errorMessage = context.tr('ticketError');
       }
     });
   }
@@ -87,122 +90,210 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
-    
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
-          'ارسال تیکت',
+          context.tr('sendTicket'),
           style: TextStyle(
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 22,
+            letterSpacing: 0.5,
           ),
         ),
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.backgroundLight,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         iconTheme: IconThemeData(
           color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
         ),
-        elevation: 0,
+        centerTitle: true,
       ),
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.backgroundLight,
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _isSuccess
-            ? _buildSuccessView(isDark)
-            : _buildTicketForm(isDark),
+      body: Stack(
+        children: [
+          // Gradient background
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? [
+                        const Color(0xFF232526),
+                        const Color(0xFF414345),
+                      ]
+                    : [
+                        const Color(0xFFe0eafc),
+                        const Color(0xFFcfdef3),
+                      ],
+              ),
+            ),
+          ),
+          // Glassmorphism effect
+          Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 90.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 0),
+                    padding: const EdgeInsets.all(0),
+                    color: (isDark
+                        ? Colors.black.withOpacity(0.25)
+                        : Colors.white.withOpacity(0.25)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(0),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        child: _isSuccess
+                            ? _buildSuccessView(isDark)
+                            : _buildTicketForm(isDark),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildSuccessView(bool isDark) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            height: 200,
-            width: 200,
-            child: Lottie.asset(
-              'assets/icone/success_animation.json', // مسیر فایل انیمیشن
-              controller: _animationController,
-              repeat: false,
-              onLoaded: (composition) {
-                _animationController.duration = composition.duration;
-                _animationController.forward();
-              },
-            ),
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: (isDark ? AppColors.darkCardBackground : AppColors.backgroundWhite),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? Colors.blueAccent.withOpacity(0.2)
+                        : Colors.blue.withOpacity(0.12),
+                    blurRadius: 40,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                height: 180,
+                width: 180,
+                child: Lottie.asset(
+                  'assets/icone/success_animation.json',
+                  controller: _animationController,
+                  repeat: false,
+                  onLoaded: (composition) {
+                    _animationController.duration = composition.duration;
+                    _animationController.forward();
+                  },
                 ),
-              ],
+              ),
             ),
-            child: Column(
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: (isDark
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.white.withOpacity(0.7)),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.07),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+                border: Border.all(
+                  color: isDark
+                      ? Colors.blueGrey.withOpacity(0.2)
+                      : Colors.blue.withOpacity(0.08),
+                  width: 1.2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    context.tr('ticketSentSuccess'),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isDark ? AppColors.brightBlue : AppColors.brightBlue,
+                      letterSpacing: 0.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    context.tr('ticketSentDescription'),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  'تیکت شما با موفقیت ارسال شد',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: Text(context.tr('sendNewTicket')),
+                  onPressed: _resetForm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        isDark ? AppColors.brightBlue : AppColors.brightBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 2,
                   ),
-                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'کارشناسان ما در اسرع وقت به تیکت شما رسیدگی خواهند کرد.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                const SizedBox(width: 18),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.home),
+                  label: Text(context.tr('returnToHome')),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                    foregroundColor: isDark ? Colors.white : Colors.black87,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('ارسال تیکت جدید'),
-                onPressed: _resetForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? AppColors.brightBlue : AppColors.brightBlue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.home),
-                label: const Text('بازگشت'),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
-                  foregroundColor: isDark ? Colors.white : Colors.black87,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -211,33 +302,43 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
     return Form(
       key: _formKey,
       child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
         children: [
           // نوع تیکت
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+            margin: const EdgeInsets.only(bottom: 18),
             decoration: BoxDecoration(
-              color: (isDark ? AppColors.darkCardBackground : AppColors.backgroundWhite),
-              borderRadius: BorderRadius.circular(12),
+              color: (isDark
+                  ? Colors.white.withOpacity(0.04)
+                  : Colors.white.withOpacity(0.7)),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
+              border: Border.all(
+                color: isDark
+                    ? Colors.blueGrey.withOpacity(0.13)
+                    : Colors.blue.withOpacity(0.08),
+                width: 1.1,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'نوع تیکت:',
+                  context.tr('ticketType'),
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
@@ -246,14 +347,17 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
                           children: [
                             Icon(
                               Icons.bug_report,
-                              color: isDark ? AppColors.darkIconPrimary : Colors.red,
-                              size: 20,
+                              color: isDark ? AppColors.brightBlue : Colors.red,
+                              size: 22,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'گزارش خطا',
                               style: TextStyle(
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.textPrimary,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -265,7 +369,7 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
                             _ticketType = value!;
                           });
                         },
-                        activeColor: isDark ? AppColors.brightBlue : AppColors.brightBlue,
+                        activeColor: AppColors.brightBlue,
                         contentPadding: EdgeInsets.zero,
                         dense: true,
                       ),
@@ -276,14 +380,18 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
                           children: [
                             Icon(
                               Icons.lightbulb,
-                              color: isDark ? AppColors.darkIconPrimary : Colors.amber,
-                              size: 20,
+                              color:
+                                  isDark ? AppColors.brightBlue : Colors.amber,
+                              size: 22,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'پیشنهاد',
                               style: TextStyle(
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.textPrimary,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -295,7 +403,7 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
                             _ticketType = value!;
                           });
                         },
-                        activeColor: isDark ? AppColors.brightBlue : AppColors.brightBlue,
+                        activeColor: AppColors.brightBlue,
                         contentPadding: EdgeInsets.zero,
                         dense: true,
                       ),
@@ -305,20 +413,28 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
               ],
             ),
           ),
-          const SizedBox(height: 16),
           // موضوع تیکت
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+            margin: const EdgeInsets.only(bottom: 18),
             decoration: BoxDecoration(
-              color: (isDark ? AppColors.darkCardBackground : AppColors.backgroundWhite),
-              borderRadius: BorderRadius.circular(12),
+              color: (isDark
+                  ? Colors.white.withOpacity(0.04)
+                  : Colors.white.withOpacity(0.7)),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
+              border: Border.all(
+                color: isDark
+                    ? Colors.blueGrey.withOpacity(0.13)
+                    : Colors.blue.withOpacity(0.08),
+                width: 1.1,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,29 +442,36 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
                 Text(
                   'موضوع:',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 TextFormField(
                   controller: _subjectController,
                   decoration: InputDecoration(
                     hintText: 'موضوع تیکت را وارد کنید',
                     hintStyle: TextStyle(
-                      color: isDark ? AppColors.darkTextSecondary.withOpacity(0.5) : AppColors.textSecondary.withOpacity(0.5),
+                      color: isDark
+                          ? AppColors.darkTextSecondary.withOpacity(0.5)
+                          : AppColors.textSecondary.withOpacity(0.5),
                     ),
                     filled: true,
-                    fillColor: isDark ? AppColors.darkBackground : AppColors.backgroundGrey.withOpacity(0.3),
+                    fillColor: isDark
+                        ? AppColors.darkBackground
+                        : AppColors.backgroundGrey.withOpacity(0.3),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 14),
                   ),
                   style: TextStyle(
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -360,20 +483,28 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
               ],
             ),
           ),
-          const SizedBox(height: 16),
           // متن تیکت
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+            margin: const EdgeInsets.only(bottom: 18),
             decoration: BoxDecoration(
-              color: (isDark ? AppColors.darkCardBackground : AppColors.backgroundWhite),
-              borderRadius: BorderRadius.circular(12),
+              color: (isDark
+                  ? Colors.white.withOpacity(0.04)
+                  : Colors.white.withOpacity(0.7)),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
+              border: Border.all(
+                color: isDark
+                    ? Colors.blueGrey.withOpacity(0.13)
+                    : Colors.blue.withOpacity(0.08),
+                width: 1.1,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,29 +512,36 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
                 Text(
                   'متن پیام:',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 TextFormField(
                   controller: _messageController,
                   decoration: InputDecoration(
                     hintText: 'متن پیام خود را وارد کنید',
                     hintStyle: TextStyle(
-                      color: isDark ? AppColors.darkTextSecondary.withOpacity(0.5) : AppColors.textSecondary.withOpacity(0.5),
+                      color: isDark
+                          ? AppColors.darkTextSecondary.withOpacity(0.5)
+                          : AppColors.textSecondary.withOpacity(0.5),
                     ),
                     filled: true,
-                    fillColor: isDark ? AppColors.darkBackground : AppColors.backgroundGrey.withOpacity(0.3),
+                    fillColor: isDark
+                        ? AppColors.darkBackground
+                        : AppColors.backgroundGrey.withOpacity(0.3),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.all(16),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 18),
                   ),
                   style: TextStyle(
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
                   ),
                   maxLines: 5,
                   validator: (value) {
@@ -419,14 +557,16 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
               ],
             ),
           ),
-          const SizedBox(height: 24),
           // نمایش خطا
           if (_isError)
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.only(bottom: 18),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: Colors.red.withOpacity(0.13),
+                borderRadius: BorderRadius.circular(10),
+                border:
+                    Border.all(color: Colors.red.withOpacity(0.18), width: 1),
               ),
               child: Row(
                 children: [
@@ -440,38 +580,47 @@ class _TicketPageState extends State<TicketPage> with SingleTickerProviderStateM
                       _errorMessage,
                       style: const TextStyle(
                         color: Colors.red,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-          if (_isError) const SizedBox(height: 16),
           // دکمه ارسال
-          SizedBox(
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
             width: double.infinity,
-            height: 50,
+            height: 54,
             child: ElevatedButton.icon(
               icon: _isLoading
                   ? Container(
-                      width: 24,
-                      height: 24,
+                      width: 26,
+                      height: 26,
                       padding: const EdgeInsets.all(2.0),
                       child: const CircularProgressIndicator(
                         color: Colors.white,
-                        strokeWidth: 3,
+                        strokeWidth: 3.2,
                       ),
                     )
-                  : const Icon(Icons.send),
-              label: Text(_isLoading ? 'در حال ارسال...' : 'ارسال تیکت'),
+                  : const Icon(Icons.send_rounded),
+              label: Text(
+                  _isLoading
+                      ? context.tr('sendingTicket')
+                      : context.tr('sendTicket'),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 17)),
               onPressed: _isLoading ? null : _submitTicket,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isDark ? AppColors.brightBlue : AppColors.brightBlue,
+                backgroundColor: AppColors.brightBlue,
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: isDark ? AppColors.brightBlue.withOpacity(0.5) : AppColors.brightBlue.withOpacity(0.5),
+                disabledBackgroundColor: AppColors.brightBlue.withOpacity(0.5),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
+                elevation: 2,
+                shadowColor: AppColors.brightBlue.withOpacity(0.18),
               ),
             ),
           ),

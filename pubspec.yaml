@@ -51,8 +51,9 @@ flutter:
   assets:
     - assets/icone/Fire.json
     - assets/icone/laptop.json
-    - assets/icone/settings.json
-    - assets/config/firebase-service-account.json
+    - assets/icone/success_animation.json
+    # - assets/config/firebase-service-account.json
+    - assets/logo/logo.png
   fonts:
       - family: IranSansX
         fonts:

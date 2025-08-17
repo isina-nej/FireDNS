@@ -287,6 +287,12 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
     }
 
     setState(() => _saving = false);
+    // افزودن DNS جدید به لیست لایک‌شده‌ها
+    final liked = prefs.getStringList('liked_dns_ids') ?? [];
+    if (!liked.contains(newRecord.id)) {
+      liked.add(newRecord.id);
+      await prefs.setStringList('liked_dns_ids', liked);
+    }
     widget.onAdd(newRecord);
     if (mounted) Navigator.pop(context);
   }
