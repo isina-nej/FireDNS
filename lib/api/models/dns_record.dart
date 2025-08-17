@@ -8,6 +8,7 @@ enum DnsType {
   gaming,
   telecom,
   other,
+  ipv4,
   ipv6,
   google,
 }
@@ -31,6 +32,8 @@ DnsType dnsTypeFromString(String value) {
       return DnsType.telecom;
     case 'OTHER':
       return DnsType.other;
+    case 'IPV4':
+      return DnsType.ipv4;
     case 'IPV6':
       return DnsType.ipv6;
     case 'GOOGLE':
@@ -59,6 +62,8 @@ String dnsTypeToString(DnsType type) {
       return 'TELECOM';
     case DnsType.other:
       return 'OTHER';
+    case DnsType.ipv4:
+      return 'IPV4';
     case DnsType.ipv6:
       return 'IPV6';
     case DnsType.google:
@@ -71,7 +76,7 @@ class DnsRecord {
   final String id;
   final String label;
   final String ip1;
-  final String ip2;
+  final String? ip2; // Making ip2 nullable
   final DnsType type;
   final DateTime createdAt;
 
@@ -79,7 +84,7 @@ class DnsRecord {
     required this.id,
     required this.label,
     required this.ip1,
-    required this.ip2,
+    this.ip2, // ip2 is now optional
     required this.type,
     required this.createdAt,
   });
@@ -90,7 +95,7 @@ class DnsRecord {
       id: json['id'] as String,
       label: json['label'] as String,
       ip1: json['ip1'] as String,
-      ip2: json['ip2'] as String,
+      ip2: json['ip2'] as String?, // Handle null ip2
       type: dnsTypeFromString(json['type'] as String),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
@@ -129,7 +134,7 @@ class DnsRecord {
 
   @override
   String toString() {
-    return 'DnsRecord(id: $id, label: $label, ip1: $ip1, ip2: $ip2, type: $type, createdAt: $createdAt)';
+    return 'DnsRecord(id: $id, label: $label, ip1: $ip1, ip2: ${ip2 ?? 'null'}, type: $type, createdAt: $createdAt)';
   }
 
   @override
@@ -146,13 +151,13 @@ class DnsRecord {
 class DnsRecordRequest {
   final String label;
   final String ip1;
-  final String ip2;
+  final String? ip2; // Making ip2 nullable
   final DnsType type;
 
   const DnsRecordRequest({
     required this.label,
     required this.ip1,
-    required this.ip2,
+    this.ip2, // ip2 is now optional
     required this.type,
   });
 
@@ -213,6 +218,8 @@ extension DnsTypeExtension on DnsType {
         return 'مخابرات';
       case DnsType.other:
         return 'سایر';
+      case DnsType.ipv4:
+        return 'IPv4';
       case DnsType.ipv6:
         return 'IPv6';
       case DnsType.google:
@@ -239,6 +246,8 @@ extension DnsTypeExtension on DnsType {
         return 0xFF795548; // قهوه‌ای
       case DnsType.other:
         return 0xFF607D8B; // خاکستری آبی
+      case DnsType.ipv4:
+        return 0xFF00BCD4; // فیروزه‌ای
       case DnsType.ipv6:
         return 0xFF3F51B5; // ایندیگو
       case DnsType.google:

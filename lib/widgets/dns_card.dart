@@ -327,7 +327,7 @@ class DnsCard extends StatelessWidget {
                               Expanded(
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
-                                    final text = record.ip2;
+                                    final text = record.ip2 ?? '';
                                     final textStyle = const TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFF90A4AE),

@@ -173,7 +173,7 @@ class _DnsListPageState extends State<DnsListPage> {
       List<DnsRecord> newRecords = [...apiRecords, ...userDnsRecords];
       final seen = <String>{};
       newRecords = newRecords.where((r) {
-        final key = '${r.ip1}_${r.ip2}'.replaceAll(' ', '').toLowerCase();
+        final key = '${r.ip1}_${r.ip2 ?? ''}'.replaceAll(' ', '').toLowerCase();
         if (seen.contains(key)) return false;
         seen.add(key);
         return true;
@@ -211,7 +211,7 @@ class _DnsListPageState extends State<DnsListPage> {
       List<DnsRecord> allRecords = [...cachedRecords, ...userDnsRecords];
       final seen = <String>{};
       allRecords = allRecords.where((r) {
-        final key = '${r.ip1}_${r.ip2}'.replaceAll(' ', '').toLowerCase();
+        final key = '${r.ip1}_${r.ip2 ?? ''}'.replaceAll(' ', '').toLowerCase();
         if (seen.contains(key)) return false;
         seen.add(key);
         return true;
@@ -306,7 +306,8 @@ class _DnsListPageState extends State<DnsListPage> {
     records.addAll(userDnsRecords);
     final seen = <String>{};
     records = records.where((r) {
-      final key = (r.ip1 + '_' + r.ip2).replaceAll(' ', '').toLowerCase();
+      final key =
+          (r.ip1 + '_' + (r.ip2 ?? '')).replaceAll(' ', '').toLowerCase();
       if (seen.contains(key)) return false;
       seen.add(key);
       return true;
@@ -603,14 +604,15 @@ class _DnsListPageState extends State<DnsListPage> {
 
         setState(() {
           _pingCache['${record.id}_1'] = -2;
-          if (record.ip2.isNotEmpty) {
+          if ((record.ip2 ?? '').isNotEmpty) {
             _pingCache['${record.id}_2'] = -2;
           }
         });
 
         final results = await Future.wait([
           DnsTestManager.testSingleDns(record.ip1),
-          if (record.ip2.isNotEmpty) DnsTestManager.testSingleDns(record.ip2),
+          if ((record.ip2 ?? '').isNotEmpty)
+            DnsTestManager.testSingleDns(record.ip2 ?? ''),
         ]);
 
         if (!mounted || !_testDialogOpen) break;
@@ -644,130 +646,6 @@ class _DnsListPageState extends State<DnsListPage> {
     }
   }
 
-  Future<void> _testAdvancedDns() async {
-    if (!mounted) return;
-    final ctx = context;
-    final prefs = await SharedPreferences.getInstance();
-    int? testCount = await showDialog<int>(
-      context: ctx,
-      builder: (context) => AlertDialog(
-        title: Text(context.tr('advancedTest')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(context.tr('advancedTestDescription')),
-            const SizedBox(height: 16),
-            Text(context.tr('testCount')),
-            StatefulBuilder(
-              builder: (context, setState) {
-                return Column(
-                  children: [
-                    Slider(
-                      value: DnsPingHelper.testCount.toDouble(),
-                      min: 3,
-                      max: 10,
-                      divisions: 7,
-                      label: DnsPingHelper.testCount.toString(),
-                      onChanged: (value) {
-                        setState(() {
-                          DnsPingHelper.testCount = value.toInt();
-                        });
-                      },
-                    ),
-                    Text('${DnsPingHelper.testCount}'),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.tr('cancel')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, DnsPingHelper.testCount),
-            child: Text(context.tr('ok')),
-          ),
-        ],
-      ),
-    );
-
-    if (testCount == null) return;
-
-    setState(() => _testDialogOpen = true);
-
-    try {
-      final results = await DnsPingHelper.testSequentialDns(
-        context: context,
-        dnsRecords: _dnsRecords,
-        sortType: _sortType,
-        sortDnsRecords: _sortDnsRecords,
-        testCount: testCount,
-        mounted: mounted,
-        showDialogCallback: (List<String> results) async {
-          if (!mounted) return;
-          final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
-          if (dontShow) return;
-          await showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(context.tr('advancedTest')),
-              content: SizedBox(
-                width: double.maxFinite,
-                height: 300,
-                child: ListView(
-                  children: results.map((e) => Text(e)).toList(),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(context.tr('close')),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await prefs.setBool('dont_show_dns_test_dialog', true);
-                    if (mounted && Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: Text(context.tr('dontShowAgain')),
-                ),
-              ],
-            ),
-          );
-        },
-        setTestDialogOpen: (v) {
-          if (mounted) {
-            setState(() => _testDialogOpen = v);
-          }
-        },
-        setCancelTest: (v) {},
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _pingCache = results;
-        _sortDnsRecords();
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _testDialogOpen = false);
-      }
-    }
-  }
-
   String _searchQuery = '';
   bool _showSearch = false;
   final TextEditingController _searchController = TextEditingController();
@@ -779,7 +657,7 @@ class _DnsListPageState extends State<DnsListPage> {
     return _dnsRecords.where((r) {
       final label = r.label.replaceAll(' ', '').toLowerCase();
       final ip1 = r.ip1.replaceAll(' ', '').toLowerCase();
-      final ip2 = r.ip2.replaceAll(' ', '').toLowerCase();
+      final ip2 = (r.ip2 ?? '').replaceAll(' ', '').toLowerCase();
       return parts.every((part) {
         final p = part.replaceAll(' ', '').toLowerCase();
         return label.contains(p) || ip1.contains(p) || ip2.contains(p);
@@ -822,11 +700,13 @@ class _DnsListPageState extends State<DnsListPage> {
             } catch (_) {}
           }
           userDnsList.removeWhere((e) {
-            final key =
-                (e['ip1'] + '_' + e['ip2']).replaceAll(' ', '').toLowerCase();
-            final editedKey = (editedRecord.ip1 + '_' + editedRecord.ip2)
+            final key = (e['ip1'] + '_' + (e['ip2'] ?? ''))
                 .replaceAll(' ', '')
                 .toLowerCase();
+            final editedKey =
+                (editedRecord.ip1 + '_' + (editedRecord.ip2 ?? ''))
+                    .replaceAll(' ', '')
+                    .toLowerCase();
             return e['id'] == record.id || key == editedKey;
           });
           userDnsList.add(editedRecord.toJson());
@@ -1200,7 +1080,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                                     record.ip1);
                                             final ping2 =
                                                 await DnsPingHelper.ping(
-                                                    record.ip2);
+                                                    record.ip2 ?? '');
                                             setState(() {
                                               _pingCache['${record.id}_1'] =
                                                   (ping1 < 0) ? -1 : ping1;
@@ -1244,7 +1124,7 @@ class _DnsListPageState extends State<DnsListPage> {
                                                     record.ip1);
                                             final ping2 =
                                                 await DnsPingHelper.ping(
-                                                    record.ip2);
+                                                    record.ip2 ?? '');
                                             setState(() {
                                               _pingCache['${record.id}_1'] =
                                                   (ping1 < 0) ? -1 : ping1;

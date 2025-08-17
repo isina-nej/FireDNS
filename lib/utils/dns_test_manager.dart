@@ -19,7 +19,7 @@ class DnsTestManager {
   static Future<bool> checkNetworkStatus() async {
     try {
       final connectivity = await Connectivity().checkConnectivity();
-      if ([ConnectivityResult.none].contains(connectivity)) {
+      if (connectivity == ConnectivityResult.none) {
         return false;
       }
 
@@ -27,7 +27,7 @@ class DnsTestManager {
       try {
         final result = await InternetAddress.lookup('google.com')
             .timeout(const Duration(seconds: 5));
-        return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+        return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
       } on SocketException catch (_) {
         return false;
       } on TimeoutException catch (_) {
@@ -132,8 +132,8 @@ class DnsTestManager {
         }));
 
         // تست IP دوم
-        if (record.ip2.isNotEmpty) {
-          futures.add(testSingleDns(record.ip2).then((ping) {
+        if (record.ip2 != null && record.ip2!.isNotEmpty) {
+          futures.add(testSingleDns(record.ip2!).then((ping) {
             results['${record.id}_2'] = ping ?? -1;
             completedTests++;
             if (showProgress && onProgress != null) {

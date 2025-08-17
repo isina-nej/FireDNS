@@ -12,19 +12,62 @@ class DnsApiService {
   /// دریافت همه رکوردهای DNS
   Future<ApiResponse<List<DnsRecord>>> getAllDnsRecords() async {
     try {
+      debugPrint('Sending request to /api/dns with IPv4 type...');
       final response = await _apiClient.get<List<DnsRecord>>(
         '/api/dns',
-        fromJson: (data) {
-          if (data is List) {
-            return data.map((item) => DnsRecord.fromJson(item)).toList();
+        queryParameters: {
+          'type': 'IPv4',
+          'offset': '0',
+          'limit': 'all',
+        },
+        fromJson: (json) {
+          debugPrint('Raw JSON response type: ${json.runtimeType}');
+          debugPrint('Raw JSON response:');
+          debugPrint(json.toString());
+
+          if (json == null) {
+            throw const FormatException('پاسخ سرور خالی است');
           }
-          return <DnsRecord>[];
+
+          // Handle the case where the response is directly a list (for backward compatibility)
+          if (json is List) {
+            debugPrint('Response is a List. Processing directly...');
+            return json
+                .map((item) => DnsRecord.fromJson(item as Map<String, dynamic>))
+                .toList();
+          }
+
+          // Handle the case where the response is wrapped in a response object
+          debugPrint('Response is a Map. Processing as wrapped response...');
+          final responseMap = json as Map<String, dynamic>;
+          debugPrint('Response map keys: ${responseMap.keys.join(', ')}');
+
+          if (!responseMap.containsKey('data')) {
+            throw const FormatException('پاسخ سرور فاقد فیلد data است');
+          }
+
+          debugPrint('Data field type: ${responseMap['data'].runtimeType}');
+          final List<dynamic> dataList = responseMap['data'] as List;
+          return dataList
+              .map((item) => DnsRecord.fromJson(item as Map<String, dynamic>))
+              .toList();
         },
       );
 
+      debugPrint('API /api/dns?type=IPv4&offset=0&limit=all final response:');
+      debugPrint(response.toString());
       return response;
-    } catch (e) {
+    } on FormatException catch (e) {
+      debugPrint('JSON Parse Error: $e');
+      return ApiResponse<List<DnsRecord>>(
+        status: false,
+        message: 'خطا در تجزیه پاسخ سرور',
+        errorCode: 'JSON_PARSE_ERROR',
+        data: null,
+      );
+    } catch (e, stackTrace) {
       debugPrint('Error getting all DNS records: $e');
+      debugPrint('Stack trace: $stackTrace');
       return ApiResponse<List<DnsRecord>>(
         status: false,
         message: 'خطا در دریافت لیست DNS: ${e.toString()}',
@@ -40,6 +83,9 @@ class DnsApiService {
         '/api/dns',
         queryParameters: {'type': dnsTypeToString(type)},
         fromJson: (data) {
+          debugPrint(
+              'API /api/dns?type=${dnsTypeToString(type)} response data:');
+          debugPrint(data.toString());
           if (data is List) {
             return data.map((item) => DnsRecord.fromJson(item)).toList();
           }
@@ -47,6 +93,8 @@ class DnsApiService {
         },
       );
 
+      debugPrint('API /api/dns?type=${dnsTypeToString(type)} final response:');
+      debugPrint(response.toString());
       return response;
     } catch (e) {
       debugPrint('Error getting DNS records by type: $e');

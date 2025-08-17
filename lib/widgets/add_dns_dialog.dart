@@ -115,12 +115,12 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
       jsonList.map((e) => (e['label'] as String).trim().toLowerCase()),
     );
     allIps.addAll(jsonList.map((e) => (e['ip1'] as String).trim()));
-    allIps.addAll(jsonList.map((e) => (e['ip2'] as String).trim()));
+    allIps.addAll(jsonList.map((e) => (e['ip2'] as String?)?.trim() ?? ''));
 
     // If editing, remove the current name and IPs from check
     String currentName = widget.initialRecord?.label.trim().toLowerCase() ?? '';
     String currentIp1 = widget.initialRecord?.ip1.trim() ?? '';
-    String currentIp2 = widget.initialRecord?.ip2.trim() ?? '';
+    String currentIp2 = widget.initialRecord?.ip2?.trim() ?? '';
     allNames = allNames.where((n) => n != currentName).toList();
     allIps =
         allIps.where((ip) => ip != currentIp1 && ip != currentIp2).toList();
@@ -226,14 +226,17 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         label: _labelController.text.trim(),
         ip1: _ip1Controller.text.trim(),
-        ip2: _ip2Controller.text.trim(),
+        ip2: _ip2Controller.text.trim().isEmpty
+            ? null
+            : _ip2Controller.text.trim(),
         type: DnsType.general, // نوع پیش‌فرض برای DNSهای دستی
         createdAt: DateTime.now(),
       );
     }
     // Prevent duplicate by ip1+ip2 (except for edit mode, already removed old)
-    final newKey =
-        (newRecord.ip1 + '_' + newRecord.ip2).replaceAll(' ', '').toLowerCase();
+    final newKey = (newRecord.ip1 + '_' + (newRecord.ip2 ?? ''))
+        .replaceAll(' ', '')
+        .toLowerCase();
     jsonList.removeWhere((e) {
       final key = (e['ip1'] + '_' + e['ip2']).replaceAll(' ', '').toLowerCase();
       return key == newKey;
@@ -252,7 +255,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
       final dnsResponse = await _dnsApiService.createUserDns(
         label: newRecord.label,
         ip1: newRecord.ip1,
-        ip2: newRecord.ip2,
+        ip2: newRecord.ip2 ?? '',
         type: newRecord.type,
       );
 
@@ -337,8 +340,9 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                   borderSide: BorderSide(color: AppColors.primaryBlue),
                 ),
               ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? context.tr('enterName') : null,
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? context.tr('enterName')
+                  : null,
             ),
             IpInputField(
               label: 'DNS1',
@@ -397,7 +401,8 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                             ),
                           ),
                         )
-                      : Text(isEdit ? context.tr('saveEdit') : context.tr('add')),
+                      : Text(
+                          isEdit ? context.tr('saveEdit') : context.tr('add')),
                 ),
               ),
               const SizedBox(width: 12),

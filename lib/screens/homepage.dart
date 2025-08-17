@@ -17,7 +17,6 @@ import '../widgets/notification_bell.dart';
 import '../widgets/custom_drawer.dart';
 import 'dart:io' show Platform;
 
-
 class FireDNSHomePage extends StatefulWidget {
   final String title;
 
@@ -109,10 +108,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       if (selected != null) {
         _selectedDnsLabel = selected.label;
         _selectedDnsIp =
-            selected.ip1.isNotEmpty ? selected.ip1 : selected.ip2;
+            selected.ip1.isNotEmpty ? selected.ip1 : (selected.ip2 ?? '');
         // مهم: به‌روزرسانی DNS controllers با مقادیر جدید
         _dns1Controller.text = selected.ip1;
-        _dns2Controller.text = selected.ip2;
+        _dns2Controller.text = selected.ip2 ?? '';
       } else {
         _selectedDnsLabel = null;
         _selectedDnsIp = null;
@@ -188,9 +187,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                 _lottieController
                     .animateTo(
                       _lottieController.value + remaining,
-                      duration: Duration(
-                          milliseconds: (remaining * 1500)
-                              .round()),
+                      duration:
+                          Duration(milliseconds: (remaining * 1500).round()),
                       curve: Curves.easeInOut,
                     )
                     .then((_) => _lottieController.stop());
@@ -277,16 +275,16 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         }
       } catch (e) {
         debugPrint('Error checking initial status: $e');
-        setState() {
+        setState(() {
           _vpnActive = false;
           _vpnLoading = false;
-        };
+        });
       }
     } else {
-      setState() {
+      setState(() {
         _vpnActive = false;
         _vpnLoading = false;
-      };
+      });
     }
   }
 
@@ -341,22 +339,22 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       await _reportDnsUsage(newStatus);
     } catch (e) {
       debugPrint('❌ Error in _toggleVpn: $e');
-      setState() {
+      setState(() {
         _vpnLoading = false;
-      };
+      });
 
       try {
         bool actualStatus = false;
         if (Platform.isAndroid) {
           actualStatus = await DnsService.getServiceStatus();
         }
-        setState() {
+        setState(() {
           _vpnActive = actualStatus;
-        };
+        });
       } catch (_) {
-        setState() {
+        setState(() {
           _vpnActive = false;
-        };
+        });
       }
     }
   }
@@ -515,8 +513,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         debugPrint('Deactivating VPN...');
         final success = await DnsService.stopVpn();
 
-        await Future.delayed(
-            const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 500));
         final actualStatus = await DnsService.getServiceStatus();
         debugPrint(
             'VPN deactivation success: $success, actual status: $actualStatus');
@@ -575,9 +572,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   void _handleDnsSelected(DnsRecord result) {
     setState(() {
       _selectedDnsLabel = result.label;
-      _selectedDnsIp = result.ip1.isNotEmpty ? result.ip1 : result.ip2;
+      _selectedDnsIp = result.ip1.isNotEmpty ? result.ip1 : (result.ip2 ?? '');
       _dns1Controller.text = result.ip1;
-      _dns2Controller.text = result.ip2;
+      _dns2Controller.text = result.ip2 ?? '';
     });
   }
 
