@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'api_client.dart';
 import '../models/api_response.dart';
 import '../models/update_info.dart';
@@ -7,19 +8,34 @@ import '../models/update_info.dart';
 class UpdateApiService {
   final ApiClient _apiClient;
 
-  UpdateApiService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+  UpdateApiService({ApiClient? apiClient})
+      : _apiClient = apiClient ?? ApiClient();
 
   /// دریافت اطلاعات آپدیت
-  Future<ApiResponse<UpdateInfo>> getUpdateInfo(String currentAppVersion) async {
+  Future<ApiResponse<UpdateInfo>> getUpdateInfo(
+      String currentAppVersion) async {
     try {
+      print('🔍 درخواست اطلاعات آپدیت برای نسخه $currentAppVersion');
+
+      // زبان را هم ارسال کنیم
+      final String languageCode =
+          WidgetsBinding.instance.platformDispatcher.locale.languageCode;
       final response = await _apiClient.get<UpdateInfo>(
-        '/api/update-info', // endpoint
-        queryParameters: {'currentVersion': currentAppVersion},
-        fromJson: (data) => UpdateInfo.fromJson(data as Map<String, dynamic>),
+        '/api/update-info',
+        queryParameters: {
+          'currentVersion': currentAppVersion,
+          'language': languageCode,
+        },
+        fromJson: (data) => UpdateInfo.fromJson({'data': data}),
       );
+
+      print(response.status
+          ? '✅ دریافت اطلاعات آپدیت موفق'
+          : '❌ خطا در دریافت اطلاعات آپدیت: ${response.message}');
+
       return response;
     } catch (e, stackTrace) {
-      debugPrint('Error in getUpdateInfo: $e');
+      print('⚠️ خطا در getUpdateInfo: $e');
       debugPrintStack(stackTrace: stackTrace);
       return ApiResponse<UpdateInfo>(
         status: false,
@@ -29,7 +45,7 @@ class UpdateApiService {
     }
   }
 
-  /// بستن client
+  /// بستن کلاینت
   void dispose() {
     _apiClient.dispose();
   }

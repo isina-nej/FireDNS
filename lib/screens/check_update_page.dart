@@ -12,7 +12,8 @@ class CheckUpdatePage extends StatefulWidget {
   State<CheckUpdatePage> createState() => _CheckUpdatePageState();
 }
 
-class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProviderStateMixin {
+class _CheckUpdatePageState extends State<CheckUpdatePage>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   bool _isLatestVersion = true;
   String _errorMessage = '';
@@ -41,20 +42,22 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
     });
 
     try {
-      final isLatest = await UpdateChecker.isLatestVersion();
-      
+      final languageCode = Localizations.localeOf(context).languageCode;
+      final (isLatest, updateInfo) =
+          await UpdateChecker.checkForUpdates(languageCode: languageCode);
+
       setState(() {
         _isLatestVersion = isLatest;
         _isLoading = false;
       });
 
-      if (!isLatest && mounted) {
+      if (!isLatest && updateInfo != null && mounted) {
         // اگر نسخه جدید موجود باشد، صفحه بروزرسانی اجباری را نمایش می‌دهیم
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => ForceUpdatePage(
-              updateUrl: UpdateChecker.updateUrl,
+              updateUrl: updateInfo.updateUrl,
               currentAppVersion: UpdateChecker.currentVersion,
             ),
           ),
@@ -75,7 +78,7 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
   Widget build(BuildContext context) {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -84,13 +87,15 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
         ),
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.backgroundLight,
+        backgroundColor:
+            isDark ? AppColors.darkBackground : AppColors.backgroundLight,
         iconTheme: IconThemeData(
           color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
         ),
         elevation: 0,
       ),
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.darkBackground : AppColors.backgroundLight,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -99,14 +104,17 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(
-                      color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
+                      color:
+                          isDark ? AppColors.brightBlue : AppColors.brightBlue,
                     ),
                     const SizedBox(height: 24),
                     Text(
                       context.tr('checkingForUpdates'),
                       style: TextStyle(
                         fontSize: 18,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -136,7 +144,9 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                           label: Text(context.tr('tryAgain')),
                           onPressed: _checkForUpdates,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: isDark ? AppColors.brightBlue : AppColors.brightBlue,
+                            backgroundColor: isDark
+                                ? AppColors.brightBlue
+                                : AppColors.brightBlue,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
@@ -158,7 +168,8 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                                 controller: _animationController,
                                 repeat: false,
                                 onLoaded: (composition) {
-                                  _animationController.duration = composition.duration;
+                                  _animationController.duration =
+                                      composition.duration;
                                   _animationController.forward();
                                 },
                               ),
@@ -167,7 +178,9 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: (isDark ? AppColors.darkCardBackground : AppColors.backgroundWhite),
+                                color: (isDark
+                                    ? AppColors.darkCardBackground
+                                    : AppColors.backgroundWhite),
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
@@ -184,7 +197,9 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : AppColors.textPrimary,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -193,7 +208,9 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                                     '${context.tr('currentVersion')}: ${UpdateChecker.currentVersion}',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.textSecondary,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -208,7 +225,9 @@ class _CheckUpdatePageState extends State<CheckUpdatePage> with SingleTickerProv
                                 Navigator.pop(context);
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: isDark ? AppColors.brightBlue : AppColors.brightBlue,
+                                backgroundColor: isDark
+                                    ? AppColors.brightBlue
+                                    : AppColors.brightBlue,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 24,

@@ -24,9 +24,15 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // راه‌اندازی مدیریت زبان اول از همه
+  print('🚀 شروع اجرای برنامه...');
+
+  // راه‌اندازی مدیریت زبان
   final languageManager = LanguageManager();
   await languageManager.loadLanguage();
+
+  // راه‌اندازی مدیریت تم
+  final themeManager = ThemeManager();
+  await themeManager.loadThemeMode();
 
   // راه‌اندازی Firebase
   await Firebase.initializeApp();
@@ -83,8 +89,8 @@ void main() async {
     }
   }
 
-  final themeManager = ThemeManager();
-  await themeManager.loadThemeMode();
+  // final themeManager = ThemeManager();
+  // await themeManager.loadThemeMode();
 
   // Load DNS test settings
   final dnsTestSettingsService = DnsTestSettingsService();
@@ -102,36 +108,57 @@ void main() async {
 
 /// اپلیکیشن اصلی Fire DNS
 
-class FireDNSApp extends StatelessWidget {
+class FireDNSApp extends StatefulWidget {
   final ThemeManager themeManager;
   final LanguageManager languageManager;
   final DnsTestSettingsService dnsTestSettingsService;
-  final bool forceUpdate;
 
   const FireDNSApp({
     super.key,
     required this.themeManager,
     required this.languageManager,
     required this.dnsTestSettingsService,
-    this.forceUpdate = false,
   });
+
+  @override
+  State<FireDNSApp> createState() => _FireDNSAppState();
+}
+
+class _FireDNSAppState extends State<FireDNSApp> {
+  bool? _needsUpdate;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkForUpdates();
+  }
+
+  UpdateInfo? _updateInfo;
+  Future<void> _checkForUpdates() async {
+    final languageCode = widget.languageManager.locale.languageCode;
+    final (isLatest, updateInfo) =
+        await UpdateChecker.checkForUpdates(languageCode: languageCode);
+    if (mounted) {
+      setState(() {
+        _needsUpdate = !isLatest;
+        _updateInfo = updateInfo;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<ThemeManager>.value(value: themeManager),
-        ChangeNotifierProvider<LanguageManager>.value(value: languageManager),
+        ChangeNotifierProvider<ThemeManager>.value(value: widget.themeManager),
+        ChangeNotifierProvider<LanguageManager>.value(
+            value: widget.languageManager),
         ChangeNotifierProvider<NotificationService>(
           create: (_) => NotificationService(),
           lazy: false, // Initialize immediately
         ),
         ChangeNotifierProvider<DnsTestSettingsService>.value(
-          value: dnsTestSettingsService,
-        ),
-        ChangeNotifierProvider<DnsTestSettingsService>(
-          create: (_) => DnsTestSettingsService(),
-          lazy: false, // Initialize immediately
+          value: widget.dnsTestSettingsService,
         ),
       ],
       child: Consumer2<ThemeManager, LanguageManager>(
@@ -251,12 +278,14 @@ class FireDNSApp extends StatelessWidget {
               );
             },
 
-            home: forceUpdate
-                ? const ForceUpdatePage(
-                    updateUrl: UpdateChecker.updateUrl,
+            home: _needsUpdate == true && _updateInfo != null
+                ? ForceUpdatePage(
+                    updateUrl: _updateInfo!.updateUrl,
                     currentAppVersion: UpdateChecker.currentVersion,
                   )
-                : (FireDNSHomePage(title: context.tr('appTitle'))),
+                : _needsUpdate == null
+                    ? const Center(child: CircularProgressIndicator())
+                    : FireDNSHomePage(title: context.tr('appTitle')),
             debugShowCheckedModeBanner: false,
           );
         },

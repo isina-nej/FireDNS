@@ -22,52 +22,29 @@ class UpdateInfo {
 
   /// Factory constructor برای ایجاد از JSON
   factory UpdateInfo.fromJson(Map<String, dynamic> json) {
-    UpdateType type = UpdateType.minor;
-    final typeString = json['updateType'] as String?;
-    if (typeString != null) {
-      switch (typeString.toLowerCase()) {
-        case 'mandatory':
-          type = UpdateType.mandatory;
-          break;
-        case 'important':
-          type = UpdateType.important;
-          break;
-        case 'minor':
-          type = UpdateType.minor;
-          break;
-      }
-    }
+    // پشتیبانی از ساختار نمونه API
+    final data = json['data'] ?? json;
 
     return UpdateInfo(
-      currentVersion: json['currentVersion'] as String? ?? '',
-      latestVersion: json['latestVersion'] as String? ?? '',
-      updateUrl: json['updateUrl'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      features: (json['features'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? [],
-      changes: (json['changes'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? [],
-      updateType: type,
+      currentVersion: data['currentVersion'] as String? ?? '',
+      latestVersion: data['latestVersion'] as String? ?? '',
+      updateUrl:
+          data['updateUrl'] as String? ?? data['updateUri'] as String? ?? '',
+      description: data['description'] as String? ?? '',
+      features: (data['features'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      changes: (data['changes'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      updateType: UpdateType.fromString(data['importance'] as String?),
     );
   }
 
   /// تبدیل به JSON
   Map<String, dynamic> toJson() {
-    String typeString;
-    switch (updateType) {
-      case UpdateType.mandatory:
-        typeString = 'mandatory';
-        break;
-      case UpdateType.important:
-        typeString = 'important';
-        break;
-      case UpdateType.minor:
-        typeString = 'minor';
-        break;
-    }
-
     return {
       'currentVersion': currentVersion,
       'latestVersion': latestVersion,
@@ -75,12 +52,13 @@ class UpdateInfo {
       'description': description,
       'features': features,
       'changes': changes,
-      'updateType': typeString,
+      'importance': updateType.toString(),
     };
   }
 
   @override
   String toString() {
-    return 'UpdateInfo(currentVersion: $currentVersion, latestVersion: $latestVersion, updateUrl: $updateUrl, description: $description, features: $features, changes: $changes, updateType: $updateType)';
+    return 'UpdateInfo(currentVersion: $currentVersion, latestVersion: $latestVersion, '
+        'updateType: $updateType, features: ${features.length}, changes: ${changes.length})';
   }
 }
