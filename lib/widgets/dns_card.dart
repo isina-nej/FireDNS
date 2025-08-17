@@ -5,7 +5,6 @@ import 'package:lottie/lottie.dart';
 import 'package:flutter/gestures.dart';
 import '../path/path.dart'; // Assuming AppColors, context.tr are defined here or in imports
 import '../widgets/animated_overflow_label.dart';
-import 'dart:math';
 import 'package:provider/provider.dart';
 
 class DnsCard extends StatelessWidget {
@@ -42,33 +41,54 @@ class DnsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
-    final ping = pingCache['${record.id}_1'] ?? pingCache[record.id];
+    final ping1 = pingCache['${record.id}_1'] ?? pingCache[record.id];
     final ping2 = pingCache['${record.id}_2'] ?? pingCache[record.id];
 
+    int? bestPing;
+    int? bestPing2;
+    if (ping1 != null && ping2 != null && ping1 >= 0 && ping2 >= 0) {
+      if (ping1 <= ping2) {
+        bestPing = ping1;
+        bestPing2 = ping2;
+      } else {
+        bestPing = ping2;
+        bestPing2 = ping1;
+      }
+    } else if (ping1 != null && ping1 >= 0) {
+      bestPing = ping1;
+      bestPing2 = null;
+    } else if (ping2 != null && ping2 >= 0) {
+      bestPing = ping2;
+      bestPing2 = null;
+    } else {
+      bestPing = null;
+      bestPing2 = null;
+    }
+
     Color pingColor;
-    if (ping == null || ping < 0) {
+    if (bestPing == null) {
       pingColor = Colors.grey.shade400;
-    } else if (ping < 50) {
+    } else if (bestPing < 50) {
       pingColor = AppColors.pingExcellent;
-    } else if (ping < 120) {
+    } else if (bestPing < 120) {
       pingColor = AppColors.pingGood;
-    } else if (ping < 250) {
+    } else if (bestPing < 250) {
       pingColor = AppColors.pingMedium;
-    } else if (ping < 500) {
+    } else if (bestPing < 500) {
       pingColor = AppColors.pingPoor;
     } else {
       pingColor = AppColors.pingBad;
     }
     Color ping2Color;
-    if (ping2 == null || ping2 < 0) {
+    if (bestPing2 == null) {
       ping2Color = Colors.grey.shade400;
-    } else if (ping2 < 50) {
+    } else if (bestPing2 < 50) {
       ping2Color = AppColors.pingExcellent;
-    } else if (ping2 < 120) {
+    } else if (bestPing2 < 120) {
       ping2Color = AppColors.pingGood;
-    } else if (ping2 < 250) {
+    } else if (bestPing2 < 250) {
       ping2Color = AppColors.pingMedium;
-    } else if (ping2 < 500) {
+    } else if (bestPing2 < 500) {
       ping2Color = AppColors.pingPoor;
     } else {
       ping2Color = AppColors.pingBad;
@@ -236,7 +256,7 @@ class DnsCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              if (ping != null)
+                              if (bestPing != null)
                                 Listener(
                                   behavior: HitTestBehavior.opaque,
                                   onPointerDown: (event) {
@@ -260,7 +280,7 @@ class DnsCard extends StatelessWidget {
                                           color: pingColor,
                                         ),
                                         const SizedBox(width: 2),
-                                        ping == -2
+                                        bestPing == -2
                                             ? const SizedBox(
                                                 width: 18,
                                                 height: 18,
@@ -269,9 +289,9 @@ class DnsCard extends StatelessWidget {
                                                   strokeWidth: 2,
                                                 ),
                                               )
-                                            : (ping == -1 ||
-                                                    ping < 0 ||
-                                                    ping >= 1000)
+                                            : (bestPing == -1 ||
+                                                    bestPing < 0 ||
+                                                    bestPing >= 1000)
                                                 ? Text(
                                                     '---',
                                                     style: TextStyle(
@@ -284,7 +304,7 @@ class DnsCard extends StatelessWidget {
                                                     ),
                                                   )
                                                 : Text(
-                                                    '$ping ms',
+                                                    '${bestPing} ms',
                                                     style: TextStyle(
                                                       color: pingColor,
                                                       fontWeight:
@@ -294,7 +314,7 @@ class DnsCard extends StatelessWidget {
                                                           .underline,
                                                     ),
                                                   ),
-                                        if (ping > 0 && ping < 80)
+                                        if (bestPing > 0 && bestPing < 80)
                                           Container(
                                             margin: const EdgeInsets.only(
                                               left: 2,
@@ -355,7 +375,7 @@ class DnsCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              if (ping2 != null)
+                              if (bestPing2 != null)
                                 Listener(
                                   behavior: HitTestBehavior.opaque,
                                   onPointerDown: (event) {
@@ -379,7 +399,7 @@ class DnsCard extends StatelessWidget {
                                           color: ping2Color,
                                         ),
                                         const SizedBox(width: 2),
-                                        ping2 == -2
+                                        bestPing2 == -2
                                             ? const SizedBox(
                                                 width: 18,
                                                 height: 18,
@@ -388,9 +408,9 @@ class DnsCard extends StatelessWidget {
                                                   strokeWidth: 2,
                                                 ),
                                               )
-                                            : (ping2 == -1 ||
-                                                    ping2 < 0 ||
-                                                    ping2 >= 1000)
+                                            : (bestPing2 == -1 ||
+                                                    bestPing2 < 0 ||
+                                                    bestPing2 >= 1000)
                                                 ? Text(
                                                     '---',
                                                     style: TextStyle(
@@ -403,7 +423,7 @@ class DnsCard extends StatelessWidget {
                                                     ),
                                                   )
                                                 : Text(
-                                                    '$ping2 ms',
+                                                    '${bestPing2} ms',
                                                     style: TextStyle(
                                                       color: ping2Color,
                                                       fontWeight:
@@ -413,7 +433,7 @@ class DnsCard extends StatelessWidget {
                                                           .underline,
                                                     ),
                                                   ),
-                                        if (ping2 > 0 && ping2 < 80)
+                                        if (bestPing2 > 0 && bestPing2 < 80)
                                           Container(
                                             margin: const EdgeInsets.only(
                                               left: 2,

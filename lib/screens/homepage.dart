@@ -31,6 +31,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   late ThemeManager _themeManager;
   late final AnimationController _lottieController;
 
+  DateTime? _lastBackPressTime; // زمان آخرین فشردن دکمه برگشت
+
   String? _selectedDnsLabel;
   String? _selectedDnsIp;
   // Controllers
@@ -597,110 +599,137 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     final isDark = themeManager.isDarkModeActive(context);
     return ListenableBuilder(
       listenable: themeManager,
-      builder: (context, _) => Scaffold(
-        key: _scaffoldKey,
-        drawer: const CustomDrawer(),
-        backgroundColor:
-            isDark ? AppColors.darkBackground : AppColors.backgroundLight,
-        appBar: AppBar(
-          backgroundColor:
-              isDark ? AppColors.darkBackground : AppColors.backgroundLight,
-          elevation: 0,
-          leading: IconButton(
-            icon: Icon(
-              Icons.menu,
-              color: isDark ? AppColors.darkIconPrimary : AppColors.textPrimary,
-            ),
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-          ),
-          title: Text(
-            context.tr('appTitle'),
-            style: TextStyle(
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          centerTitle: true,
-          toolbarHeight: kToolbarHeight,
-          actions: [
-            const NotificationBell(),
-            IconButton(
-              icon: CircleAvatar(
-                backgroundColor: AppColors.backgroundGrey,
-                child: Icon(
-                  Icons.person_outline,
+      builder: (context, _) => WillPopScope(
+          onWillPop: () async {
+            if (_vpnActive) {
+              // اگر VPN فعال است، اجازه اجرا در پس‌زمینه را بده
+              return false;
+            }
+
+            // منطق double-back برای خروج
+            final now = DateTime.now();
+            if (_lastBackPressTime == null ||
+                now.difference(_lastBackPressTime!) >
+                    const Duration(seconds: 2)) {
+              _lastBackPressTime = now;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(context.tr('pressBackAgainToExit')),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+              return false;
+            }
+            return true;
+          },
+          child: Scaffold(
+            key: _scaffoldKey,
+            drawer: const CustomDrawer(),
+            backgroundColor:
+                isDark ? AppColors.darkBackground : AppColors.backgroundLight,
+            appBar: AppBar(
+              backgroundColor:
+                  isDark ? AppColors.darkBackground : AppColors.backgroundLight,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(
+                  Icons.menu,
                   color: isDark
                       ? AppColors.darkIconPrimary
                       : AppColors.textPrimary,
-                  size: 20,
+                ),
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              ),
+              title: Text(
+                context.tr('appTitle'),
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              onPressed: () {
-                _showSnackBar(context.tr('profileComingSoon'));
-              },
-            ),
-          ],
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              const minCardHeight = 170.0;
-              const totalSpacing = 24.0;
-              final availableHeight = constraints.maxHeight - totalSpacing;
-              double cardHeight = availableHeight / 3;
-              if (cardHeight < minCardHeight) cardHeight = minCardHeight;
-              const cardPadding = EdgeInsets.all(12);
-              return Padding(
-                padding: cardPadding,
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    Expanded(
-                      flex: 12,
-                      child: ConnectionStatusCard(
-                        height: cardHeight,
-                        themeManager: _themeManager,
-                        vpnActive: _vpnActive,
-                        vpnLoading: _vpnLoading,
-                        lottieController: _lottieController,
-                        onToggleVpn: () => _toggleVpn(!_vpnActive),
-                        selectedDnsLabel: _selectedDnsLabel,
-                        selectedDnsIp: _selectedDnsIp,
-                        dns1Controller: _dns1Controller,
-                        dns2Controller: _dns2Controller,
-                      ),
+              centerTitle: true,
+              toolbarHeight: kToolbarHeight,
+              actions: [
+                const NotificationBell(),
+                IconButton(
+                  icon: CircleAvatar(
+                    backgroundColor: AppColors.backgroundGrey,
+                    child: Icon(
+                      Icons.person_outline,
+                      color: isDark
+                          ? AppColors.darkIconPrimary
+                          : AppColors.textPrimary,
+                      size: 20,
                     ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      flex: 10,
-                      child: SpeedTestCard(
-                        height: cardHeight,
-                        themeManager: _themeManager,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      flex: 10,
-                      child: ConfigurationCard(
-                        height: cardHeight,
-                        themeManager: _themeManager,
-                        onDnsSelected: _handleDnsSelected,
-                        vpnActive: _vpnActive,
-                        deactivateVpn: _deactivateVpn,
-                        activateVpn: _activateVpn,
-                        loadSelectedDnsLabel: _loadSelectedDnsLabel,
-                        showSnackBar: _showSnackBar,
-                      ),
-                    ),
-                  ],
+                  ),
+                  onPressed: () {
+                    _showSnackBar(context.tr('profileComingSoon'));
+                  },
                 ),
-              );
-            },
-          ),
-        ),
-      ),
+              ],
+            ),
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const minCardHeight = 170.0;
+                  const totalSpacing = 24.0;
+                  final availableHeight = constraints.maxHeight - totalSpacing;
+                  double cardHeight = availableHeight / 3;
+                  if (cardHeight < minCardHeight) cardHeight = minCardHeight;
+                  const cardPadding = EdgeInsets.all(12);
+                  return Padding(
+                    padding: cardPadding,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        Expanded(
+                          flex: 12,
+                          child: ConnectionStatusCard(
+                            height: cardHeight,
+                            themeManager: _themeManager,
+                            vpnActive: _vpnActive,
+                            vpnLoading: _vpnLoading,
+                            lottieController: _lottieController,
+                            onToggleVpn: () => _toggleVpn(!_vpnActive),
+                            selectedDnsLabel: _selectedDnsLabel,
+                            selectedDnsIp: _selectedDnsIp,
+                            dns1Controller: _dns1Controller,
+                            dns2Controller: _dns2Controller,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          flex: 10,
+                          child: SpeedTestCard(
+                            height: cardHeight,
+                            themeManager: _themeManager,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          flex: 10,
+                          child: ConfigurationCard(
+                            height: cardHeight,
+                            themeManager: _themeManager,
+                            onDnsSelected: _handleDnsSelected,
+                            vpnActive: _vpnActive,
+                            deactivateVpn: _deactivateVpn,
+                            activateVpn: _activateVpn,
+                            loadSelectedDnsLabel: _loadSelectedDnsLabel,
+                            showSnackBar: _showSnackBar,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          )),
     );
   }
 }

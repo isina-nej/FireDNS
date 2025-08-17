@@ -7,11 +7,12 @@ import '../api/models/dns_record.dart';
 import 'dns_ping_helper.dart';
 
 class DnsTestManager {
+  static bool _sequentialTestStopped = false;
   static const int timeout = 2; // timeout به ثانیه
   static const int maxConcurrentTests = 200; // حداکثر تست همزمان
-  static const Duration cacheExpiration = Duration(hours: 1); // مدت اعتبار کش
+  static const Duration cacheExpiration = Duration(hours: 24); // مدت اعتبار کش
   static const Duration throttleInterval =
-      Duration(seconds: 30); // حداقل فاصله بین تست‌ها
+      Duration(seconds: 10); // حداقل فاصله بین تست‌ها
 
   static DateTime? _lastTestTime;
 
@@ -57,7 +58,17 @@ class DnsTestManager {
 
   static Future<void> savePingCache(Map<String, dynamic> cache) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('ping_cache', json.encode(cache));
+    // کش قبلی را بارگذاری کن
+    final oldCacheJson = prefs.getString('ping_cache');
+    Map<String, dynamic> oldCache = {};
+    if (oldCacheJson != null) {
+      try {
+        oldCache = Map<String, dynamic>.from(json.decode(oldCacheJson));
+      } catch (_) {}
+    }
+    // فقط مقادیر جدید را جایگزین کن، بقیه را نگه دار
+    oldCache.addAll(cache);
+    await prefs.setString('ping_cache', json.encode(oldCache));
     await prefs.setString(
         'ping_cache_update', DateTime.now().toIso8601String());
   }
@@ -76,7 +87,7 @@ class DnsTestManager {
       try {
         final result =
             await DnsPingHelper.ping(ip).timeout(Duration(seconds: timeout));
-        if (result != null && result >= 0) {
+        if (result >= 0) {
           return result;
         }
       } catch (e) {
@@ -88,11 +99,20 @@ class DnsTestManager {
   }
 
   // تست گروهی DNS‌ها با مدیریت تعداد همزمان
+  static void stopSequentialTest() {
+    _sequentialTestStopped = true;
+  }
+
+  static void resetSequentialTest() {
+    _sequentialTestStopped = false;
+  }
+
   static Future<Map<String, int>> testMultipleDns(
     List<DnsRecord> records, {
     bool showProgress = true,
     Function(double)? onProgress,
   }) async {
+    _sequentialTestStopped = false;
     if (!await checkNetworkStatus()) {
       throw Exception('No internet connection');
     }
@@ -105,7 +125,6 @@ class DnsTestManager {
     final results = <String, int>{};
     final chunks = <List<DnsRecord>>[];
 
-    // تقسیم رکوردها به گروه‌های کوچکتر
     for (var i = 0; i < records.length; i += maxConcurrentTests) {
       chunks.add(records.sublist(
           i,
@@ -115,14 +134,14 @@ class DnsTestManager {
     }
 
     int completedTests = 0;
-    final total = records.length * 2; // برای هر رکورد دو IP تست می‌شود
+    final total = records.length * 2;
 
-    // تست هر گروه
     for (final chunk in chunks) {
+      if (_sequentialTestStopped) break;
       final futures = <Future<void>>[];
 
       for (final record in chunk) {
-        // تست IP اول
+        if (_sequentialTestStopped) break;
         futures.add(testSingleDns(record.ip1).then((ping) {
           results['${record.id}_1'] = ping ?? -1;
           completedTests++;
@@ -131,7 +150,6 @@ class DnsTestManager {
           }
         }));
 
-        // تست IP دوم
         if (record.ip2 != null && record.ip2!.isNotEmpty) {
           futures.add(testSingleDns(record.ip2!).then((ping) {
             results['${record.id}_2'] = ping ?? -1;
@@ -143,18 +161,14 @@ class DnsTestManager {
         }
       }
 
-      // انتظار برای تکمیل تست‌های این گروه
       await Future.wait(futures);
 
-      // مکث کوتاه بین گروه‌ها
       if (chunks.last != chunk) {
         await Future.delayed(const Duration(milliseconds: 500));
       }
     }
 
-    // ذخیره نتایج در کش
     await savePingCache(results);
-
     return results;
   }
 }
