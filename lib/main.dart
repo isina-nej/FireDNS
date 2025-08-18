@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'services/local_notification_service.dart';
 
 import '../path/path.dart';
 import 'services/firebase_messaging_service.dart';
@@ -16,9 +17,24 @@ import 'screens/force_update_page.dart';
 import 'api/services/fcm_api_service.dart';
 
 // Background message handler برای FCM
+@pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   print('Handling a background message: ${message.messageId}');
+
+  // پردازش پیام در پس‌زمینه
+  if (message.notification != null) {
+    print('Background Message Title: ${message.notification?.title}');
+    print('Background Message Body: ${message.notification?.body}');
+
+    // نمایش نوتیفیکیشن در پس‌زمینه
+    await LocalNotificationService.showNotification(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: message.notification!.title ?? 'Fire DNS',
+      body: message.notification!.body ?? '',
+      payload: message.data.toString(),
+    );
+  }
 }
 
 void main() async {
@@ -36,6 +52,9 @@ void main() async {
 
   // راه‌اندازی Firebase
   await Firebase.initializeApp();
+
+  // راه‌اندازی Local Notifications
+  await LocalNotificationService.initialize();
 
   // تنظیم background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
