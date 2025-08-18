@@ -87,28 +87,29 @@ class _TicketPageState extends State<TicketPage>
         'message': _messageController.text
       });
 
-      // شبیه‌سازی ارسال تیکت به سرور
-      await Future.delayed(const Duration(seconds: 2));
+      // ارسال واقعی تیکت به سرور
+      final response = await _ticketService.sendTicket(
+        type: _ticketType,
+        subject: _subjectController.text,
+        message: _messageController.text,
+      );
 
       TicketLogger.logStep(context.tr('ticketSentToServer'));
 
-      // شبیه‌سازی پاسخ موفق یا خطا (به صورت تصادفی)
-      final isSuccess = DateTime.now().millisecondsSinceEpoch % 2 == 0;
-
-      TicketLogger.logNetworkResponse('Ticket', isSuccess,
-          message: isSuccess
+      TicketLogger.logNetworkResponse('Ticket', response.status,
+          message: response.status
               ? context.tr('successfulSubmission')
               : context.tr('submissionFailed'));
 
       setState(() {
         _isLoading = false;
-        if (isSuccess) {
+        if (response.status) {
           _isSuccess = true;
           _animationController.forward();
           TicketLogger.logStep(context.tr('successfulSubmission'));
         } else {
           _isError = true;
-          _errorMessage = context.tr('ticketError');
+          _errorMessage = response.message;
           TicketLogger.logStep(context.tr('submissionFailed'));
         }
       });
