@@ -32,7 +32,7 @@ class SessionApiService {
           debugPrint('Error saving jwt: $e');
         }
         // ست کردن jwt در ApiClient
-        _apiClient.setJwt(_jwt!);
+        ApiClient.setJwt(_jwt!);
       }
       return response;
     } catch (e) {
@@ -49,10 +49,23 @@ class SessionApiService {
   /// تمدید سشن
   Future<ApiResponse<SessionData>> refreshSession() async {
     try {
+      // قبل از درخواست refresh، jwt قبلی را از SharedPreferences می‌خوانیم
+      final prefs = await SharedPreferences.getInstance();
+      final currentJwt = prefs.getString('jwt');
+      if (currentJwt != null && currentJwt.isNotEmpty) {
+        ApiClient.setJwt(currentJwt);
+      }
+
       final response = await _apiClient.post<SessionData>(
         '/api/session/refresh',
         fromJson: (data) => SessionData.fromJson(data),
       );
+
+      // اگر پاسخ موفق بود و jwt جدید داشت، آن را ذخیره می‌کنیم
+      if (response.status && response.data?.jwt != null) {
+        await prefs.setString('jwt', response.data!.jwt);
+        ApiClient.setJwt(response.data!.jwt);
+      }
 
       return response;
     } catch (e) {

@@ -8,9 +8,13 @@ const String baseApiUrl = 'https://api.fire-dns.ir';
 
 /// کلاس مدیریت درخواست‌های HTTP
 class ApiClient {
-  // متد برای ست کردن jwt
-  void setJwt(String jwt) {
-    ApiClient._jwt = jwt;
+  // دسترسی فقط خواندنی به مقدار فعلی JWT
+  static String? get jwt => _jwt;
+  // متد برای ست کردن jwt به صورت static تا در همه instanceها اعمال شود
+  static void setJwt(String jwt) {
+    debugPrint('[APIClient][JWT] setJwt called with: $jwt');
+    _jwt = jwt;
+    debugPrint('[APIClient][JWT] _jwt is now: $_jwt');
   }
 
   static const String baseUrl = baseApiUrl;
@@ -38,7 +42,12 @@ class ApiClient {
       final uri = _buildUri(endpoint, queryParameters);
       final mergedHeaders = {..._defaultHeaders, ...?headers};
       if (ApiClient._jwt != null) {
+        debugPrint(
+            '[APIClient][JWT] Adding Authorization header: Bearer ${ApiClient._jwt}');
         mergedHeaders['Authorization'] = 'Bearer ${ApiClient._jwt}';
+      } else {
+        debugPrint(
+            '[APIClient][JWT] No JWT set, Authorization header will NOT be added.');
       }
 
       debugPrint('GET Request: $uri');
@@ -65,7 +74,12 @@ class ApiClient {
       final uri = _buildUri(endpoint);
       final mergedHeaders = {..._defaultHeaders, ...?headers};
       if (ApiClient._jwt != null) {
+        debugPrint(
+            '[APIClient][JWT] Adding Authorization header: Bearer ${ApiClient._jwt}');
         mergedHeaders['Authorization'] = 'Bearer ${ApiClient._jwt}';
+      } else {
+        debugPrint(
+            '[APIClient][JWT] No JWT set, Authorization header will NOT be added.');
       }
       final jsonBody = body != null ? jsonEncode(body) : null;
 
@@ -98,7 +112,12 @@ class ApiClient {
       final uri = _buildUri(endpoint);
       final mergedHeaders = {..._defaultHeaders, ...?headers};
       if (ApiClient._jwt != null) {
+        debugPrint(
+            '[APIClient][JWT] Adding Authorization header: Bearer ${ApiClient._jwt}');
         mergedHeaders['Authorization'] = 'Bearer ${ApiClient._jwt}';
+      } else {
+        debugPrint(
+            '[APIClient][JWT] No JWT set, Authorization header will NOT be added.');
       }
       final jsonBody = body != null ? jsonEncode(body) : null;
 
@@ -128,7 +147,12 @@ class ApiClient {
       final uri = _buildUri(endpoint);
       final mergedHeaders = {..._defaultHeaders, ...?headers};
       if (ApiClient._jwt != null) {
+        debugPrint(
+            '[APIClient][JWT] Adding Authorization header: Bearer ${ApiClient._jwt}');
         mergedHeaders['Authorization'] = 'Bearer ${ApiClient._jwt}';
+      } else {
+        debugPrint(
+            '[APIClient][JWT] No JWT set, Authorization header will NOT be added.');
       }
       final jsonBody = body != null ? jsonEncode(body) : null;
 
@@ -157,7 +181,12 @@ class ApiClient {
       final uri = _buildUri(endpoint);
       final mergedHeaders = {..._defaultHeaders, ...?headers};
       if (ApiClient._jwt != null) {
+        debugPrint(
+            '[APIClient][JWT] Adding Authorization header: Bearer ${ApiClient._jwt}');
         mergedHeaders['Authorization'] = 'Bearer ${ApiClient._jwt}';
+      } else {
+        debugPrint(
+            '[APIClient][JWT] No JWT set, Authorization header will NOT be added.');
       }
 
       debugPrint('DELETE Request: $uri');
@@ -194,15 +223,23 @@ class ApiClient {
     debugPrint('Response Body: ${response.body}');
 
     try {
-      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return ApiResponse<T>.fromJson(jsonData, fromJson);
+      final jsonData = jsonDecode(response.body);
+      if (jsonData is Map<String, dynamic>) {
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return ApiResponse<T>.fromJson(jsonData, fromJson);
+        } else {
+          return ApiResponse<T>(
+            status: false,
+            message: jsonData['message'] as String? ?? 'خطای سرور',
+            errorCode: jsonData['errorCode']?.toString(),
+          );
+        }
       } else {
+        // JSON is not a map (unexpected)
         return ApiResponse<T>(
           status: false,
-          message: jsonData['message'] as String? ?? 'خطای سرور',
-          errorCode: jsonData['errorCode'] as String?,
+          message: 'پاسخ سرور نامعتبر است',
+          errorCode: 'INVALID_JSON',
         );
       }
     } catch (e) {

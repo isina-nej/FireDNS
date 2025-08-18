@@ -1,46 +1,46 @@
-import '../models/api_response.dart';
-import 'api_client.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../services/api_client.dart';
+import '../../models/ticket.dart';
+import '../../api/models/api_response.dart';
+import '../services/session_api_service.dart';
 
 class TicketService {
-  final ApiClient apiClient;
+  static final TicketService _instance = TicketService._internal();
+  late final ApiClient _apiClient;
+  late final SessionApiService _sessionService;
 
-  TicketService(this.apiClient);
+  factory TicketService() {
+    return _instance;
+  }
 
-  Future<ApiResponse<dynamic>> sendTicket({
+  TicketService._internal() {
+    _apiClient = ApiClient();
+    _sessionService = SessionApiService();
+  }
+
+  Future<ApiResponse<Ticket>> createTicket({
     required String type,
     required String subject,
     required String message,
   }) async {
-    try {
-      final url = Uri.parse('${ApiClient.baseUrl}/api/user/tickets');
-      final body = jsonEncode({
-        'type': type,
-        'subject': subject,
-        'message': message,
-      });
-
-      final response = await apiClient.post<dynamic>(
-        '/api/user/tickets',
-        body: {
-          'type': type,
-          'subject': subject,
-          'message': message,
-        },
-      );
-
-      print('[TicketService] HTTP Status Code: ${response.status}');
-      print('[TicketService] Response Body: ${response.data}');
-
-      return response;
-    } catch (error) {
-      print('[TicketService] Error: $error');
-      return ApiResponse<dynamic>(
+    // اول سشن را تازه می‌کنیم تا از معتبر بودن توکن مطمئن شویم
+    final sessionResponse = await _sessionService.refreshSession();
+    if (!sessionResponse.status) {
+      return ApiResponse<Ticket>(
         status: false,
-        message: 'خطا در ارسال تیکت',
-        errorCode: 'TICKET_SEND_ERROR',
+        message: 'خطا در احراز هویت. لطفا دوباره وارد شوید.',
+        errorCode: 'AUTH_ERROR',
       );
     }
+
+    final body = {
+      'type': type,
+      'subject': subject,
+      'message': message,
+    };
+    return _apiClient.post<Ticket>(
+      '/api/user/tickets',
+      body: body,
+      fromJson: (json) => Ticket.fromJson(json),
+    );
   }
 }

@@ -7,7 +7,6 @@ import '../l10n/localization_extension.dart';
 
 import '../utils/ticket_logger.dart';
 import '../api/services/ticket_service.dart';
-import '../api/services/api_client.dart';
 
 class TicketPage extends StatefulWidget {
   const TicketPage({Key? key}) : super(key: key);
@@ -47,9 +46,11 @@ class _TicketPageState extends State<TicketPage>
     super.dispose();
   }
 
-  final TicketService _ticketService;
+  late final TicketService _ticketService;
 
-  _TicketPageState() : _ticketService = TicketService(ApiClient());
+  _TicketPageState() {
+    _ticketService = TicketService();
+  }
 
   Future<void> _submitTicket() async {
     TicketLogger.resetStepCount();
@@ -87,8 +88,8 @@ class _TicketPageState extends State<TicketPage>
         'message': _messageController.text
       });
 
-      // ارسال واقعی تیکت به سرور
-      final response = await _ticketService.sendTicket(
+      // ارسال واقعی تیکت به سرور با API جدید
+      final response = await _ticketService.createTicket(
         type: _ticketType,
         subject: _subjectController.text,
         message: _messageController.text,
