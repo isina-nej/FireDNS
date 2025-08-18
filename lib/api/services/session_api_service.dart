@@ -52,9 +52,18 @@ class SessionApiService {
       // قبل از درخواست refresh، jwt قبلی را از SharedPreferences می‌خوانیم
       final prefs = await SharedPreferences.getInstance();
       final currentJwt = prefs.getString('jwt');
-      if (currentJwt != null && currentJwt.isNotEmpty) {
-        ApiClient.setJwt(currentJwt);
+
+      // اگر jwt وجود ندارد، یک سشن جدید ایجاد می‌کنیم
+      if (currentJwt == null || currentJwt.isEmpty) {
+        // اینجا می‌توانیم از initSession استفاده کنیم یا کاربر را به صفحه ورود هدایت کنیم
+        return ApiResponse<SessionData>(
+          status: false,
+          message: 'لطفا دوباره وارد شوید.',
+          errorCode: 'NO_JWT_ERROR',
+        );
       }
+
+      ApiClient.setJwt(currentJwt);
 
       final response = await _apiClient.post<SessionData>(
         '/api/session/refresh',

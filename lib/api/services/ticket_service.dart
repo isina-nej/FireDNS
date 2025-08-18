@@ -22,25 +22,48 @@ class TicketService {
     required String subject,
     required String message,
   }) async {
-    // اول سشن را تازه می‌کنیم تا از معتبر بودن توکن مطمئن شویم
-    final sessionResponse = await _sessionService.refreshSession();
-    if (!sessionResponse.status) {
+    try {
+      // اول سعی می‌کنیم مستقیماً تیکت را ارسال کنیم
+      final response = await _apiClient.post<Ticket>(
+        '/api/user/tickets',
+        body: {
+          'type': type,
+          'subject': subject,
+          'message': message,
+        },
+        fromJson: (json) => Ticket.fromJson(json),
+      );
+
+      // اگر با خطای 401 یا 403 مواجه شدیم، سشن را تازه می‌کنیم
+      if (!response.status &&
+          (response.errorCode == '401' || response.errorCode == '403')) {
+        final sessionResponse = await _sessionService.refreshSession();
+        if (!sessionResponse.status) {
+          return ApiResponse<Ticket>(
+            status: false,
+            message: 'خطا در احراز هویت. لطفا دوباره وارد شوید.',
+            errorCode: 'AUTH_ERROR',
+          );
+        }
+        // دوباره درخواست را با توکن جدید ارسال می‌کنیم
+        return await _apiClient.post<Ticket>(
+          '/api/user/tickets',
+          body: {
+            'type': type,
+            'subject': subject,
+            'message': message,
+          },
+          fromJson: (json) => Ticket.fromJson(json),
+        );
+      }
+
+      return response;
+    } catch (e) {
       return ApiResponse<Ticket>(
         status: false,
-        message: 'خطا در احراز هویت. لطفا دوباره وارد شوید.',
-        errorCode: 'AUTH_ERROR',
+        message: 'خطا در ارسال تیکت. لطفا دوباره تلاش کنید.',
+        errorCode: 'TICKET_ERROR',
       );
     }
-
-    final body = {
-      'type': type,
-      'subject': subject,
-      'message': message,
-    };
-    return _apiClient.post<Ticket>(
-      '/api/user/tickets',
-      body: body,
-      fromJson: (json) => Ticket.fromJson(json),
-    );
   }
 }
