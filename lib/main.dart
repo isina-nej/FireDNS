@@ -3,18 +3,21 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'services/navigation_service.dart';
+import 'routes/app_routes.dart';
 import 'services/local_notification_service.dart';
-
-import '../path/path.dart';
-import 'services/firebase_messaging_service.dart';
+import 'styles/theme_manager.dart';
+import 'styles/language_manager.dart';
 import 'services/notification_service.dart';
+import 'services/notification_service_provider.dart';
 import 'services/dns_test_settings_service.dart';
-import 'dart:io' show Platform;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'services/firebase_messaging_service.dart';
 import 'api/services/session_api_service.dart';
 import 'utils/update_checker.dart';
 import 'screens/force_update_page.dart';
-import 'api/services/fcm_api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'api/models/update_info.dart';
+import 'l10n/localization_extension.dart';
 
 // Background message handler برای FCM
 @pragma('vm:entry-point')
@@ -37,9 +40,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 }
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   print('🚀 شروع اجرای برنامه...');
 
   // راه‌اندازی مدیریت زبان
@@ -67,51 +69,18 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final isRegistered = prefs.getBool('fcm_registered') ?? false;
   if (!isRegistered) {
-    // دریافت توکن FCM
     final fcmToken = await FirebaseMessaging.instance.getToken();
     if (fcmToken != null) {
-      // ارسال به سرور و دریافت JWT
       final sessionApi = SessionApiService();
       final response = await sessionApi.initSession(fcmToken);
       if (response.data != null) {
         final jwt = response.data!.jwt;
-        // ذخیره امن JWT
         await prefs.setString('jwt', jwt);
-        // ثبت ارسال FCM
         await prefs.setBool('fcm_registered', true);
-        // پرینت برای دیباگ
-        debugPrint('JWT دریافت شده: $jwt');
-        print('JWT دریافت شده: $jwt');
-
-        // ارسال FCM به سرور
-        final fcmApi = FcmApiService();
-        final deviceId = fcmToken;
-        final fcmTokenKey = fcmToken;
-        final platform = Platform.isAndroid
-            ? 'android'
-            : Platform.isIOS
-                ? 'ios'
-                : 'other';
-        final fcmResponse = await fcmApi.registerFcmToken(
-          deviceId: deviceId,
-          fcmToken: fcmTokenKey,
-          platform: platform,
-        );
-        debugPrint('ثبت FCM سمت سرور: ${fcmResponse.toJson()}');
-      } else {
-        debugPrint('دریافت JWT ناموفق بود: ${response.errorMessage}');
-        print('دریافت JWT ناموفق بود: ${response.errorMessage}');
       }
-    } else {
-      debugPrint('توکن FCM دریافت نشد');
-      print('توکن FCM دریافت نشد');
     }
   }
 
-  // final themeManager = ThemeManager();
-  // await themeManager.loadThemeMode();
-
-  // Load DNS test settings
   final dnsTestSettingsService = DnsTestSettingsService();
   await dnsTestSettingsService.loadSettings();
 
@@ -124,8 +93,6 @@ void main() async {
     ),
   );
 }
-
-/// اپلیکیشن اصلی Fire DNS
 
 class FireDNSApp extends StatefulWidget {
   final ThemeManager themeManager;
@@ -201,10 +168,17 @@ class _FireDNSAppState extends State<FireDNSApp> {
           value: widget.dnsTestSettingsService,
         ),
       ],
-      child: Consumer2<ThemeManager, LanguageManager>(
-        builder: (context, themeManager, languageManager, child) {
+      child: Builder(builder: (context) {
+        // Init NotificationServiceProvider for global access
+        NotificationServiceProvider.init(context);
+        return Consumer2<ThemeManager, LanguageManager>(
+            builder: (context, themeManager, languageManager, child) {
           return MaterialApp(
+            navigatorKey: NavigationService.navigatorKey,
             title: context.tr('appTitle'),
+            initialRoute: AppRoutes.home,
+            routes: AppRoutes.routes,
+            onGenerateRoute: AppRoutes.onGenerateRoute,
 
             // تنظیمات زبان و محلی‌سازی
             locale: languageManager.locale,
@@ -312,24 +286,27 @@ class _FireDNSAppState extends State<FireDNSApp> {
 
             // تنظیمات جهت متن
             builder: (context, child) {
+              // اگر نیاز به بروزرسانی باشد، صفحه بروزرسانی را نمایش می‌دهیم
+              if (_needsUpdate == true && _updateInfo != null) {
+                return ForceUpdatePage(
+                  updateUrl: _updateInfo!.updateUrl,
+                  currentAppVersion: UpdateChecker.currentVersion,
+                );
+              }
+              // اگر در حال بررسی وضعیت بروزرسانی هستیم، نمایش لودینگ
+              if (_needsUpdate == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              // در غیر این صورت نمایش محتوای اصلی با جهت مناسب
               return Directionality(
                 textDirection: languageManager.textDirection,
                 child: child!,
               );
             },
-
-            home: _needsUpdate == true && _updateInfo != null
-                ? ForceUpdatePage(
-                    updateUrl: _updateInfo!.updateUrl,
-                    currentAppVersion: UpdateChecker.currentVersion,
-                  )
-                : _needsUpdate == null
-                    ? const Center(child: CircularProgressIndicator())
-                    : FireDNSHomePage(title: context.tr('appTitle')),
             debugShowCheckedModeBanner: false,
           );
-        },
-      ),
+        });
+      }),
     );
   }
 }

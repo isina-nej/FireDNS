@@ -1,4 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'navigation_service.dart';
+import '../routes/app_routes.dart';
 
 class NotificationSettings {
   static const androidChannel = AndroidNotificationChannel(
@@ -34,8 +36,23 @@ class LocalNotificationService {
       initSettings,
       onDidReceiveNotificationResponse:
           (NotificationResponse notificationResponse) {
-        // اینجا می‌توانید کدهای مربوط به کلیک روی نوتیفیکیشن را اضافه کنید
         print('Notification clicked: ${notificationResponse.payload}');
+        if (notificationResponse.payload != null) {
+          try {
+            // پیلود حاوی اطلاعات مسیریابی است
+            NavigationService.navigatorKey.currentState?.pushNamed(
+              AppRoutes.notifications,
+              arguments: notificationResponse.payload,
+            );
+          } catch (e) {
+            print('Error handling notification tap: $e');
+            NavigationService.navigatorKey.currentState
+                ?.pushNamed(AppRoutes.notifications);
+          }
+        } else {
+          NavigationService.navigatorKey.currentState
+              ?.pushNamed(AppRoutes.notifications);
+        }
       },
     );
 

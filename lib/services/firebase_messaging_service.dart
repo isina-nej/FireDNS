@@ -1,10 +1,39 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'local_notification_service.dart';
 import 'package:flutter/foundation.dart';
+import 'navigation_service.dart';
+import '../routes/app_routes.dart';
+import '../api/models/notification_model.dart';
+import 'notification_cache_service.dart';
 
 class FirebaseMessagingService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   int _notificationId = 0;
+
+  NotificationType _getNotificationType(RemoteMessage message) {
+    final type = message.data['type']?.toString().toLowerCase() ?? 'info';
+    switch (type) {
+      case 'warning':
+        return NotificationType.warning;
+      case 'error':
+        return NotificationType.error;
+      case 'success':
+        return NotificationType.success;
+      default:
+        return NotificationType.info;
+    }
+  }
+
+  void _handleNotificationNavigation(RemoteMessage message) {
+    if (message.data.containsKey('route')) {
+      final route = message.data['route'];
+      NavigationService.navigatorKey.currentState?.pushNamed(route);
+    } else {
+      // اگر مسیر خاصی مشخص نشده باشد، به صفحه اعلانات هدایت می‌شود
+      NavigationService.navigatorKey.currentState
+          ?.pushNamed(AppRoutes.notifications);
+    }
+  }
 
   Future<void> initialize() async {
     // بررسی نوتیفیکیشن اولیه در صورت باز شدن اپ از حالت terminated
@@ -12,10 +41,10 @@ class FirebaseMessagingService {
     if (initialMessage != null) {
       print('App opened from terminated state via notification');
       print('Initial message data: ${initialMessage.data}');
-      if (initialMessage.data.containsKey('route')) {
-        print('Initial navigation to route: ${initialMessage.data['route']}');
-        // TODO: اضافه کردن کد ناوبری به صفحه مورد نظر
-      }
+      // تاخیر برای اطمینان از آماده بودن نویگیتور
+      Future.delayed(const Duration(seconds: 1), () {
+        _handleNotificationNavigation(initialMessage);
+      });
     }
 
     // درخواست مجوز نوتیفیکیشن با اجازه نمایش در پس‌زمینه
@@ -45,16 +74,36 @@ class FirebaseMessagingService {
 
     // تنظیم handlers برای دریافت پیام‌ها در فورگراند
     // نمایش نوتیفیکیشن در حالت فورگراند
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       print('Got a message whilst in the foreground!');
       print('Message data: ${message.data}');
 
       if (message.notification != null) {
         print('Message notification: ${message.notification}');
 
+        // ساخت مدل نوتیفیکیشن
+        final notification = NotificationModel(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: message.notification!.title ?? 'Fire DNS',
+          message: message.notification!.body ?? '',
+          date: message.sentTime ?? DateTime.now(),
+          type: _getNotificationType(message),
+          actionUrl: message.data['actionUrl'],
+          imageUrl: message.notification!.android?.imageUrl,
+        );
+
+        // ذخیره در کش
+        try {
+          await NotificationCacheService.addNotification(notification);
+          print('Firebase notification saved to cache: ${notification.id}');
+        } catch (e) {
+          print('Error saving firebase notification to cache: $e');
+        }
+
+        // نمایش نوتیفیکیشن
         LocalNotificationService.showNotification(
           id: _notificationId++,
-          title: message.notification!.title ?? 'Fire DNS',
+          title: notification.title,
           body: message.notification!.body ?? '',
           payload: message.data.toString(),
         );
@@ -66,12 +115,7 @@ class FirebaseMessagingService {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('A new onMessageOpenedApp event was published!');
       print('Message data: ${message.data}');
-
-      // می‌توانید اینجا عملیات مربوط به باز کردن صفحه خاص یا اجرای عملیات خاص را انجام دهید
-      if (message.data.containsKey('route')) {
-        print('Navigation to route: ${message.data['route']}');
-        // TODO: اضافه کردن کد ناوبری به صفحه مورد نظر
-      }
+      _handleNotificationNavigation(message);
     });
   }
 

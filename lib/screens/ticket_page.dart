@@ -3,7 +3,6 @@ import 'package:lottie/lottie.dart';
 import '../path/path.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
-import '../l10n/localization_extension.dart';
 
 import '../utils/ticket_logger.dart';
 import '../api/services/ticket_service.dart';
