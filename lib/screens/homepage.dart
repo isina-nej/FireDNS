@@ -430,18 +430,11 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       debugPrint('Connection Type: ${request.connectionType}');
       debugPrint('Timestamp: ${request.timestamp}');
 
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('user_id') ?? '';
-      debugPrint('User ID: $userId');
-
+      // ارسال کل جیسون اولیه به سرور
       final response = await dnsUsageService.recordDnsUsage(
-        userDnsId: request.dns.label,
-        internetTag: request.networkInfo.connectionType,
-        userId: userId,
+        body: request.toJson(),
       );
-      if (!response.status) {
-        debugPrint('خطا در ارسال وضعیت اتصال به سرور: ${response.message}');
-      }
+      debugPrint('پاسخ سرور به ثبت وضعیت DNS: ${response.toJson()}');
     } catch (e) {
       debugPrint('خطا در ارسال وضعیت اتصال: $e');
     }

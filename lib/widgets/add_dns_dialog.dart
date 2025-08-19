@@ -4,7 +4,10 @@ import 'dart:convert';
 import '../path/path.dart';
 import '../api/services/dns_usage_api_service.dart';
 import '../api/services/dns_api_service.dart';
+import '../api/models/dns_usage_request.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:http/http.dart' as http;
 import 'ip_input_field.dart';
 
 class AddDnsDialog extends StatefulWidget {
@@ -30,7 +33,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
   /// تشخیص نوع اتصال اینترنت
   Future<String> _getInternetConnectionType() async {
     final connectivityResult = await _connectivity.checkConnectivity();
-    if (connectivityResult.contains(ConnectivityResult.mobile)) {
+    if (connectivityResult == ConnectivityResult.mobile) {
       // تشخیص نوع اپراتور موبایل
       try {
         // این قسمت نیاز به پیاده‌سازی دقیق‌تر برای تشخیص اپراتور دارد
@@ -38,11 +41,24 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
       } catch (_) {
         return 'MOBILE';
       }
-    } else if (connectivityResult.contains(ConnectivityResult.wifi)) {
+    } else if (connectivityResult == ConnectivityResult.wifi) {
       return 'TELECOM'; // یا تشخیص ISP دقیق‌تر
     } else {
       return 'OTHER';
     }
+  }
+
+  /// دریافت IP عمومی
+  Future<String?> _getPublicIp() async {
+    try {
+      final response = await http.get(Uri.parse('https://api.ipify.org'));
+      if (response.statusCode == 200) {
+        return response.body;
+      }
+    } catch (e) {
+      debugPrint('Error getting public IP: $e');
+    }
+    return null;
   }
 
   @override
@@ -268,14 +284,73 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
       if (await _isUserLoggedIn()) {
         // فقط برای کاربران لاگین شده ثبت می‌کنیم
         final userId = await _getUserId();
-        final usageResponse = await _dnsUsageApiService.recordDnsUsage(
-          userDnsId:
-              dnsResponse.data!.id, // از ID برگشتی از سرور استفاده می‌کنیم
-          internetTag: await _getInternetConnectionType(), // تشخیص نوع اینترنت
-          destination: 'GENERAL', // یا هر مقدار مناسب دیگر
-          userId: userId,
+        // ساخت شیء DnsUsageRequest
+        final internetType = await _getInternetConnectionType();
+
+        // ابتدا وضعیت قطع DNS قبلی را ثبت می‌کنیم (اگر قبلاً متصل بوده)
+        final cachedDnsList = prefs.getString('cached_dns_list');
+        final selectedId = prefs.getString('cached_selected_dns');
+        if (cachedDnsList != null && selectedId != null) {
+          try {
+            final List<dynamic> jsonList = List.from(jsonDecode(cachedDnsList));
+            final records = jsonList.map((e) => DnsRecord.fromJson(e)).toList();
+            final selected = records.firstWhere((r) => r.id == selectedId);
+
+            // ارسال وضعیت قطع اتصال DNS قبلی
+            final disconnectRequest = DnsUsageRequest(
+              fcmToken: await FirebaseMessaging.instance.getToken() ?? '',
+              dns: DnsInfo(
+                label: selected.label,
+                ip1: selected.ip1,
+                ip2: selected.ip2 ?? '',
+              ),
+              timestamp: DateTime.now(),
+              connectionType: ConnectionType.disconnected,
+              networkInfo: NetworkInfo(
+                connectionType: internetType,
+                carrierName: internetType == 'MOBILE' ? 'Unknown' : null,
+                ipAddress: await _getPublicIp(),
+                mobileNetworkType: internetType == 'MOBILE' ? 'Unknown' : null,
+              ),
+            );
+
+            debugPrint('=== ارسال وضعیت قطع اتصال DNS قبلی ===');
+            debugPrint('DNS Info: ${disconnectRequest.dns.toJson()}');
+            debugPrint('Connection Type: ${disconnectRequest.connectionType}');
+
+            await _dnsUsageApiService.recordDnsUsage(
+              body: disconnectRequest.toJson(),
+            );
+          } catch (e) {
+            debugPrint('Error recording DNS disconnect: $e');
+          }
+        }
+
+        // حالا وضعیت اتصال DNS جدید را ثبت می‌کنیم
+        final connectRequest = DnsUsageRequest(
+          fcmToken: await FirebaseMessaging.instance.getToken() ?? '',
+          dns: DnsInfo(
+            label: dnsResponse.data!.label,
+            ip1: dnsResponse.data!.ip1,
+            ip2: dnsResponse.data!.ip2 ?? '',
+          ),
+          timestamp: DateTime.now(),
+          connectionType: ConnectionType.connected,
+          networkInfo: NetworkInfo(
+            connectionType: internetType,
+            carrierName: internetType == 'MOBILE' ? 'Unknown' : null,
+            ipAddress: await _getPublicIp(),
+            mobileNetworkType: internetType == 'MOBILE' ? 'Unknown' : null,
+          ),
         );
 
+        debugPrint('=== ارسال وضعیت اتصال DNS جدید ===');
+        debugPrint('DNS Info: ${connectRequest.dns.toJson()}');
+        debugPrint('Connection Type: ${connectRequest.connectionType}');
+
+        final usageResponse = await _dnsUsageApiService.recordDnsUsage(
+          body: connectRequest.toJson(),
+        );
         if (!usageResponse.status) {
           debugPrint('Error recording DNS usage: ${usageResponse.message}');
         }
