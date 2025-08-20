@@ -25,8 +25,15 @@ class AppRoutes {
           settings: settings,
         );
       case notifications:
+        // استخراج notificationId از arguments
+        final args = settings.arguments as Map<String, dynamic>?;
+        final highlightNotificationId =
+            args?['highlightNotificationId'] as String?;
+
         return MaterialPageRoute(
-          builder: (context) => const NotificationListPage(),
+          builder: (context) => NotificationListPage(
+            highlightNotificationId: highlightNotificationId,
+          ),
           settings: settings,
         );
       default:

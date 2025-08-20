@@ -8,20 +8,72 @@ import '../api/models/notification_model.dart';
 import '../path/path.dart';
 
 class NotificationListPage extends StatefulWidget {
-  const NotificationListPage({Key? key}) : super(key: key);
+  final String? highlightNotificationId;
+
+  const NotificationListPage({Key? key, this.highlightNotificationId})
+      : super(key: key);
 
   @override
   State<NotificationListPage> createState() => _NotificationListPageState();
 }
 
 class _NotificationListPageState extends State<NotificationListPage> {
+  final ScrollController _scrollController = ScrollController();
+  String? _highlightedNotificationId;
+
   @override
   void initState() {
     super.initState();
+    _highlightedNotificationId = widget.highlightNotificationId;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<NotificationService>().fetchNotifications();
+      context.read<NotificationService>().fetchNotifications().then((_) {
+        if (widget.highlightNotificationId != null) {
+          _scrollToNotification(widget.highlightNotificationId!);
+        }
+      });
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToNotification(String notificationId) {
+    final service = context.read<NotificationService>();
+    final notifications = service.notifications;
+
+    // پیدا کردن ایندکس نوتیف (با در نظر گیری معکوس بودن لیست)
+    final originalIndex =
+        notifications.indexWhere((n) => n.id == notificationId);
+    if (originalIndex != -1) {
+      final reversedIndex = notifications.length - 1 - originalIndex;
+
+      // محاسبه موقعیت تقریبی
+      const itemHeight = 150.0; // تقریبی ارتفاع هر آیتم
+      final targetOffset = reversedIndex * itemHeight;
+
+      // scroll کردن به آن موقعیت
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          targetOffset,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+
+      // پاک کردن highlight بعد از مدتی
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _highlightedNotificationId = null;
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -104,12 +156,16 @@ class _NotificationListPageState extends State<NotificationListPage> {
               await context.read<NotificationService>().fetchNotifications();
             },
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               itemCount: notifications.length,
               itemBuilder: (context, index) {
                 // نمایش جدیدترین نوتیفیکیشن‌ها در بالای لیست
                 final notification =
                     notifications[notifications.length - 1 - index];
+                final isHighlighted =
+                    _highlightedNotificationId == notification.id;
+
                 return Dismissible(
                   key: Key(notification.id),
                   direction: DismissDirection.endToStart,
@@ -134,15 +190,19 @@ class _NotificationListPageState extends State<NotificationListPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                       side: BorderSide(
-                        color: notification.isRead
-                            ? Colors.grey.shade200
-                            : Colors.transparent,
-                        width: 1,
+                        color: isHighlighted
+                            ? Colors.blue.shade300
+                            : (notification.isRead
+                                ? Colors.grey.shade200
+                                : Colors.transparent),
+                        width: isHighlighted ? 2 : 1,
                       ),
                     ),
-                    color: notification.isRead
-                        ? Colors.white
-                        : Colors.blue.shade50.withOpacity(0.5),
+                    color: isHighlighted
+                        ? Colors.blue.shade50
+                        : (notification.isRead
+                            ? Colors.white
+                            : Colors.blue.shade50.withOpacity(0.5)),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: () {

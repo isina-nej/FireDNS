@@ -316,10 +316,18 @@ class _NotificationPopupState extends State<NotificationPopup> {
         if (!notification.isRead) {
           _markAsRead(notification.id);
         }
-        if (notification.actionUrl != null &&
-            notification.actionUrl!.isNotEmpty) {
-          _openUrl(notification.actionUrl);
-        }
+
+        // بستن popup
+        Navigator.pop(context);
+
+        // رفتن به صفحه نوتیف‌ها و highlight کردن این نوتیف
+        Navigator.pushNamed(
+          context,
+          '/notifications',
+          arguments: {
+            'highlightNotificationId': notification.id,
+          },
+        );
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -404,6 +412,24 @@ class _NotificationPopupState extends State<NotificationPopup> {
                       ),
                       if (notification.actionUrl != null &&
                           notification.actionUrl!.isNotEmpty)
+                        Row(
+                          children: [
+                            TextButton.icon(
+                              icon: const Icon(Icons.open_in_new, size: 14),
+                              label: Text(context.tr('view')),
+                              onPressed: () => _openUrl(notification.actionUrl),
+                              style: TextButton.styleFrom(
+                                foregroundColor: isDark
+                                    ? AppColors.brightBlue
+                                    : AppColors.brightBlue,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                          ],
+                        )
+                      else
                         Text(
                           context.tr('view'),
                           style: TextStyle(
