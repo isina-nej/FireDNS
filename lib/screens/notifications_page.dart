@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/notification_service.dart';
 import '../api/models/notification_model.dart';
+import 'notification_list_page.dart';
 
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -124,6 +125,13 @@ class _NotificationCard extends StatelessWidget {
               Provider.of<NotificationService>(context, listen: false)
                   .markAsRead(notification.id);
             }
+            // Navigate to NotificationListPage
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NotificationListPage(),
+              ),
+            );
           },
           borderRadius: BorderRadius.circular(12),
           child: Padding(

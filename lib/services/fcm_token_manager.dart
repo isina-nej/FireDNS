@@ -3,15 +3,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import '../api/services/session_api_service.dart';
 import '../api/services/api_client.dart';
+import '../api/services/fcm_api_service.dart';
+import 'dart:io';
 
 class FcmTokenManager {
   static const String _fcmTokenKey = 'fcm_token';
   static const String _fcmRegisteredKey = 'fcm_registered';
 
   final SessionApiService _sessionApi;
+  final FcmApiService _fcmApi;
 
-  FcmTokenManager({SessionApiService? sessionApi})
-      : _sessionApi = sessionApi ?? SessionApiService();
+  FcmTokenManager({SessionApiService? sessionApi, FcmApiService? fcmApi})
+      : _sessionApi = sessionApi ?? SessionApiService(),
+        _fcmApi = fcmApi ?? FcmApiService();
 
   /// دریافت توکن جدید FCM و ثبت آن در سرور
   Future<void> refreshAndRegisterToken() async {
@@ -54,20 +58,42 @@ class FcmTokenManager {
 
   /// تضمین وجود session معتبر و ثبت FCM token
   Future<dynamic> _ensureValidSessionAndRegister(String fcmToken) async {
-    // اگر JWT داریم، مستقیماً سعی در ثبت می‌کنیم
-    final currentJwt = ApiClient.jwt;
-    if (currentJwt != null && currentJwt.isNotEmpty) {
-      final result = await _sessionApi.initSession(fcmToken);
-      if (result.status) {
-        return result;
-      }
-      // اگر JWT معتبر نبود، ادامه می‌دهیم تا session جدید ایجاد کنیم
-      debugPrint('🔄 Current JWT might be invalid, creating new session');
+    // مرحله 1: تضمین وجود JWT معتبر
+    await _ensureValidSession(fcmToken);
+
+    // مرحله 2: ثبت FCM token در endpoint مخصوص
+    final platform = Platform.isIOS ? 'ios' : 'android';
+    final fcmResult = await _fcmApi.registerFcmToken(
+      deviceId: fcmToken,
+      fcmToken: fcmToken,
+      platform: platform,
+    );
+
+    if (fcmResult.status) {
+      debugPrint('✅ FCM token registered successfully in /api/fcm/register');
+    } else {
+      debugPrint('❌ Failed to register FCM token: ${fcmResult.message}');
     }
 
-    // ایجاد session جدید با FCM token
-    debugPrint('🆕 Creating new session with FCM token');
-    return await _sessionApi.initSession(fcmToken);
+    return fcmResult;
+  }
+
+  /// تضمین وجود JWT معتبر
+  Future<void> _ensureValidSession(String fcmToken) async {
+    final currentJwt = ApiClient.jwt;
+    if (currentJwt != null && currentJwt.isNotEmpty) {
+      // JWT موجود است، فعلاً فرض می‌کنیم معتبر است
+      debugPrint('ℹ️ Using existing JWT for FCM registration');
+      return;
+    }
+
+    // اگر JWT نداریم، session جدید ایجاد می‌کنیم
+    debugPrint('🆕 Creating new session for FCM token registration');
+    final sessionResult = await _sessionApi.initSession(fcmToken);
+    if (!sessionResult.status) {
+      throw Exception('Failed to create session: ${sessionResult.message}');
+    }
+    debugPrint('✅ New session created successfully');
   }
 
   /// بررسی وضعیت توکن در هنگام راه‌اندازی برنامه
