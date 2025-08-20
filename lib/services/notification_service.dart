@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/models/notification_model.dart';
 import './notification_cache_service.dart';
+import './welcome_notification_manager.dart';
 
 /// سرویس مدیریت اعلانات
 class NotificationService extends ChangeNotifier {
@@ -89,15 +90,15 @@ class NotificationService extends ChangeNotifier {
       print('Received ${_notifications.length} notifications from cache');
 
       if (_notifications.isEmpty) {
-        print('Adding test notification...');
-        final testNotification = NotificationModel(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          title: 'به FireDNS خوش آمدید',
-          message: 'این یک اعلان تستی برای نمایش قابلیت‌های برنامه است.',
-          date: DateTime.now(),
-          type: NotificationType.info,
-        );
-        await addNotification(testNotification);
+        print('Adding welcome notification...');
+
+        // بررسی اینکه آیا نوتیفیکیشن خوش‌آمدگویی نیاز است یا خیر
+        final shouldShow =
+            await WelcomeNotificationManager.shouldShowWelcomeNotification();
+
+        if (shouldShow) {
+          await _createWelcomeNotification();
+        }
       }
 
       _unreadCount = _notifications.where((n) => !n.isRead).length;
@@ -206,6 +207,104 @@ class NotificationService extends ChangeNotifier {
 
   /// پیام خطا
   String get errorMessage => _errorMessage;
+
+  /// ایجاد نوتیفیکیشن خوش‌آمدگویی بر اساس زبان کاربر
+  Future<void> _createWelcomeNotification() async {
+    try {
+      // ایجاد نوتیفیکیشن خوش‌آمدگویی
+      final welcomeNotification =
+          await WelcomeNotificationManager.createWelcomeNotification();
+
+      await addNotification(welcomeNotification);
+
+      // علامت‌گذاری نوتیفیکیشن خوش‌آمدگویی به عنوان نمایش داده شده
+      await WelcomeNotificationManager.markWelcomeNotificationShown();
+
+      print('Welcome notification created successfully');
+    } catch (e) {
+      print('Error creating welcome notification: $e');
+
+      // در صورت خطا، نوتیفیکیشن فارسی پیش‌فرض ایجاد کن
+      final fallbackNotification = NotificationModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: '🔥 به Fire DNS خوش آمدید!',
+        message: '''سلام و درود! 👋
+
+به جمع کاربران Fire DNS خوش آمدید! 🎉
+
+🔒 حریم خصوصی شما محفوظ
+⚡ سرعت اتصال بهتر
+🛡️ امنیت بالا
+🌐 دسترسی آزاد به اینترنت
+
+از همین الان می‌توانید DNS دلخواه خود را انتخاب کرده و از اینترنت سریع‌تر و امن‌تری لذت ببرید.
+
+موفق باشید! 🚀''',
+        date: DateTime.now(),
+        type: NotificationType.success,
+        isRead: false,
+      );
+
+      await addNotification(fallbackNotification);
+      await WelcomeNotificationManager.markWelcomeNotificationShown();
+    }
+  }
+
+  /// بررسی تغییر زبان و ایجاد نوتیفیکیشن خوش‌آمدگویی جدید در صورت نیاز
+  Future<void> checkLanguageChangeForWelcome() async {
+    try {
+      final shouldUpdate = await WelcomeNotificationManager
+          .shouldUpdateWelcomeForLanguageChange();
+
+      if (shouldUpdate) {
+        print('Language changed, creating new welcome notification...');
+
+        // حذف نوتیفیکیشن‌های خوش‌آمدگویی قبلی
+        await _removeOldWelcomeNotifications();
+
+        // ایجاد نوتیفیکیشن جدید
+        final newWelcomeNotification =
+            await WelcomeNotificationManager.createWelcomeNotification();
+        await addNotification(newWelcomeNotification);
+
+        // به‌روزرسانی وضعیت
+        await WelcomeNotificationManager.markWelcomeNotificationShown();
+      }
+    } catch (e) {
+      print('Error checking language change for welcome: $e');
+    }
+  }
+
+  /// حذف نوتیفیکیشن‌های خوش‌آمدگویی قدیمی
+  Future<void> _removeOldWelcomeNotifications() async {
+    try {
+      final notifications =
+          await NotificationCacheService.getCachedNotifications();
+
+      // پیدا کردن نوتیفیکیشن‌های خوش‌آمدگویی
+      final welcomeNotificationIds = notifications
+          .where((n) =>
+              n.id.startsWith('welcome_') ||
+              n.title.contains('خوش آمدید') ||
+              n.title.contains('Welcome'))
+          .map((n) => n.id)
+          .toList();
+
+      // حذف نوتیفیکیشن‌های قدیمی
+      for (final id in welcomeNotificationIds) {
+        await NotificationCacheService.removeNotification(id);
+      }
+
+      // بروزرسانی لیست محلی
+      _notifications.removeWhere((n) => welcomeNotificationIds.contains(n.id));
+      notifyListeners();
+
+      print(
+          'Removed ${welcomeNotificationIds.length} old welcome notifications');
+    } catch (e) {
+      print('Error removing old welcome notifications: $e');
+    }
+  }
 
   @override
   void dispose() {

@@ -11,4 +11,11 @@ class NotificationServiceProvider {
     _notificationService =
         Provider.of<NotificationService>(context, listen: false);
   }
+
+  /// بررسی تغییر زبان و به‌روزرسانی نوتیفیکیشن خوش‌آمدگویی
+  static Future<void> checkLanguageChange() async {
+    if (_notificationService != null) {
+      await _notificationService!.checkLanguageChangeForWelcome();
+    }
+  }
 }

@@ -2,18 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../path/path.dart';
-import '../api/services/dns_usage_api_service.dart';
-import '../api/services/dns_api_service.dart';
-import '../api/models/dns_usage_request.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:http/http.dart' as http;
 import 'ip_input_field.dart';
 
 class AddDnsDialog extends StatefulWidget {
   final void Function(DnsRecord) onAdd;
-  final DnsRecord? initialRecord;
-  const AddDnsDialog({Key? key, required this.onAdd, this.initialRecord})
-      : super(key: key);
+  const AddDnsDialog({super.key, required this.onAdd});
 
   @override
   State<AddDnsDialog> createState() => _AddDnsDialogState();
@@ -24,54 +17,19 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
   late final TextEditingController _labelController;
   late final TextEditingController _ip1Controller;
   late final TextEditingController _ip2Controller;
+  late final FocusNode _labelFocusNode;
+  late final FocusNode _ip2FocusNode;
   bool _saving = false;
-  final _dnsUsageApiService = DnsUsageApiService();
   final _dnsApiService = DnsApiService();
-  final _connectivity = Connectivity();
-
-  /// تشخیص نوع اتصال اینترنت
-  Future<String> _getInternetConnectionType() async {
-    final connectivityResult = await _connectivity.checkConnectivity();
-    if (connectivityResult == ConnectivityResult.mobile) {
-      // تشخیص نوع اپراتور موبایل
-      try {
-        // این قسمت نیاز به پیاده‌سازی دقیق‌تر برای تشخیص اپراتور دارد
-        return 'HAMRAHAVAL'; // یا IRANCELL یا سایر اپراتورها
-      } catch (_) {
-        return 'MOBILE';
-      }
-    } else if (connectivityResult == ConnectivityResult.wifi) {
-      return 'TELECOM'; // یا تشخیص ISP دقیق‌تر
-    } else {
-      return 'OTHER';
-    }
-  }
-
-  /// دریافت IP عمومی
-  Future<String?> _getPublicIp() async {
-    try {
-      final response = await http.get(Uri.parse('https://api.ipify.org'));
-      if (response.statusCode == 200) {
-        return response.body;
-      }
-    } catch (e) {
-      debugPrint('Error getting public IP: $e');
-    }
-    return null;
-  }
 
   @override
   void initState() {
     super.initState();
-    _labelController = TextEditingController(
-      text: widget.initialRecord?.label ?? '',
-    );
-    _ip1Controller = TextEditingController(
-      text: widget.initialRecord?.ip1 ?? '',
-    );
-    _ip2Controller = TextEditingController(
-      text: widget.initialRecord?.ip2 ?? '',
-    );
+    _labelController = TextEditingController();
+    _ip1Controller = TextEditingController();
+    _ip2Controller = TextEditingController();
+    _labelFocusNode = FocusNode();
+    _ip2FocusNode = FocusNode();
   }
 
   @override
@@ -79,194 +37,79 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
     _labelController.dispose();
     _ip1Controller.dispose();
     _ip2Controller.dispose();
-    _dnsUsageApiService.dispose();
+    _labelFocusNode.dispose();
+    _ip2FocusNode.dispose();
+    _dnsApiService.dispose();
     super.dispose();
-  }
-
-  Future<bool> _isUserLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString('user_id');
-    final authToken = prefs.getString(
-        'auth_token'); // یا هر کلید دیگری که برای توکن استفاده می‌کنید
-    return userId != null &&
-        userId != 'unknown' &&
-        authToken != null &&
-        authToken.isNotEmpty;
-  }
-
-  Future<String> _getUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('user_id') ?? 'unknown';
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _saving = true);
-    final prefs = await SharedPreferences.getInstance();
-    final userDnsJson = prefs.getString('user_dns_list');
-    List<dynamic> jsonList = [];
-    if (userDnsJson != null) {
-      try {
-        jsonList = List<Map<String, dynamic>>.from(jsonDecode(userDnsJson));
-      } catch (_) {}
-    }
 
-    // Load all displayed DNS names (from cache and API)
-    final cachedJson = prefs.getString('cached_dns_list');
-    List<String> allNames = [];
-    List<String> allIps = [];
-    if (cachedJson != null) {
-      try {
-        final List<dynamic> cachedList = List.from(jsonDecode(cachedJson));
-        allNames.addAll(
-          cachedList.map((e) => (e['label'] as String).trim().toLowerCase()),
-        );
-        allIps.addAll(cachedList.map((e) => (e['ip1'] as String).trim()));
-        allIps.addAll(cachedList.map((e) => (e['ip2'] as String).trim()));
-      } catch (_) {}
-    }
-    // Add user DNS names and IPs
-    allNames.addAll(
-      jsonList.map((e) => (e['label'] as String).trim().toLowerCase()),
-    );
-    allIps.addAll(jsonList.map((e) => (e['ip1'] as String).trim()));
-    allIps.addAll(jsonList.map((e) => (e['ip2'] as String?)?.trim() ?? ''));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userDnsJson = prefs.getString('user_dns_list');
+      List<dynamic> jsonList = [];
 
-    // If editing, remove the current name and IPs from check
-    String currentName = widget.initialRecord?.label.trim().toLowerCase() ?? '';
-    String currentIp1 = widget.initialRecord?.ip1.trim() ?? '';
-    String currentIp2 = widget.initialRecord?.ip2?.trim() ?? '';
-    allNames = allNames.where((n) => n != currentName).toList();
-    allIps =
-        allIps.where((ip) => ip != currentIp1 && ip != currentIp2).toList();
-
-    String newName = _labelController.text.trim().toLowerCase();
-    String newIp1 = _ip1Controller.text.trim();
-    String newIp2 = _ip2Controller.text.trim();
-
-    // Check for duplicate name
-    if (allNames.contains(newName)) {
-      setState(() => _saving = false);
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(context.tr('error')),
-          content: Text(
-            context.tr('duplicateNameError'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(context.tr('ok')),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    // Check for duplicate IPs
-    bool ipConflict = allIps.contains(newIp1) || allIps.contains(newIp2);
-    if (ipConflict) {
-      setState(() => _saving = false);
-      // پیدا کردن اولین DNS موجود با IP تکراری
-      DnsRecord? existingDns;
-      // جستجو در کش و لیست کاربر
-      final List<Map<String, dynamic>> allRecords = [];
-      if (cachedJson != null) {
+      if (userDnsJson != null) {
         try {
-          final List<dynamic> cachedList = List.from(jsonDecode(cachedJson));
-          allRecords.addAll(
-            cachedList.map((e) => Map<String, dynamic>.from(e)),
-          );
+          jsonList = List<Map<String, dynamic>>.from(jsonDecode(userDnsJson));
         } catch (_) {}
       }
-      allRecords.addAll(jsonList.map((e) => Map<String, dynamic>.from(e)));
-      for (var e in allRecords) {
-        if (e['ip1'] == newIp1 ||
-            e['ip2'] == newIp1 ||
-            e['ip1'] == newIp2 ||
-            e['ip2'] == newIp2) {
-          existingDns = DnsRecord.fromJson(e);
-          break;
-        }
-      }
-      final result = await showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(context.tr('duplicateIP')),
-          content: Text(
-            context.tr('duplicateIPMessage'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop('cancel'),
-              child: Text(context.tr('cancel')),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop('connect'),
-              child: Text(context.tr('connectToExistingDNS')),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop('add'),
-              child: Text(context.tr('submit')),
-            ),
-          ],
-        ),
-      );
-      if (result == 'cancel' || result == null) return;
-      if (result == 'connect' && existingDns != null) {
-        // ارسال رکورد موجود به والد و بستن دیالوگ
-        widget.onAdd(existingDns);
-        // فقط pop کافی است، چون والد (dns_list.dart) با دریافت رکورد، آن را انتخاب و به صفحه قبلی برمی‌گردد
-        if (mounted) Navigator.pop(context, existingDns);
+
+      // بررسی تکراری بودن نام
+      final newName = _labelController.text.trim().toLowerCase();
+      final existingNames = jsonList
+          .map((e) => (e['label'] as String).trim().toLowerCase())
+          .toList();
+
+      if (existingNames.contains(newName)) {
+        setState(() => _saving = false);
+        if (mounted) _showErrorDialog(context.tr('duplicateNameError'));
         return;
       }
-      setState(() => _saving = true);
-    }
 
-    DnsRecord newRecord;
-    if (widget.initialRecord != null) {
-      // Edit mode: keep id/type/createdAt, update label/ip1/ip2
-      newRecord = widget.initialRecord!.copyWith(
-        label: _labelController.text.trim(),
-        ip1: _ip1Controller.text.trim(),
-        ip2: _ip2Controller.text.trim(),
-      );
-      // Remove old record by id
-      jsonList.removeWhere((e) => e['id'] == widget.initialRecord!.id);
-    } else {
-      // Add mode
-      newRecord = DnsRecord(
+      // بررسی تکراری بودن IP
+      final newIp1 = _ip1Controller.text.trim();
+      final newIp2 = _ip2Controller.text.trim();
+      final existingIps = <String>[];
+
+      for (var record in jsonList) {
+        existingIps.add(record['ip1'] as String);
+        if (record['ip2'] != null && (record['ip2'] as String).isNotEmpty) {
+          existingIps.add(record['ip2'] as String);
+        }
+      }
+
+      if (existingIps.contains(newIp1) ||
+          (newIp2.isNotEmpty && existingIps.contains(newIp2))) {
+        setState(() => _saving = false);
+        if (mounted) _showErrorDialog(context.tr('duplicateIPMessage'));
+        return;
+      }
+
+      // ایجاد رکورد جدید
+      final newRecord = DnsRecord(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         label: _labelController.text.trim(),
-        ip1: _ip1Controller.text.trim(),
-        ip2: _ip2Controller.text.trim().isEmpty
-            ? null
-            : _ip2Controller.text.trim(),
-        type: DnsType.general, // نوع پیش‌فرض برای DNSهای دستی
+        ip1: newIp1,
+        ip2: newIp2.isEmpty ? null : newIp2,
+        type: DnsType.general,
         createdAt: DateTime.now(),
       );
-    }
-    // Prevent duplicate by ip1+ip2 (except for edit mode, already removed old)
-    final newKey = (newRecord.ip1 + '_' + (newRecord.ip2 ?? ''))
-        .replaceAll(' ', '')
-        .toLowerCase();
-    jsonList.removeWhere((e) {
-      final key = (e['ip1'] + '_' + e['ip2']).replaceAll(' ', '').toLowerCase();
-      return key == newKey;
-    });
-    jsonList.add(newRecord.toJson());
-    await prefs.setString('user_dns_list', jsonEncode(jsonList));
-    // Add to order (only for add mode)
-    final cachedOrder = prefs.getStringList('cached_dns_order') ?? [];
-    if (widget.initialRecord == null) {
+
+      // ذخیره در لوکال
+      jsonList.add(newRecord.toJson());
+      await prefs.setString('user_dns_list', jsonEncode(jsonList));
+
+      // اضافه کردن به ترتیب
+      final cachedOrder = prefs.getStringList('cached_dns_order') ?? [];
       cachedOrder.add(newRecord.id);
       await prefs.setStringList('cached_dns_order', cachedOrder);
-    }
-    // ثبت DNS و استفاده از آن در سرور
-    try {
-      // اول DNS را در سرور ثبت می‌کنیم
+
+      // ارسال به سرور
       final dnsResponse = await _dnsApiService.createUserDns(
         label: newRecord.label,
         ip1: newRecord.ip1,
@@ -276,229 +119,441 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
 
       if (!dnsResponse.status) {
         debugPrint('Error creating DNS record: ${dnsResponse.message}');
+        setState(() => _saving = false);
+        _showErrorDialog('خطا در ارسال به سرور');
         return;
       }
 
-      // سپس استفاده از DNS را ثبت می‌کنیم
-      if (await _isUserLoggedIn()) {
-        // فقط برای کاربران لاگین شده ثبت می‌کنیم
-        final userId = await _getUserId();
-        // ساخت شیء DnsUsageRequest
-        final internetType = await _getInternetConnectionType();
-
-        // ابتدا وضعیت قطع DNS قبلی را ثبت می‌کنیم (اگر قبلاً متصل بوده)
-        final cachedDnsList = prefs.getString('cached_dns_list');
-        final selectedId = prefs.getString('cached_selected_dns');
-        if (cachedDnsList != null && selectedId != null) {
-          try {
-            final List<dynamic> jsonList = List.from(jsonDecode(cachedDnsList));
-            final records = jsonList.map((e) => DnsRecord.fromJson(e)).toList();
-            final selected = records.firstWhere((r) => r.id == selectedId);
-
-            // ارسال وضعیت قطع اتصال DNS قبلی
-            final disconnectRequest = DnsUsageRequest(
-              dns: DnsInfo(
-                label: selected.label,
-                ip1: selected.ip1,
-                ip2: selected.ip2 ?? '',
-              ),
-              timestamp: DateTime.now(),
-              connectionType: ConnectionType.disconnected,
-              networkInfo: NetworkInfo(
-                connectionType: internetType,
-                carrierName: internetType == 'MOBILE' ? 'Unknown' : null,
-                ipAddress: await _getPublicIp(),
-                mobileNetworkType: internetType == 'MOBILE' ? 'Unknown' : null,
-              ),
-            );
-
-            debugPrint('=== ارسال وضعیت قطع اتصال DNS قبلی ===');
-            debugPrint('DNS Info: ${disconnectRequest.dns.toJson()}');
-            debugPrint('Connection Type: ${disconnectRequest.connectionType}');
-
-            await _dnsUsageApiService.recordDnsUsage(
-              body: disconnectRequest.toJson(),
-            );
-          } catch (e) {
-            debugPrint('Error recording DNS disconnect: $e');
-          }
-        }
-
-        // حالا وضعیت اتصال DNS جدید را ثبت می‌کنیم
-        final connectRequest = DnsUsageRequest(
-          dns: DnsInfo(
-            label: dnsResponse.data!.label,
-            ip1: dnsResponse.data!.ip1,
-            ip2: dnsResponse.data!.ip2 ?? '',
-          ),
-          timestamp: DateTime.now(),
-          connectionType: ConnectionType.connected,
-          networkInfo: NetworkInfo(
-            connectionType: internetType,
-            carrierName: internetType == 'MOBILE' ? 'Unknown' : null,
-            ipAddress: await _getPublicIp(),
-            mobileNetworkType: internetType == 'MOBILE' ? 'Unknown' : null,
-          ),
-        );
-
-        debugPrint('=== ارسال وضعیت اتصال DNS جدید ===');
-        debugPrint('DNS Info: ${connectRequest.dns.toJson()}');
-        debugPrint('Connection Type: ${connectRequest.connectionType}');
-
-        final usageResponse = await _dnsUsageApiService.recordDnsUsage(
-          body: connectRequest.toJson(),
-        );
-        if (!usageResponse.status) {
-          debugPrint('Error recording DNS usage: ${usageResponse.message}');
-        }
-      } else {
-        debugPrint('DNS usage not recorded: User not logged in');
+      // اضافه کردن به لیست لایک‌شده‌ها
+      final liked = prefs.getStringList('liked_dns_ids') ?? [];
+      if (!liked.contains(newRecord.id)) {
+        liked.add(newRecord.id);
+        await prefs.setStringList('liked_dns_ids', liked);
       }
-    } catch (e) {
-      debugPrint('Error in DNS operations: $e');
-    }
 
-    setState(() => _saving = false);
-    // افزودن DNS جدید به لیست لایک‌شده‌ها
-    final liked = prefs.getStringList('liked_dns_ids') ?? [];
-    if (!liked.contains(newRecord.id)) {
-      liked.add(newRecord.id);
-      await prefs.setStringList('liked_dns_ids', liked);
+      setState(() => _saving = false);
+      widget.onAdd(newRecord);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        debugPrint('Error in DNS operations: $e');
+        _showErrorDialog('خطا در اضافه کردن DNS');
+      }
     }
-    widget.onAdd(newRecord);
-    if (mounted) Navigator.pop(context);
+  }
+
+  void _showErrorDialog(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('error')),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(context.tr('ok')),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.initialRecord != null;
-    return AlertDialog(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark
-          ? AppColors.darkNavy
-          : AppColors.pureWhite,
-      title: Text(
-        isEdit ? context.tr('editDNS') : context.tr('addNewDNS'),
-        style: TextStyle(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? AppColors.textWhite
-              : AppColors.textPrimary,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > AppSizes.tabletBreakpoint;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: isTablet ? 400 : screenWidth * 0.9,
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
         ),
-      ),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _labelController,
-              style: TextStyle(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.textWhite
-                    : AppColors.textPrimary,
-              ),
-              decoration: InputDecoration(
-                labelText: context.tr('name'),
-                filled: true,
-                fillColor: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.darkNavy
-                    : AppColors.pureWhite,
-                labelStyle: TextStyle(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? AppColors.textLight
-                      : AppColors.textSecondary,
-                ),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? AppColors.textLight
-                        : AppColors.textSecondary,
-                  ),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.primaryBlue),
-                ),
-              ),
-              validator: (v) => v == null || v.trim().isEmpty
-                  ? context.tr('enterName')
-                  : null,
-            ),
-            IpInputField(
-              label: 'DNS1',
-              initialValue: widget.initialRecord?.ip1,
-              isDarkMode: Theme.of(context).brightness == Brightness.dark,
-              onComplete: (value) {
-                _ip1Controller.text = value;
-              },
-            ),
-            const SizedBox(height: 16),
-            IpInputField(
-              label: 'DNS2',
-              initialValue: widget.initialRecord?.ip2,
-              isDarkMode: Theme.of(context).brightness == Brightness.dark,
-              onComplete: (value) {
-                _ip2Controller.text = value;
-              },
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.pureWhite,
+          borderRadius: BorderRadius.circular(AppSizes.radiusXXL),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? AppColors.darkShadow : AppColors.cardShadow,
+              blurRadius: AppSizes.elevationVeryHigh * 2,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppSizes.radiusXXL),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                flex: 1,
-                child: ElevatedButton(
-                  onPressed: _saving ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    foregroundColor: AppColors.textWhite,
-                    minimumSize: const Size.fromHeight(48),
-                    disabledBackgroundColor:
-                        Theme.of(context).brightness == Brightness.dark
-                            ? Color.alphaBlend(
-                                AppColors.textLight.withAlpha(77),
-                                AppColors.darkNavy,
-                              )
-                            : Color.alphaBlend(
-                                AppColors.textSecondary.withAlpha(77),
-                                AppColors.pureWhite,
-                              ),
+              // Header Section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSizes.paddingXXL),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            AppColors.brightBlue.withValues(alpha: 0.1),
+                            AppColors.fireRed.withValues(alpha: 0.05)
+                          ]
+                        : [
+                            AppColors.primaryBlue.withValues(alpha: 0.1),
+                            AppColors.gradientOrange.withValues(alpha: 0.05)
+                          ],
                   ),
-                  child: _saving
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? AppColors.textWhite
-                                  : AppColors.textPrimary,
-                            ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(AppSizes.paddingM),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.brightBlue
+                                : AppColors.primaryBlue,
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusM),
                           ),
-                        )
-                      : Text(
-                          isEdit ? context.tr('saveEdit') : context.tr('add')),
+                          child: const Icon(
+                            Icons.dns_rounded,
+                            color: AppColors.pureWhite,
+                            size: AppSizes.iconL,
+                          ),
+                        ),
+                        const SizedBox(width: AppSizes.spaceL),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.tr('addNewDNS'),
+                                style:
+                                    AppTextStyles.titleLarge(context).copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : AppColors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: AppSizes.spaceXS),
+                              Text(
+                                'Add your custom DNS server configuration',
+                                style:
+                                    AppTextStyles.bodySmall(context).copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 1,
-                child: TextButton(
-                  onPressed: _saving ? null : () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    minimumSize: const Size.fromHeight(48),
+
+              // Content Section
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSizes.paddingXXL),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // DNS Name Field
+                        _buildModernTextField(
+                          controller: _labelController,
+                          label: context.tr('name'),
+                          hint: 'Enter DNS name (e.g. Cloudflare)',
+                          icon: Icons.label_outline_rounded,
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? context.tr('enterName')
+                              : null,
+                          isDark: isDark,
+                          focusNode: _labelFocusNode,
+                        ),
+
+                        const SizedBox(height: AppSizes.spaceXL),
+
+                        // DNS Servers Section
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppSizes.paddingL),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.darkSurfaceVariant
+                                : AppColors.selectedLight,
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusL),
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.brightBlue.withValues(alpha: 0.3)
+                                  : AppColors.primaryBlue
+                                      .withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.router_rounded,
+                                    color: isDark
+                                        ? AppColors.brightBlue
+                                        : AppColors.primaryBlue,
+                                    size: AppSizes.iconM,
+                                  ),
+                                  const SizedBox(width: AppSizes.spaceS),
+                                  Text(
+                                    'DNS Servers',
+                                    style: AppTextStyles.labelLarge(context)
+                                        .copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : AppColors.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSizes.spaceL),
+
+                              // Primary DNS
+                              IpInputField(
+                                label: 'Primary DNS',
+                                isDarkMode: isDark,
+                                onComplete: (value) {
+                                  _ip1Controller.text = value;
+                                },
+                                onNext: () {
+                                  _ip2FocusNode.requestFocus();
+                                },
+                              ),
+
+                              const SizedBox(height: AppSizes.spaceL),
+
+                              // Secondary DNS
+                              Focus(
+                                focusNode: _ip2FocusNode,
+                                child: IpInputField(
+                                  label: 'Secondary DNS (Optional)',
+                                  isDarkMode: isDark,
+                                  onComplete: (value) {
+                                    _ip2Controller.text = value;
+                                  },
+                                  onNext: () {
+                                    _labelFocusNode.requestFocus();
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Text(context.tr('cancel')),
+                ),
+              ),
+
+              // Action Buttons Section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSizes.paddingXXL),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkBackground
+                      : AppColors.lightGray.withValues(alpha: 0.3),
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark
+                          ? AppColors.darkBorder.withValues(alpha: 0.2)
+                          : AppColors.lightGray,
+                      width: AppSizes.borderThin,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Cancel Button
+                    Expanded(
+                      child: _buildModernButton(
+                        onPressed:
+                            _saving ? null : () => Navigator.pop(context),
+                        text: context.tr('cancel'),
+                        isSecondary: true,
+                        isDark: isDark,
+                      ),
+                    ),
+
+                    const SizedBox(width: AppSizes.spaceL),
+
+                    // Add Button
+                    Expanded(
+                      flex: 2,
+                      child: _buildModernButton(
+                        onPressed: _saving ? null : _save,
+                        text: context.tr('add'),
+                        isLoading: _saving,
+                        isDark: isDark,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildModernTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    required String? Function(String?) validator,
+    required bool isDark,
+    FocusNode? focusNode,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.labelLarge(context).copyWith(
+            color:
+                isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: AppSizes.spaceS),
+        TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          style: AppTextStyles.bodyLarge(context).copyWith(
+            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(
+              icon,
+              color: isDark ? AppColors.brightBlue : AppColors.primaryBlue,
+              size: AppSizes.iconM,
+            ),
+            hintStyle: AppTextStyles.bodyMedium(context).copyWith(
+              color: isDark ? AppColors.darkTextLight : AppColors.textLight,
+            ),
+            filled: true,
+            fillColor:
+                isDark ? AppColors.darkCardBackground : AppColors.pureWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              borderSide: BorderSide(
+                color: isDark
+                    ? AppColors.darkBorder.withValues(alpha: 0.3)
+                    : AppColors.lightGray,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              borderSide: BorderSide(
+                color: isDark
+                    ? AppColors.darkBorder.withValues(alpha: 0.3)
+                    : AppColors.lightGray,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              borderSide: BorderSide(
+                color: isDark ? AppColors.brightBlue : AppColors.primaryBlue,
+                width: AppSizes.borderMedium,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              borderSide: const BorderSide(
+                color: AppColors.textError,
+                width: AppSizes.borderMedium,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.paddingL,
+              vertical: AppSizes.paddingL,
+            ),
+          ),
+          validator: validator,
+        ),
       ],
+    );
+  }
+
+  Widget _buildModernButton({
+    required VoidCallback? onPressed,
+    required String text,
+    bool isSecondary = false,
+    bool isLoading = false,
+    required bool isDark,
+  }) {
+    return SizedBox(
+      height: AppSizes.buttonHeight + 4,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSecondary
+              ? Colors.transparent
+              : (isDark ? AppColors.brightBlue : AppColors.primaryBlue),
+          foregroundColor: isSecondary
+              ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
+              : AppColors.pureWhite,
+          elevation: isSecondary ? 0 : AppSizes.elevationMedium,
+          shadowColor: isDark ? AppColors.darkShadow : AppColors.cardShadow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+            side: isSecondary
+                ? BorderSide(
+                    color: isDark
+                        ? AppColors.darkBorder.withValues(alpha: 0.5)
+                        : AppColors.lightGray,
+                    width: AppSizes.borderThin,
+                  )
+                : BorderSide.none,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.paddingXL,
+            vertical: AppSizes.paddingL,
+          ),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                width: AppSizes.iconM,
+                height: AppSizes.iconM,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.pureWhite,
+                  ),
+                ),
+              )
+            : Text(
+                text,
+                style: AppTextStyles.buttonMedium(context).copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      ),
     );
   }
 }

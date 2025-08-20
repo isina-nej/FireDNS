@@ -45,29 +45,22 @@ DnsType dnsTypeFromString(String value) {
 
 /// تبدیل DnsType به string
 String dnsTypeToString(DnsType type) {
+  // سرور فقط IPv4 و IPv6 را می‌پذیرد
+  // همه انواع DNS به IPv4 تبدیل می‌شوند مگر اینکه صراحت IPv6 باشند
   switch (type) {
-    case DnsType.general:
-      return 'GENERAL';
-    case DnsType.radar:
-      return 'RADAR';
-    case DnsType.shekan:
-      return 'SHEKAN';
-    case DnsType.irancell:
-      return 'IRANCELL';
-    case DnsType.hamrahaval:
-      return 'HAMRAHAVAL';
-    case DnsType.gaming:
-      return 'GAMING';
-    case DnsType.telecom:
-      return 'TELECOM';
-    case DnsType.other:
-      return 'OTHER';
-    case DnsType.ipv4:
-      return 'IPV4';
     case DnsType.ipv6:
-      return 'IPV6';
+      return 'IPv6';
+    case DnsType.general:
+    case DnsType.radar:
+    case DnsType.shekan:
+    case DnsType.irancell:
+    case DnsType.hamrahaval:
+    case DnsType.gaming:
+    case DnsType.telecom:
+    case DnsType.other:
+    case DnsType.ipv4:
     case DnsType.google:
-      return 'GOOGLE';
+      return 'IPv4';
   }
 }
 

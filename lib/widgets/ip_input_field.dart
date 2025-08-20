@@ -6,6 +6,7 @@ class IpInputField extends StatefulWidget {
   final String label;
   final String? initialValue;
   final ValueChanged<String> onComplete;
+  final VoidCallback? onNext;
   final bool isDarkMode;
 
   const IpInputField({
@@ -14,6 +15,7 @@ class IpInputField extends StatefulWidget {
     required this.onComplete,
     required this.isDarkMode,
     this.initialValue,
+    this.onNext,
   }) : super(key: key);
 
   @override
@@ -39,131 +41,167 @@ class _IpInputFieldState extends State<IpInputField> {
 
   void _handleInput(String value) {
     if (value.isEmpty) {
+      setState(() => _hasError = false);
       widget.onComplete('');
       return;
     }
 
-    // اگر متن فقط نقطه باشد
+    // جلوگیری از شروع با نقطه
     if (value == '.') {
-      _controller.value = TextEditingValue(
+      _controller.value = const TextEditingValue(
         text: '',
-        selection: const TextSelection.collapsed(offset: 0),
+        selection: TextSelection.collapsed(offset: 0),
       );
       return;
     }
 
-    // شمارش تعداد نقطه‌ها
-    final dots = value.split('.').length - 1;
+    // جلوگیری از دبل دات متوالی
+    if (value.contains('..')) {
+      final cleaned = value.replaceAll('..', '.');
+      _controller.value = TextEditingValue(
+        text: cleaned,
+        selection: TextSelection.collapsed(offset: cleaned.length),
+      );
+      return;
+    }
+
+    // شمارش نقطه‌ها و بررسی محدودیت
+    final dots = '.'.allMatches(value).length;
     if (dots > 3) {
-      return; // اگر بیشتر از 3 نقطه باشد، ورودی را نادیده بگیر
+      return;
     }
 
-    // حذف نقطه‌های اضافی و اضافه کردن خودکار نقطه بعد از ورود عدد
-    var numbers = value.replaceAll(RegExp(r'\.+'), '.');
+    // تقسیم به بخش‌ها
+    final parts = value.split('.');
 
-    // اضافه کردن نقطه بعد از هر عدد اگر نیاز باشد
-    var formatted = '';
-    var currentPart = '';
+    // بررسی طول و مقدار هر بخش
+    for (int i = 0; i < parts.length; i++) {
+      final part = parts[i];
 
-    for (var i = 0; i < numbers.length; i++) {
-      if (numbers[i] == '.') {
-        if (currentPart.isNotEmpty) {
-          // اعتبارسنجی و محدود کردن عدد به 255
-          int? num = int.tryParse(currentPart);
-          if (num != null && num > 255) {
-            currentPart = '255';
-          }
-          formatted += currentPart + '.';
-          currentPart = '';
-        }
-        continue;
+      // محدود کردن طول هر بخش به 3 رقم
+      if (part.length > 3) {
+        parts[i] = part.substring(0, 3);
       }
 
-      currentPart += numbers[i];
-
-      // اگر به 3 رقم رسید یا آخرین کاراکتر نقطه است
-      if (currentPart.length == 3 ||
-          (i < numbers.length - 1 && numbers[i + 1] == '.')) {
-        // اعتبارسنجی و محدود کردن عدد به 255
-        int? num = int.tryParse(currentPart);
+      // محدود کردن مقدار به 255
+      if (parts[i].isNotEmpty) {
+        final num = int.tryParse(parts[i]);
         if (num != null && num > 255) {
-          currentPart = '255';
+          parts[i] = '255';
         }
-        formatted += currentPart;
-
-        // اضافه کردن نقطه خودکار برای سه بخش اول
-        final parts = formatted.split('.');
-        if (parts.length < 4) {
-          formatted += '.';
-          // اگر این تغییر خودکار بود (نه از ورودی کاربر)، کرسر را یک حرف جلو ببر
-          if (currentPart.length == 3 &&
-              i < numbers.length - 1 &&
-              numbers[i + 1] != '.') {
-            _controller.value = TextEditingValue(
-              text: formatted,
-              selection: TextSelection.collapsed(offset: formatted.length),
-            );
-          }
-        }
-        currentPart = '';
-        continue;
       }
     }
 
-    // اضافه کردن آخرین بخش
-    if (currentPart.isNotEmpty) {
-      // محدود کردن طول آخرین بخش به 3 رقم
-      if (currentPart.length > 3) {
-        currentPart = currentPart.substring(0, 3);
-        // اگر بخش آخر بیشتر از 3 رقم بود، بعد از برش آن را به روز کنیم
-        int? num = int.tryParse(currentPart);
-        if (num != null && num > 255) {
-          currentPart = '255';
-        }
-        formatted += currentPart;
-        _controller.value = TextEditingValue(
-          text: formatted,
-          selection: TextSelection.collapsed(offset: formatted.length),
-        );
-        return;
+    String formatted = parts.join('.');
+
+    // Auto-dot: اضافه کردن نقطه بعد از تکمیل هر بخش (3 رقم)
+    if (parts.length < 4) {
+      final lastPart = parts.last;
+      if (lastPart.length == 3 && !value.endsWith('.')) {
+        formatted += '.';
       }
-      // اعتبارسنجی و محدود کردن عدد به 255
-      int? num = int.tryParse(currentPart);
-      if (num != null && num > 255) {
-        currentPart = '255';
-      }
-      formatted += currentPart;
     }
 
-    // حذف نقطه اضافی از انتها
-    formatted = formatted.replaceAll(RegExp(r'\.+$'), '');
-
-    // اگر کاربر نقطه وارد کرده و بخش فعلی خالی نیست، نقطه را اضافه کن
-    if (value.endsWith('.') && currentPart.isNotEmpty) {
-      formatted += '.';
-    }
-
+    // به‌روزرسانی فیلد در صورت تغییر
     if (formatted != value) {
-      var newCursorPosition = formatted.length;
-
-      // اگر کاربر نقطه وارد کرده، کرسر را بعد از نقطه قرار بده
-      if (value.endsWith('.')) {
-        if (!formatted.endsWith('.')) {
-          formatted += '.';
-        }
-        newCursorPosition = formatted.length;
-      }
-
       _controller.value = TextEditingValue(
         text: formatted,
-        selection: TextSelection.collapsed(offset: newCursorPosition),
+        selection: TextSelection.collapsed(offset: formatted.length),
       );
     }
 
-    // اگر IP کامل بود، ارسال به والد
-    final parts = formatted.split('.');
-    if (parts.length == 4 && parts.every((part) => part.isNotEmpty)) {
+    // بررسی تکمیل IP و فراخوانی onNext
+    final finalParts = formatted.split('.');
+    if (finalParts.length == 4 && finalParts.every((part) => part.isNotEmpty)) {
+      // بررسی اینکه همه بخش‌ها حداقل یک رقم داشته باشند و IP کامل باشد
+      bool isComplete = true;
+      for (final part in finalParts) {
+        final num = int.tryParse(part);
+        if (num == null || part.isEmpty) {
+          isComplete = false;
+          break;
+        }
+      }
+
+      if (isComplete) {
+        // IP کامل است
+        setState(() => _hasError = false);
+        widget.onComplete(formatted);
+
+        // فراخوانی onNext برای رفتن به فیلد بعدی فقط اگر کاربر Enter زده باشد
+        // نه اینکه خودکار auto-complete شده باشد
+      } else {
+        widget.onComplete(formatted);
+      }
+    } else {
       widget.onComplete(formatted);
+    }
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    try {
+      final clipboardData = await Clipboard.getData('text/plain');
+      final text = clipboardData?.text?.trim() ?? '';
+
+      if (text.isEmpty) return;
+
+      // بررسی فرمت IP
+      final ipRegex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}$');
+      if (ipRegex.hasMatch(text)) {
+        // بررسی صحت هر بخش
+        final parts = text.split('.');
+        bool isValid = true;
+
+        for (final part in parts) {
+          final num = int.tryParse(part);
+          if (num == null || num < 0 || num > 255) {
+            isValid = false;
+            break;
+          }
+        }
+
+        if (isValid) {
+          _controller.text = text;
+          _handleInput(text);
+
+          // نمایش پیام موفقیت
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('IP از کلیپ‌بورد وارد شد'),
+                duration: const Duration(seconds: 1),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } else {
+          _showInvalidIpError();
+        }
+      } else {
+        _showInvalidIpError();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('خطا در خواندن از کلیپ‌بورد'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showInvalidIpError() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('فرمت IP در کلیپ‌بورد صحیح نیست'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.orange,
+        ),
+      );
     }
   }
 
@@ -172,18 +210,56 @@ class _IpInputFieldState extends State<IpInputField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Label و دکمه Paste
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            widget.label,
-            style: TextStyle(
-              color: widget.isDarkMode
-                  ? AppColors.textLight
-                  : AppColors.textSecondary,
-              fontSize: 14,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.label,
+                  style: TextStyle(
+                    color: widget.isDarkMode
+                        ? AppColors.textLight
+                        : AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              // دکمه Paste کوچک
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(4),
+                  onTap: _pasteFromClipboard,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: widget.isDarkMode
+                            ? AppColors.textLight.withOpacity(0.3)
+                            : AppColors.textSecondary.withOpacity(0.3),
+                        width: 0.5,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Icon(
+                      Icons.content_paste,
+                      size: 14,
+                      color: widget.isDarkMode
+                          ? AppColors.textLight.withOpacity(0.7)
+                          : AppColors.textSecondary.withOpacity(0.7),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+        // فیلد ورودی IP
         TextFormField(
           key: _formKey,
           controller: _controller,
@@ -191,59 +267,61 @@ class _IpInputFieldState extends State<IpInputField> {
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.next,
           style: TextStyle(
-            color: widget.isDarkMode
-                ? AppColors.textWhite
-                : AppColors.textPrimary,
+            color:
+                widget.isDarkMode ? AppColors.textWhite : AppColors.textPrimary,
             fontSize: 16,
           ),
           onFieldSubmitted: (value) {
-            // بررسی تعداد بخش‌ها و نقطه‌ها
+            // بررسی تکمیل IP و رفتن به فیلد بعدی فقط وقتی کاربر Enter زده
             final parts = value.split('.');
-            final dots = parts.length - 1;
+            if (parts.length == 4 && parts.every((part) => part.isNotEmpty)) {
+              // بررسی صحت IP
+              bool isValid = true;
+              for (final part in parts) {
+                final num = int.tryParse(part);
+                if (num == null || num < 0 || num > 255) {
+                  isValid = false;
+                  break;
+                }
+              }
 
-            if (dots < 3 ||
-                parts.length < 4 ||
-                parts.any((part) => part.isEmpty)) {
+              if (isValid) {
+                setState(() => _hasError = false);
+                // فقط در صورت کامل بودن IP به فیلد بعدی برود
+                if (widget.onNext != null) {
+                  widget.onNext!();
+                }
+              } else {
+                setState(() => _hasError = true);
+                _formKey.currentState?.validate();
+              }
+            } else {
               setState(() => _hasError = true);
-              _formKey.currentState?.validate(); // فعال کردن نمایش خطا
-              return;
-            }
-
-            setState(() => _hasError = false);
-            _formKey.currentState?.validate();
-
-            // اگر همه چیز درست بود، رفتن به موقعیت بعد از آخرین نقطه
-            if (value.contains('.')) {
-              final lastDotIndex = value.lastIndexOf('.');
-              _controller.selection = TextSelection.fromPosition(
-                TextPosition(offset: lastDotIndex + 1),
-              );
+              _formKey.currentState?.validate();
             }
           },
           decoration: InputDecoration(
             hintText: '8.8.8.8',
             hintStyle: TextStyle(
-              color:
-                  (widget.isDarkMode
-                          ? AppColors.textLight
-                          : AppColors.textSecondary)
-                      .withOpacity(0.5),
+              color: (widget.isDarkMode
+                      ? AppColors.textLight
+                      : AppColors.textSecondary)
+                  .withOpacity(0.5),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
             ),
             filled: true,
-            fillColor: widget.isDarkMode
-                ? AppColors.darkNavy
-                : AppColors.pureWhite,
+            fillColor:
+                widget.isDarkMode ? AppColors.darkNavy : AppColors.pureWhite,
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(
                 color: _hasError
                     ? Colors.red
                     : (widget.isDarkMode
-                          ? AppColors.textLight
-                          : AppColors.textSecondary),
+                        ? AppColors.textLight.withOpacity(0.3)
+                        : AppColors.textSecondary.withOpacity(0.3)),
               ),
               borderRadius: BorderRadius.circular(8),
             ),
@@ -255,41 +333,45 @@ class _IpInputFieldState extends State<IpInputField> {
               borderRadius: BorderRadius.circular(8),
             ),
             errorBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.red),
+              borderSide: const BorderSide(color: Colors.red),
               borderRadius: BorderRadius.circular(8),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.red, width: 2),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
               borderRadius: BorderRadius.circular(8),
             ),
-            errorStyle: const TextStyle(color: Colors.red),
+            errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
           ),
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[0-9\.]')),
             TextInputFormatter.withFunction((oldValue, newValue) {
-              // اگر متن خالی است و کاربر نقطه وارد کرده
+              // جلوگیری از شروع با نقطه
               if (oldValue.text.isEmpty && newValue.text == '.') {
                 return oldValue;
               }
 
-              // شمارش تعداد نقطه‌ها
-              final parts = newValue.text.split('.');
-              final dots = parts.length - 1;
+              // جلوگیری از نقطه‌های متوالی
+              if (newValue.text.contains('..')) {
+                return oldValue;
+              }
+
+              // محدودیت تعداد نقطه‌ها
+              final dots = '.'.allMatches(newValue.text).length;
               if (dots > 3) {
-                return oldValue; // نباید بیشتر از 3 تا نقطه باشد
+                return oldValue;
+              }
+
+              // محدودیت طول کل
+              if (newValue.text.length > 15) {
+                return oldValue;
               }
 
               // بررسی طول هر بخش
-              for (var i = 0; i < parts.length; i++) {
-                if (parts[i].length > 3) {
-                  return oldValue; // هیچ بخشی نباید بیشتر از 3 رقم باشد
+              final parts = newValue.text.split('.');
+              for (final part in parts) {
+                if (part.length > 3) {
+                  return oldValue;
                 }
-              }
-
-              // حذف همه نقطه‌ها برای شمارش تعداد ارقام
-              final onlyNumbers = newValue.text.replaceAll('.', '');
-              if (onlyNumbers.length > 12) {
-                return oldValue;
               }
 
               return newValue;
@@ -307,7 +389,7 @@ class _IpInputFieldState extends State<IpInputField> {
             if (parts.length != 4) {
               return 'باید چهار بخش عددی با سه نقطه وارد کنید';
             }
-            for (var part in parts) {
+            for (final part in parts) {
               if (part.isEmpty) {
                 return 'هر بخش باید شامل عدد باشد';
               }

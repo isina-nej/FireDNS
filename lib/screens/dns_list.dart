@@ -703,7 +703,7 @@ class _DnsListPageState extends State<DnsListPage> {
     await showDialog(
       context: context,
       builder: (context) => AddDnsDialog(
-        initialRecord: record,
+        // initialRecord: record,
         onAdd: (editedRecord) async {
           final prefs = await SharedPreferences.getInstance();
           final userDnsJson = prefs.getString('user_dns_list');
