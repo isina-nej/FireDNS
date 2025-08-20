@@ -99,7 +99,7 @@ class NotificationModel {
       'actionUrl': actionUrl,
       'type': typeString,
       'isRead': isRead,
-      'isRead': isRead,
+      // 'isRead': isRead,
     };
   }
 

@@ -16,6 +16,8 @@ class AppColors {
   static const pingMedium = Color(0xFFFFC107);
   static const pingPoor = Color(0xFFFF9800);
   static const pingBad = Color(0xFFF44336);
+  // رنگ پینگ غیرقابل دسترس (افزوده شده)
+  static const pingUnreachable = Color(0xFF800000); // قرمز تیره / Maroon
 
   // رنگ‌های متن و آیکن خاکستری
   static const textGrey = Color(0xFF607D8B);

@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import '../styles/app_colors.dart';
 
 /// مدل وضعیت DNS که شامل اطلاعات پینگ و وضعیت دسترسی است
 class DnsStatus {
   final int ping;
   final bool isReachable;
 
-  // رنگ‌های ثابت برای نمایش وضعیت
-  static const Color unreachableColor = Color(0xFF800000); // قرمز تیره
-  static const Color bestPingColor = Color(0xFF4CAF50); // سبز
-  static const Color mediumPingColor = Color(0xFFFFC107); // زرد
-  static const Color badPingColor = Color(0xFFF44336); // قرمز
+  // رنگ‌های ثابت برای نمایش وضعیت (اکنون از AppColors استفاده می‌کند)
+  static const Color unreachableColor = AppColors.pingUnreachable; // قرمز تیره
+  static const Color bestPingColor = AppColors.pingExcellent; // سبز
+  static const Color mediumPingColor = AppColors.pingMedium; // زرد
+  static const Color badPingColor = AppColors.pingBad; // قرمز
 
   const DnsStatus(this.ping, this.isReachable);
 
