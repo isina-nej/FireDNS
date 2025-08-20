@@ -1,9 +1,9 @@
 # FireDNS - Advanced DNS Management Tool
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/yourusername/FireDNS/releases/tag/v2.0.0)
-[![Platform](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20Web-green.svg)](https://github.com/yourusername/FireDNS)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/isina-nej/FireDNS/releases/tag/v2.0.0)
+[![Platform](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20Web-green.svg)](https://github.com/isina-nej/FireDNS)
 [![Flutter](https://img.shields.io/badge/built%20with-Flutter-02569B.svg?logo=flutter&logoColor=white)](https://flutter.dev/)
-[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/yourusername/FireDNS/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/isina-nej/FireDNS/blob/main/LICENSE)
 
 FireDNS is a comprehensive, cross-platform DNS management application designed to simplify DNS configuration, testing, and optimization. Built with Flutter (Dart), it supports Android, iOS, Windows, and Web platforms, offering a modern UI with multilingual support (Persian, English, Arabic, Russian, Chinese). Whether you're a casual user seeking faster internet or a developer needing advanced DNS tools, FireDNS provides automated DNS switching, performance testing, and secure notifications.
 
