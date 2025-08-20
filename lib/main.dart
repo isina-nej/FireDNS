@@ -20,8 +20,9 @@ import 'services/firebase_messaging_service.dart';
 import 'services/fcm_token_manager.dart';
 import 'utils/update_checker.dart';
 import 'screens/force_update_page.dart';
+import 'screens/loading_screen.dart';
+import 'screens/splash_screen.dart';
 import 'api/models/update_info.dart';
-import 'l10n/localization_extension.dart';
 import 'api/services/api_client.dart';
 import 'services/crash_reporting_service.dart';
 import 'services/flutter_error_handler.dart';
@@ -188,7 +189,18 @@ Future<void> main() async {
   // مدیریت خطاهای zone
   runZonedGuarded(() async {
     try {
+      // نمایش splash screen سریع
+      WidgetsFlutterBinding.ensureInitialized();
+
+      runApp(const MaterialApp(
+        home: SplashScreen(),
+        debugShowCheckedModeBanner: false,
+      ));
+
+      // انجام bootstrap در پس‌زمینه
       final boot = await _bootstrap();
+
+      // تغییر به برنامه اصلی
       runApp(FireDNSApp(
         themeManager: boot.themeManager,
         languageManager: boot.languageManager,
@@ -222,21 +234,21 @@ Future<void> main() async {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error, size: 64, color: Colors.red),
-                SizedBox(height: 16),
-                Text(
+                const Icon(Icons.error, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
                   'خطا در بارگذاری برنامه',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 8),
-                Text('لطفاً برنامه را مجدداً باز کنید'),
-                SizedBox(height: 16),
+                const SizedBox(height: 8),
+                const Text('لطفاً برنامه را مجدداً باز کنید'),
+                const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
                     // بازنشانی برنامه
                     main();
                   },
-                  child: Text('تلاش مجدد'),
+                  child: const Text('تلاش مجدد'),
                 ),
               ],
             ),
@@ -300,6 +312,25 @@ class FireDNSApp extends StatefulWidget {
 }
 
 class _FireDNSAppState extends State<FireDNSApp> {
+  bool _showLoadingScreen = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // نمایش LoadingScreen برای 2.5 ثانیه
+    await Future.delayed(const Duration(milliseconds: 2500));
+
+    if (mounted) {
+      setState(() {
+        _showLoadingScreen = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -309,25 +340,26 @@ class _FireDNSAppState extends State<FireDNSApp> {
             value: widget.languageManager),
         ChangeNotifierProvider<NotificationService>(
           create: (_) => NotificationService(),
-          lazy: true, // 🟢 Lazy loading برای بهبود startup performance
+          lazy: true,
         ),
         ChangeNotifierProvider<DnsTestSettingsService>.value(
             value: widget.dnsTestSettingsService),
       ],
       child: Builder(
         builder: (context) {
-          NotificationServiceProvider.init(context); // global access setup
+          NotificationServiceProvider.init(context);
           return Consumer2<ThemeManager, LanguageManager>(
             builder: (context, themeManager, languageManager, _) {
               final light =
                   _buildTheme(themeManager.lightTheme, languageManager);
               final dark = _buildTheme(themeManager.darkTheme, languageManager);
+
               return MaterialApp(
                 navigatorKey: NavigationService.navigatorKey,
-                title: context.tr('appTitle'),
-                initialRoute: AppRoutes.home,
-                routes: AppRoutes.routes,
-                onGenerateRoute: AppRoutes.onGenerateRoute,
+                title: 'Fire DNS',
+                theme: light,
+                darkTheme: dark,
+                themeMode: themeManager.themeMode,
                 locale: languageManager.locale,
                 localizationsDelegates: const [
                   GlobalMaterialLocalizations.delegate,
@@ -335,13 +367,30 @@ class _FireDNSAppState extends State<FireDNSApp> {
                   GlobalCupertinoLocalizations.delegate,
                 ],
                 supportedLocales: LanguageManager.supportedLocales,
-                theme: light,
-                darkTheme: dark,
-                themeMode: themeManager.themeMode,
-                builder: (context, child) => _UpdateGate(
-                  languageManager: languageManager,
-                  child: child,
-                ),
+                home: _showLoadingScreen
+                    ? const LoadingScreen()
+                    : _UpdateGate(
+                        languageManager: languageManager,
+                        child: Builder(
+                          builder: (context) => Navigator(
+                            initialRoute: AppRoutes.home,
+                            onGenerateRoute: (settings) {
+                              final route = AppRoutes.onGenerateRoute(settings);
+                              if (route != null) return route;
+
+                              final routeBuilder =
+                                  AppRoutes.routes[settings.name];
+                              if (routeBuilder != null) {
+                                return MaterialPageRoute(
+                                  builder: routeBuilder,
+                                  settings: settings,
+                                );
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ),
                 debugShowCheckedModeBanner: false,
               );
             },
@@ -405,7 +454,7 @@ class _UpdateGateState extends State<_UpdateGate> {
       future: _future,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const LoadingScreen();
         }
         final (state, info) = snapshot.data!;
         if (state == _GateState.needsUpdate && info != null) {
