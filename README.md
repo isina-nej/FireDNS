@@ -90,6 +90,7 @@ FireDNS is a comprehensive, cross-platform DNS management application designed t
 
 ### Clone & Setup
 ```bash
-git clone https://github.com/yourusername/FireDNS.git
+git clone https://github.com/isina-nej/FireDNS.git
 cd FireDNS
 flutter pub get
+
