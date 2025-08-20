@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -22,6 +23,8 @@ import 'screens/force_update_page.dart';
 import 'api/models/update_info.dart';
 import 'l10n/localization_extension.dart';
 import 'api/services/api_client.dart';
+import 'services/crash_reporting_service.dart';
+import 'services/flutter_error_handler.dart';
 
 // Background message handler برای FCM
 @pragma('vm:entry-point')
@@ -61,37 +64,41 @@ Future<_BootResult> _bootstrap() async {
   debugPrint('[BOOT] Starting bootstrap sequence');
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase & notifications init
-  await Firebase.initializeApp();
-  debugPrint('[BOOT] Firebase initialized');
-  await LocalNotificationService.initialize();
-  debugPrint('[BOOT] Local notifications initialized');
+  // راه‌اندازی سیستم گزارش خطاها
+  FlutterErrorHandler.initialize();
+  final crashReportingService = CrashReportingService();
+  await crashReportingService.initialize();
+  debugPrint('[BOOT] Crash reporting initialized');
+
+  // Critical services first (parallel initialization for non-dependent services)
+  await Future.wait([
+    Firebase.initializeApp(),
+    LocalNotificationService.initialize(),
+  ]);
+
+  debugPrint('[BOOT] Firebase and notifications initialized');
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // Core managers
-  final languageManager = LanguageManager();
-  await languageManager.loadLanguage();
-  debugPrint('[BOOT] Language loaded: ${languageManager.locale}');
+  // Load managers in parallel
+  final managerFutures = await Future.wait([
+    _initializeLanguageManager(),
+    _initializeThemeManager(),
+    _initializeDnsSettings(),
+    _loadExistingJwtIfAvailable(),
+  ]);
 
-  final themeManager = ThemeManager();
-  await themeManager.loadThemeMode();
-  debugPrint('[BOOT] Theme mode: ${themeManager.themeMode}');
+  final languageManager = managerFutures[0] as LanguageManager;
+  final themeManager = managerFutures[1] as ThemeManager;
+  final dnsTestSettingsService = managerFutures[2] as DnsTestSettingsService;
 
-  final dnsTestSettingsService = DnsTestSettingsService();
-  await dnsTestSettingsService.loadSettings();
-  debugPrint('[BOOT] DNS test settings loaded');
+  // FCM services (can be loaded in background after app starts)
+  _initializeFCMServicesInBackground();
 
-  // بارگذاری JWT موجود از SharedPreferences (در صورت وجود)
-  await _loadExistingJwtIfAvailable();
+  // ارسال لاگ‌های pending از قبل
+  _sendPendingCrashesInBackground(crashReportingService);
 
-  // FCM services
-  final fcmService = FirebaseMessagingService();
-  await fcmService.initialize();
-  debugPrint('[BOOT] FCM service initialized');
-  final fcmTokenManager = FcmTokenManager();
-  await fcmTokenManager.checkTokenOnStartup();
-  fcmTokenManager.setupTokenRefreshListener();
-  debugPrint('[BOOT] FCM token manager ready');
+  // گزارش موفقیت‌آمیز بودن startup
+  _reportStartupSuccessInBackground(crashReportingService);
 
   return _BootResult(
     themeManager: themeManager,
@@ -100,18 +107,162 @@ Future<_BootResult> _bootstrap() async {
   );
 }
 
+Future<LanguageManager> _initializeLanguageManager() async {
+  final languageManager = LanguageManager();
+  await languageManager.loadLanguage();
+  debugPrint('[BOOT] Language loaded: ${languageManager.locale}');
+  return languageManager;
+}
+
+Future<ThemeManager> _initializeThemeManager() async {
+  final themeManager = ThemeManager();
+  await themeManager.loadThemeMode();
+  debugPrint('[BOOT] Theme mode: ${themeManager.themeMode}');
+  return themeManager;
+}
+
+Future<DnsTestSettingsService> _initializeDnsSettings() async {
+  final dnsTestSettingsService = DnsTestSettingsService();
+  await dnsTestSettingsService.loadSettings();
+  debugPrint('[BOOT] DNS test settings loaded');
+  return dnsTestSettingsService;
+}
+
+Future<void> _initializeFCMServicesInBackground() async {
+  try {
+    final fcmService = FirebaseMessagingService();
+    await fcmService.initialize();
+    debugPrint('[BOOT] FCM service initialized');
+
+    final fcmTokenManager = FcmTokenManager();
+    await fcmTokenManager.checkTokenOnStartup();
+    fcmTokenManager.setupTokenRefreshListener();
+    debugPrint('[BOOT] FCM token manager ready');
+  } catch (e) {
+    debugPrint('[BOOT] FCM initialization failed: $e');
+
+    // گزارش خطای FCM
+    try {
+      final crashService = CrashReportingService();
+      await crashService.reportError(
+        message: 'FCM initialization failed: $e',
+        logType: 'fcm_error',
+        metadata: {'component': 'FCM'},
+      );
+    } catch (reportError) {
+      debugPrint('[BOOT] Failed to report FCM error: $reportError');
+    }
+  }
+}
+
+/// ارسال کرش‌های pending در پس‌زمینه
+void _sendPendingCrashesInBackground(CrashReportingService crashService) {
+  Future(() async {
+    try {
+      await crashService.sendPendingCrashes();
+    } catch (e) {
+      debugPrint('[BOOT] Failed to send pending crashes: $e');
+    }
+  });
+}
+
+/// گزارش startup موفق در پس‌زمینه
+void _reportStartupSuccessInBackground(CrashReportingService crashService) {
+  Future(() async {
+    try {
+      await crashService.reportInfo(
+        message: 'App started successfully',
+        logType: 'startup',
+        metadata: {
+          'startup_time': DateTime.now().toIso8601String(),
+          'platform': Platform.operatingSystem,
+        },
+      );
+    } catch (e) {
+      debugPrint('[BOOT] Failed to report startup success: $e');
+    }
+  });
+}
+
 Future<void> main() async {
+  // مدیریت خطاهای zone
   runZonedGuarded(() async {
-    final boot = await _bootstrap();
-    runApp(FireDNSApp(
-      themeManager: boot.themeManager,
-      languageManager: boot.languageManager,
-      dnsTestSettingsService: boot.dnsTestSettingsService,
-    ));
-  }, (error, stack) {
-    // TODO: ارسال لاگ به سرور خطا (Crashlytics / Sentry) در آینده
+    try {
+      final boot = await _bootstrap();
+      runApp(FireDNSApp(
+        themeManager: boot.themeManager,
+        languageManager: boot.languageManager,
+        dnsTestSettingsService: boot.dnsTestSettingsService,
+      ));
+    } catch (error, stackTrace) {
+      // گزارش خطای startup
+      debugPrint('[FATAL] Bootstrap error: $error');
+      debugPrint(stackTrace.toString());
+
+      // سعی در ارسال خطا به سرور
+      try {
+        final crashService = CrashReportingService();
+        await crashService.initialize();
+        await crashService.reportCrash(
+          error: error,
+          stackTrace: stackTrace,
+          additionalMetadata: {
+            'error_location': 'main_bootstrap',
+            'critical': true,
+          },
+        );
+      } catch (reportingError) {
+        debugPrint('[FATAL] Failed to report bootstrap error: $reportingError');
+      }
+
+      // نمایش صفحه خطا به کاربر
+      runApp(MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error, size: 64, color: Colors.red),
+                SizedBox(height: 16),
+                Text(
+                  'خطا در بارگذاری برنامه',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text('لطفاً برنامه را مجدداً باز کنید'),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    // بازنشانی برنامه
+                    main();
+                  },
+                  child: Text('تلاش مجدد'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ));
+    }
+  }, (error, stackTrace) {
+    // مدیریت خطاهای uncaught در zone
     debugPrint('[FATAL] Uncaught zone error: $error');
-    debugPrint(stack.toString());
+    debugPrint(stackTrace.toString());
+
+    // سعی در ارسال خطا به سرور
+    try {
+      final crashService = CrashReportingService();
+      crashService.reportCrash(
+        error: error,
+        stackTrace: stackTrace,
+        additionalMetadata: {
+          'error_location': 'uncaught_zone_error',
+          'critical': true,
+        },
+      );
+    } catch (reportingError) {
+      debugPrint('[FATAL] Failed to report zone error: $reportingError');
+    }
   });
 }
 
@@ -158,7 +309,7 @@ class _FireDNSAppState extends State<FireDNSApp> {
             value: widget.languageManager),
         ChangeNotifierProvider<NotificationService>(
           create: (_) => NotificationService(),
-          lazy: false,
+          lazy: true, // 🟢 Lazy loading برای بهبود startup performance
         ),
         ChangeNotifierProvider<DnsTestSettingsService>.value(
             value: widget.dnsTestSettingsService),

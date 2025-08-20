@@ -30,6 +30,8 @@ export '../screens/settings_page.dart';
 // services
 export '../services/dns_service.dart';
 export '../services/vpn_status_service.dart';
+export '../services/crash_reporting_service.dart';
+export '../services/flutter_error_handler.dart';
 
 // styles
 export '../styles/app_base_styles.dart';
@@ -45,6 +47,7 @@ export '../widgets/custom_drawer.dart';
 export '../utils/dns_validator.dart';
 export '../utils/format_utils.dart';
 export '../utils/snackbar_utils.dart';
+export '../utils/error_reporter.dart';
 
 // widgets
 export '../widgets/dns_info_popup.dart';

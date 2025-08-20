@@ -254,6 +254,19 @@ class ApiClient {
 
   /// مدیریت خطا
   ApiResponse<T> _handleError<T>(dynamic error) {
+    // گزارش خطا به سرور در پس‌زمینه
+    Future(() {
+      try {
+        ErrorReporter.reportNetworkError(
+          endpoint: 'api_request',
+          error: error.toString(),
+          statusCode: error is HttpException ? 500 : null,
+        );
+      } catch (e) {
+        debugPrint('[ApiClient] Failed to report network error: $e');
+      }
+    });
+
     if (error is SocketException) {
       return ApiResponse<T>(
         status: false,

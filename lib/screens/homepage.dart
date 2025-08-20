@@ -148,6 +148,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       VpnStatusService.startListening();
     }
 
+    // تنها VPN status stream را listen کنیم
     _vpnStatusSubscription = VpnStatusService.vpnStatusStream.listen((
       isActive,
     ) {
@@ -163,7 +164,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
             _vpnLoading = false;
           });
 
-          if (isActive) {
+          // Lottie animation optimization
+          if (isActive && !wasActive) {
             _lottieController
                 .animateTo(
               0.1,
@@ -175,30 +177,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                 _lottieController.repeat();
               }
             });
-          } else {
-            if (_lottieController.isAnimating) {
-              _lottieController
-                  .animateTo(
-                _lottieController.value,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              )
-                  .then((_) {
-                final remaining = 1.0 - (_lottieController.value % 1.0);
-                _lottieController
-                    .animateTo(
-                      _lottieController.value + remaining,
-                      duration:
-                          Duration(milliseconds: (remaining * 1500).round()),
-                      curve: Curves.easeInOut,
-                    )
-                    .then((_) => _lottieController.stop());
-              });
-            }
-          }
-
-          if (!_vpnLoading && wasActive != isActive) {
-            // handled by action functions
+          } else if (!isActive && wasActive) {
+            // Stop animation more efficiently
+            _lottieController.stop();
+            _lottieController.reset();
           }
         } else {
           debugPrint('Status unchanged, just updating loading state');
@@ -218,9 +200,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       }
     });
 
-    _dataUsageSubscription = VpnStatusService.dataUsageStream.listen(
-      (usage) {},
-    );
+    // حذف data usage subscription که استفاده نمی‌شود
+    // _dataUsageSubscription = VpnStatusService.dataUsageStream.listen(
+    //   (usage) {},
+    // );
   }
 
   void _disposeControllers() {
