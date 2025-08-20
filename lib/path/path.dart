@@ -1,4 +1,3 @@
-
 export '../main.dart';
 
 // api
@@ -33,6 +32,7 @@ export '../services/dns_service.dart';
 export '../services/vpn_status_service.dart';
 
 // styles
+export '../styles/app_base_styles.dart';
 export '../styles/app_colors.dart';
 export '../styles/app_sizes.dart';
 export '../styles/app_text_styles.dart';
@@ -52,6 +52,5 @@ export '../widgets/add_dns_dialog.dart';
 export '../widgets/connection_status_card.dart';
 export '../widgets/speed_test_card.dart';
 export '../widgets/configuration_card.dart';
-
 
 export '../services/dns_test_settings_service.dart';

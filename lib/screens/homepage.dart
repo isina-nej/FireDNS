@@ -6,7 +6,6 @@ import 'dart:async';
 import '../path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import '../api/services/dns_usage_api_service.dart';
 import '../api/models/dns_usage_request.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
