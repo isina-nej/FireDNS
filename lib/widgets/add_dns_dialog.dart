@@ -6,7 +6,6 @@ import '../api/services/dns_usage_api_service.dart';
 import '../api/services/dns_api_service.dart';
 import '../api/models/dns_usage_request.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'ip_input_field.dart';
 
@@ -298,7 +297,6 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
 
             // ارسال وضعیت قطع اتصال DNS قبلی
             final disconnectRequest = DnsUsageRequest(
-              fcmToken: await FirebaseMessaging.instance.getToken() ?? '',
               dns: DnsInfo(
                 label: selected.label,
                 ip1: selected.ip1,
@@ -328,7 +326,6 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
 
         // حالا وضعیت اتصال DNS جدید را ثبت می‌کنیم
         final connectRequest = DnsUsageRequest(
-          fcmToken: await FirebaseMessaging.instance.getToken() ?? '',
           dns: DnsInfo(
             label: dnsResponse.data!.label,
             ip1: dnsResponse.data!.ip1,

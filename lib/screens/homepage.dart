@@ -9,10 +9,10 @@ import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../api/services/dns_usage_api_service.dart';
 import '../api/models/dns_usage_request.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:sim_card_info/sim_card_info.dart';
 import '../widgets/notification_bell.dart';
 import '../widgets/custom_drawer.dart';
 import 'dart:io' show Platform;
@@ -363,34 +363,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
   Future<void> _reportDnsUsage(bool isConnected) async {
     try {
-      final fcmToken = await FirebaseMessaging.instance.getToken() ?? '';
       final dnsUsageService = DnsUsageApiService();
-
-      DeviceInfo deviceInfoData;
-      if (Platform.isAndroid) {
-        final deviceInfo = await DeviceInfoPlugin().androidInfo;
-        deviceInfoData = DeviceInfo(
-          deviceType: 'android',
-          brand: deviceInfo.brand,
-          model: deviceInfo.model,
-          osVersion: deviceInfo.version.release,
-        );
-      } else if (Platform.isWindows) {
-        final deviceInfo = await DeviceInfoPlugin().windowsInfo;
-        deviceInfoData = DeviceInfo(
-          deviceType: 'windows',
-          brand: deviceInfo.computerName,
-          model: deviceInfo.computerName,
-          osVersion: '${deviceInfo.majorVersion}.${deviceInfo.minorVersion}',
-        );
-      } else {
-        deviceInfoData = DeviceInfo(
-          deviceType: 'unknown',
-          brand: 'unknown',
-          model: 'unknown',
-          osVersion: 'unknown',
-        );
-      }
 
       final connectivity = await Connectivity().checkConnectivity();
       String? ipAddress;
@@ -399,20 +372,47 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         ipAddress = response.statusCode == 200 ? response.body : null;
       } catch (_) {}
 
+      // تشخیص نوع اتصال و اپراتور واقعی
+      String connectionType = 'WIFI';
+      String? carrierName;
+      String? mobileNetworkType;
+
+      if (connectivity == ConnectivityResult.mobile) {
+        // دریافت اطلاعات واقعی سیم کارت و اپراتور
+        try {
+          final _simCardInfoPlugin = SimCardInfo();
+          final simCardInfo = await _simCardInfoPlugin.getSimInfo() ?? [];
+          if (simCardInfo.isNotEmpty) {
+            final simCard = simCardInfo.first;
+            connectionType =
+                simCard.carrierName.isNotEmpty ? simCard.carrierName : 'MOBILE';
+            carrierName = simCard.carrierName;
+
+            // برای نوع شبکه، از اطلاعات موجود استفاده می‌کنیم
+            mobileNetworkType = 'Unknown';
+          } else {
+            connectionType = 'MOBILE';
+            carrierName = 'Unknown';
+            mobileNetworkType = 'Unknown';
+          }
+        } catch (e) {
+          debugPrint('خطا در دریافت اطلاعات سیم کارت: $e');
+          connectionType = 'MOBILE';
+          carrierName = 'Unknown';
+          mobileNetworkType = 'Unknown';
+        }
+      }
+
       final networkInfoData = NetworkInfo(
-        connectionType:
-            connectivity == ConnectivityResult.mobile ? 'mobile' : 'wifi',
-        carrierName:
-            connectivity == ConnectivityResult.mobile ? 'Unknown' : null,
+        connectionType: connectionType,
+        carrierName: carrierName,
         ipAddress: ipAddress,
-        mobileNetworkType:
-            connectivity == ConnectivityResult.mobile ? 'Unknown' : null,
+        mobileNetworkType: mobileNetworkType,
       );
 
       final request = DnsUsageRequest(
-        fcmToken: fcmToken,
         dns: DnsInfo(
-          label: _selectedDnsLabel ?? '',
+          label: _selectedDnsLabel ?? 'Google DNS',
           ip1: _dns1Controller.text.trim(),
           ip2: _dns2Controller.text.trim(),
         ),
@@ -424,7 +424,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       );
 
       debugPrint('=== ارسال اطلاعات DNS به سرور ===');
-      debugPrint('Device Info: ${deviceInfoData.toJson()}');
       debugPrint('Network Info: ${networkInfoData.toJson()}');
       debugPrint('DNS Info: ${request.dns.toJson()}');
       debugPrint('Connection Type: ${request.connectionType}');
@@ -434,7 +433,12 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       final response = await dnsUsageService.recordDnsUsage(
         body: request.toJson(),
       );
-      debugPrint('پاسخ سرور به ثبت وضعیت DNS: ${response.toJson()}');
+      debugPrint('=== پاسخ کامل سرور ===');
+      debugPrint('Response Status: ${response.status}');
+      debugPrint('Response Message: ${response.message}');
+      debugPrint('Response Error Code: ${response.errorCode}');
+      debugPrint('Response Data: ${response.data}');
+      debugPrint('Response toString: ${response.toString()}');
     } catch (e) {
       debugPrint('خطا در ارسال وضعیت اتصال: $e');
     }
@@ -484,6 +488,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           _vpnActive = false;
           _vpnLoading = false;
         });
+
+        // ارسال گزارش خطا در فعال‌سازی DNS
+        await _reportDnsUsage(false);
       }
     } else {
       showEnhancedSnackBar(
@@ -530,6 +537,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           _vpnActive = actualStatus;
           _vpnLoading = false;
         });
+
+        // ارسال گزارش تغییر وضعیت DNS به سرور
+        await _reportDnsUsage(actualStatus);
       } catch (e) {
         debugPrint('Error deactivating VPN: $e');
         showEnhancedSnackBar(
@@ -549,11 +559,17 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
             _vpnActive = actualStatus;
             _vpnLoading = false;
           });
+
+          // ارسال گزارش تغییر وضعیت DNS به سرور
+          await _reportDnsUsage(actualStatus);
         } catch (_) {
           setState(() {
             _vpnActive = false;
             _vpnLoading = false;
           });
+
+          // ارسال گزارش خطا به سرور
+          await _reportDnsUsage(false);
         }
       }
     } else {

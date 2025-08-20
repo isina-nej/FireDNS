@@ -1,12 +1,10 @@
 class DnsUsageRequest {
-  final String fcmToken;
   final DnsInfo dns;
   final DateTime timestamp;
   final ConnectionType connectionType;
   final NetworkInfo networkInfo;
 
   DnsUsageRequest({
-    required this.fcmToken,
     required this.dns,
     required this.timestamp,
     required this.connectionType,
@@ -14,7 +12,6 @@ class DnsUsageRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'fcm_token': fcmToken,
         'dns': dns.toJson(),
         'timestamp': timestamp.toIso8601String(),
         'connection_type': connectionType.toString().split('.').last,
@@ -67,10 +64,10 @@ class DeviceInfo {
 }
 
 class NetworkInfo {
-  final String connectionType; // mobile/wifi
-  final String? carrierName; // نام اپراتور (در صورت استفاده از دیتای موبایل)
-  final String? ipAddress; // آی‌پی قبل از اتصال
-  final String? mobileNetworkType; // نوع شبکه موبایل (3G/4G/5G)
+  final String connectionType; // WIFI/MOBILE/HAMRAHAVAL/IRANCELL etc.
+  final String? carrierName; // نام واقعی اپراتور
+  final String? ipAddress; // آی‌پی واقعی کاربر
+  final String? mobileNetworkType; // نوع شبکه واقعی
 
   NetworkInfo({
     required this.connectionType,

@@ -12,12 +12,13 @@ import 'services/notification_service.dart';
 import 'services/notification_service_provider.dart';
 import 'services/dns_test_settings_service.dart';
 import 'services/firebase_messaging_service.dart';
-import 'api/services/session_api_service.dart';
+
 import 'utils/update_checker.dart';
 import 'screens/force_update_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api/models/update_info.dart';
 import 'l10n/localization_extension.dart';
+import 'services/fcm_token_manager.dart';
 
 // Background message handler برای FCM
 @pragma('vm:entry-point')
@@ -65,21 +66,10 @@ Future<void> main() async {
   final fcmService = FirebaseMessagingService();
   await fcmService.initialize();
 
-  // ارسال FCM و دریافت JWT فقط یک بار پس از نصب
-  final prefs = await SharedPreferences.getInstance();
-  final isRegistered = prefs.getBool('fcm_registered') ?? false;
-  if (!isRegistered) {
-    final fcmToken = await FirebaseMessaging.instance.getToken();
-    if (fcmToken != null) {
-      final sessionApi = SessionApiService();
-      final response = await sessionApi.initSession(fcmToken);
-      if (response.data != null) {
-        final jwt = response.data!.jwt;
-        await prefs.setString('jwt', jwt);
-        await prefs.setBool('fcm_registered', true);
-      }
-    }
-  }
+  // راه‌اندازی مدیریت توکن FCM
+  final fcmTokenManager = FcmTokenManager();
+  await fcmTokenManager.checkTokenOnStartup();
+  fcmTokenManager.setupTokenRefreshListener();
 
   final dnsTestSettingsService = DnsTestSettingsService();
   await dnsTestSettingsService.loadSettings();
