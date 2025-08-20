@@ -80,48 +80,69 @@ class _NotificationListPageState extends State<NotificationListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('اعلان‌ها'),
+        title: Text(context.tr('notifications'),
+            style: AppTextStyles.appBarTitle(context)),
+        backgroundColor: AppColors.primaryBlue,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: context.tr('refreshNotifications'),
             onPressed: () {
               context.read<NotificationService>().fetchNotifications();
             },
           ),
         ],
+        elevation: 0,
       ),
       body: Consumer<NotificationService>(
         builder: (context, service, _) {
           if (service.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (service.errorMessage.isNotEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 48,
-                    color: Colors.red.shade300,
-                  ),
+                  CircularProgressIndicator(color: AppColors.primaryBlue),
                   const SizedBox(height: 16),
-                  Text(
-                    service.errorMessage,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.red.shade300,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  TextButton.icon(
-                    onPressed: () => service.fetchNotifications(),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('تلاش مجدد'),
-                  ),
+                  Text(context.tr('loadingNotifications'),
+                      style: AppTextStyles.bodyMedium(context)),
                 ],
+              ),
+            );
+          }
+
+          if (service.errorMessage.isNotEmpty) {
+            return Center(
+              child: Card(
+                color: AppColors.backgroundLight,
+                margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline,
+                          size: 48, color: AppColors.textError),
+                      const SizedBox(height: 16),
+                      Text(service.errorMessage,
+                          style: AppTextStyles.error(context),
+                          textAlign: TextAlign.center),
+                      const SizedBox(height: 24),
+                      TextButton.icon(
+                        onPressed: () => service.fetchNotifications(),
+                        icon: const Icon(Icons.refresh),
+                        label: Text(context.tr('tryAgain'),
+                            style: AppTextStyles.buttonMedium(context)),
+                        style: TextButton.styleFrom(
+                          backgroundColor:
+                              AppColors.primaryBlue.withOpacity(0.1),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             );
           }
@@ -129,23 +150,16 @@ class _NotificationListPageState extends State<NotificationListPage> {
           final notifications = service.notifications;
 
           if (notifications.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.notifications_off_outlined,
-                    size: 48,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'اعلان جدیدی ندارید',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
-                  ),
+                  Icon(Icons.notifications_off_outlined,
+                      size: 48, color: AppColors.iconSecondary),
+                  const SizedBox(height: 16),
+                  Text(context.tr('noNotificationsYet'),
+                      style: AppTextStyles.bodyMedium(context)
+                          .copyWith(color: AppColors.textSecondary)),
                 ],
               ),
             );
@@ -160,7 +174,6 @@ class _NotificationListPageState extends State<NotificationListPage> {
               padding: const EdgeInsets.all(16),
               itemCount: notifications.length,
               itemBuilder: (context, index) {
-                // نمایش جدیدترین نوتیفیکیشن‌ها در بالای لیست
                 final notification =
                     notifications[notifications.length - 1 - index];
                 final isHighlighted =
@@ -171,38 +184,36 @@ class _NotificationListPageState extends State<NotificationListPage> {
                   direction: DismissDirection.endToStart,
                   background: Container(
                     decoration: BoxDecoration(
-                      color: Colors.red.shade100,
+                      color: AppColors.textError.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 16),
-                    child: Icon(
-                      Icons.delete_outline,
-                      color: Colors.red.shade700,
-                    ),
+                    child: Icon(Icons.delete_outline,
+                        color: AppColors.textError, size: 28),
                   ),
                   onDismissed: (_) {
                     service.deleteNotification(notification.id);
                   },
                   child: Card(
-                    elevation: notification.isRead ? 0 : 1,
+                    elevation: notification.isRead ? 0 : 2,
                     margin: const EdgeInsets.only(bottom: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                       side: BorderSide(
                         color: isHighlighted
-                            ? Colors.blue.shade300
+                            ? AppColors.brightBlue
                             : (notification.isRead
-                                ? Colors.grey.shade200
+                                ? AppColors.cardBorder
                                 : Colors.transparent),
                         width: isHighlighted ? 2 : 1,
                       ),
                     ),
                     color: isHighlighted
-                        ? Colors.blue.shade50
+                        ? AppColors.selectedLight
                         : (notification.isRead
-                            ? Colors.white
-                            : Colors.blue.shade50.withOpacity(0.5)),
+                            ? AppColors.backgroundWhite
+                            : AppColors.selectedLight.withOpacity(0.7)),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: () {
@@ -237,25 +248,22 @@ class _NotificationListPageState extends State<NotificationListPage> {
                                           Expanded(
                                             child: Text(
                                               notification.title,
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: notification.isRead
-                                                    ? FontWeight.w500
-                                                    : FontWeight.w600,
-                                                color: Colors.black87,
-                                              ),
+                                              style: notification.isRead
+                                                  ? AppTextStyles.titleSmall(
+                                                      context)
+                                                  : AppTextStyles.titleMedium(
+                                                      context),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
-                                            timeago.format(
-                                              notification.date,
-                                              locale: 'fa',
-                                            ),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey.shade600,
-                                            ),
+                                            timeago.format(notification.date,
+                                                locale: context.languageManager
+                                                    .locale.languageCode),
+                                            style:
+                                                AppTextStyles.caption(context),
                                           ),
                                         ],
                                       ),
@@ -274,7 +282,9 @@ class _NotificationListPageState extends State<NotificationListPage> {
                                                         .externalApplication,
                                                   );
                                                 },
-                                                style: TextStyle(
+                                                style: AppTextStyles.bodyMedium(
+                                                        context)
+                                                    .copyWith(
                                                   color: AppColors.brightBlue,
                                                   decoration:
                                                       TextDecoration.underline,
@@ -290,15 +300,12 @@ class _NotificationListPageState extends State<NotificationListPage> {
                                         TextButton.icon(
                                           style: TextButton.styleFrom(
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 8,
-                                            ),
+                                                horizontal: 16, vertical: 8),
                                             backgroundColor:
-                                                Colors.blue.shade50,
+                                                AppColors.selectedLight,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
+                                                borderRadius:
+                                                    BorderRadius.circular(8)),
                                           ),
                                           onPressed: () {
                                             launchUrl(
@@ -308,18 +315,15 @@ class _NotificationListPageState extends State<NotificationListPage> {
                                                   .externalApplication,
                                             );
                                           },
-                                          icon: Icon(
-                                            Icons.open_in_new,
-                                            size: 16,
-                                            color: AppColors.brightBlue,
-                                          ),
-                                          label: Text(
-                                            'مشاهده',
-                                            style: TextStyle(
-                                              color: AppColors.brightBlue,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
+                                          icon: Icon(Icons.open_in_new,
+                                              size: 16,
+                                              color: AppColors.brightBlue),
+                                          label: Text(context.tr('view'),
+                                              style: AppTextStyles.buttonMedium(
+                                                      context)
+                                                  .copyWith(
+                                                      color: AppColors
+                                                          .brightBlue)),
                                         ),
                                       ],
                                     ],
@@ -342,17 +346,30 @@ class _NotificationListPageState extends State<NotificationListPage> {
   }
 
   Widget _getNotificationIcon(NotificationType type) {
-    final (IconData iconData, Color color) = switch (type) {
-      NotificationType.info => (Icons.info_outline, Colors.blue),
-      NotificationType.warning => (Icons.warning_amber_outlined, Colors.orange),
-      NotificationType.error => (Icons.error_outline, Colors.red),
-      NotificationType.success => (Icons.check_circle_outline, Colors.green),
-    };
-
+    late IconData iconData;
+    late Color color;
+    switch (type) {
+      case NotificationType.info:
+        iconData = Icons.info_outline;
+        color = AppColors.brightBlue;
+        break;
+      case NotificationType.warning:
+        iconData = Icons.warning_amber_outlined;
+        color = AppColors.textWarning;
+        break;
+      case NotificationType.error:
+        iconData = Icons.error_outline;
+        color = AppColors.textError;
+        break;
+      case NotificationType.success:
+        iconData = Icons.check_circle_outline;
+        color = AppColors.textSuccess;
+        break;
+    }
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(0.12),
         shape: BoxShape.circle,
       ),
       child: Icon(
