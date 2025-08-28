@@ -80,6 +80,10 @@ class _NotificationListPageState extends State<NotificationListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(context.tr('notifications'),
             style: AppTextStyles.appBarTitle(context)),
         backgroundColor: AppColors.primaryBlue,

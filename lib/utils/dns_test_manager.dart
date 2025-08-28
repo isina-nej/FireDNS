@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../api/models/dns_record.dart';
 import 'dns_ping_helper.dart';
 
@@ -86,8 +88,8 @@ class DnsTestManager {
   static Future<int?> testSingleDns(String ip, {int retries = 2}) async {
     for (int i = 0; i < retries; i++) {
       try {
-        final result =
-            await DnsPingHelper.ping(ip).timeout(Duration(seconds: timeout));
+        final result = await DnsPingHelper.ping(ip)
+            .timeout(const Duration(seconds: timeout));
         if (result >= 0) {
           return result;
         }
@@ -126,6 +128,7 @@ class DnsTestManager {
     final results = <String, int>{};
     final chunks = <List<DnsRecord>>[];
 
+    // تقسیم DNS ها به chunk های کوچکتر برای بهبود عملکرد
     for (var i = 0; i < records.length; i += maxConcurrentTests) {
       chunks.add(records.sublist(
           i,
@@ -135,14 +138,17 @@ class DnsTestManager {
     }
 
     int completedTests = 0;
-    final total = records.length * 2;
+    final total = records.length * 2; // هر DNS دو آدرس دارد
 
     for (final chunk in chunks) {
       if (_sequentialTestStopped) break;
+
       final futures = <Future<void>>[];
 
+      // تست DNS1 برای هر رکورد در chunk
       for (final record in chunk) {
         if (_sequentialTestStopped) break;
+
         futures.add(testSingleDns(record.ip1).then((ping) {
           results['${record.id}_1'] = ping ?? -1;
           completedTests++;
@@ -151,6 +157,7 @@ class DnsTestManager {
           }
         }));
 
+        // تست DNS2 اگر وجود داشته باشد
         if (record.ip2 != null && record.ip2!.isNotEmpty) {
           futures.add(testSingleDns(record.ip2!).then((ping) {
             results['${record.id}_2'] = ping ?? -1;
@@ -159,13 +166,21 @@ class DnsTestManager {
               onProgress(completedTests / total);
             }
           }));
+        } else {
+          // اگر DNS2 وجود نداشته باشد، کامل شده حساب کن
+          completedTests++;
+          if (showProgress && onProgress != null) {
+            onProgress(completedTests / total);
+          }
         }
       }
 
+      // منتظر تکمیل همه تست های این chunk باش
       await Future.wait(futures);
 
-      if (chunks.last != chunk) {
-        await Future.delayed(const Duration(milliseconds: 500));
+      // کمی استراحت بین chunk ها برای جلوگیری از فشار زیاد روی شبکه
+      if (chunks.last != chunk && !_sequentialTestStopped) {
+        await Future.delayed(const Duration(milliseconds: 300));
       }
     }
 

@@ -1,15 +1,17 @@
 // lib/pages/dns_list_page.dart
 
-import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:math';
-import '../path/path.dart';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../path/path.dart';
 import '../utils/dns_ping_helper.dart';
 import '../utils/dns_test_manager.dart';
-import 'package:provider/provider.dart';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import '../widgets/dns_card.dart'; // Import the extracted DNS card widget
 
 class DnsListPage extends StatefulWidget {
@@ -305,7 +307,7 @@ class _DnsListPageState extends State<DnsListPage> {
       final seen = <String>{};
       records = records.where((r) {
         final key =
-            (r.ip1 + '_' + (r.ip2 ?? '')).replaceAll(' ', '').toLowerCase();
+            ('${r.ip1}_${r.ip2 ?? ''}').replaceAll(' ', '').toLowerCase();
         if (seen.contains(key)) return false;
         seen.add(key);
         return true;
@@ -358,10 +360,13 @@ class _DnsListPageState extends State<DnsListPage> {
   Future<void> _testAllDns({bool auto = false}) async {
     if (!mounted) return;
 
-    final prefs = await SharedPreferences.getInstance();
     setState(() => _testDialogOpen = true);
 
     try {
+      // ریست کردن حالت لغو
+      DnsPingHelper.resetCancelState();
+      DnsTestManager.resetSequentialTest();
+
       final hasNetwork = await DnsTestManager.checkNetworkStatus();
       if (!hasNetwork) {
         if (mounted) {
@@ -389,158 +394,20 @@ class _DnsListPageState extends State<DnsListPage> {
         return;
       }
 
-      double progress = 0;
       if (!auto && mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => WillPopScope(
-            onWillPop: () async {
-              DnsTestManager.stopSequentialTest();
-              return true;
-            },
-            child: AlertDialog(
-              title: Text(context.tr('testingDns')),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  Text('${(progress * 100).toInt()}%'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    DnsTestManager.stopSequentialTest();
-                    DnsPingHelper.cancelPingTest();
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(context.tr('cancel')),
-                ),
-              ],
-            ),
-          ),
+        await _showProgressDialog();
+      } else {
+        final results = await DnsTestManager.testMultipleDns(
+          _dnsRecords,
+          showProgress: false,
         );
-      }
 
-      final results = await DnsTestManager.testMultipleDns(
-        _dnsRecords,
-        showProgress: !auto,
-        onProgress: (p) {
-          if (!auto && mounted) {
-            setState(() {
-              progress = p;
-            });
-            Navigator.of(context).pop();
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => WillPopScope(
-                onWillPop: () async {
-                  DnsTestManager.stopSequentialTest();
-                  return true;
-                },
-                child: AlertDialog(
-                  title: Text(context.tr('testingDns')),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text('${(p * 100).toInt()}%'),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        DnsTestManager.stopSequentialTest();
-                        DnsPingHelper.cancelPingTest();
-                        Navigator.of(context).pop();
-                      },
-                      child: Text(context.tr('cancel')),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-        },
-      );
-
-      if (!mounted) return;
-
-      if (!auto && Navigator.canPop(context)) {
-        Navigator.of(context).pop();
-      }
-
-      setState(() {
-        _pingCache = results;
-        _sortDnsRecords();
-      });
-
-      await DnsTestManager.savePingCache(results);
-
-      if (!auto && mounted) {
-        final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
-        if (!dontShow) {
-          final List<String> resultTexts =
-              _dnsRecords.asMap().entries.map((entry) {
-            final index = entry.key;
-            final record = entry.value;
-            final ping1 = results['${record.id}_1'] ?? -1;
-            final ping2 = results['${record.id}_2'] ?? -1;
-            String dns1Label = 'DNS1';
-            String dns2Label = 'DNS2';
-            int firstPing = ping1;
-            int secondPing = ping2;
-            // اگر هر دو پینگ معتبر باشند، کمترین را اول نمایش بده
-            if (ping1 >= 0 && ping2 >= 0) {
-              if (ping2 < ping1) {
-                firstPing = ping2;
-                secondPing = ping1;
-                dns1Label = 'DNS2';
-                dns2Label = 'DNS1';
-              }
-            } else if (ping1 < 0 && ping2 >= 0) {
-              firstPing = ping2;
-              secondPing = ping1;
-              dns1Label = 'DNS2';
-              dns2Label = 'DNS1';
-            }
-            return '${index + 1}. ${record.label}\n'
-                '$dns1Label: ${firstPing >= 0 ? '✅' : '❌'} (پینگ: ${firstPing >= 0 ? '$firstPing ms' : '---'})\n'
-                '$dns2Label: ${secondPing >= 0 ? '✅' : '❌'} (پینگ: ${secondPing >= 0 ? '$secondPing ms' : '---'})';
-          }).toList();
-
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(context.tr('testResultAllDns')),
-              content: SizedBox(
-                width: double.maxFinite,
-                height: 300,
-                child: ListView(
-                  children: resultTexts.map((e) => Text(e)).toList(),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(context.tr('close')),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await prefs.setBool('dont_show_dns_test_dialog', true);
-                    if (mounted && Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: Text(context.tr('dontShowAgain')),
-                ),
-              ],
-            ),
-          );
+        if (mounted) {
+          setState(() {
+            _pingCache = results;
+            _sortDnsRecords();
+            _testDialogOpen = false;
+          });
         }
       }
     } catch (e) {
@@ -551,10 +418,186 @@ class _DnsListPageState extends State<DnsListPage> {
             backgroundColor: Colors.red,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
         setState(() => _testDialogOpen = false);
+      }
+    }
+  }
+
+  Future<void> _showProgressDialog() async {
+    double progress = 0.0;
+    bool isCancelled = false;
+    bool isCompleted = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return WillPopScope(
+          onWillPop: () async {
+            isCancelled = true;
+            DnsTestManager.stopSequentialTest();
+            DnsPingHelper.cancelPingTest();
+            Navigator.of(dialogContext).pop();
+            return false;
+          },
+          child: StatefulBuilder(
+            builder: (context, setDialogState) {
+              // شروع تست در background
+              if (progress == 0.0 && !isCancelled && !isCompleted) {
+                _runDnsTestWithProgress(
+                  (p) {
+                    if (mounted && !isCancelled) {
+                      setDialogState(() {
+                        progress = p;
+                      });
+                    }
+                  },
+                  (cancelled, completed) {
+                    isCancelled = cancelled;
+                    isCompleted = completed;
+                    if (cancelled || completed) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                  },
+                );
+              }
+
+              return AlertDialog(
+                title: Text(context.tr('testingDns')),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text('${(progress * 100).toInt()}%'),
+                    const SizedBox(height: 8),
+                    Text(
+                      context.tr('testingInProgress'),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      isCancelled = true;
+                      DnsTestManager.stopSequentialTest();
+                      DnsPingHelper.cancelPingTest();
+                      Navigator.of(dialogContext).pop();
+                    },
+                    child: Text(context.tr('cancel')),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    // بعد از بسته شدن dialog، state را به روز کن
+    if (mounted) {
+      setState(() => _testDialogOpen = false);
+    }
+  }
+
+  Future<void> _runDnsTestWithProgress(
+    Function(double) onProgress,
+    Function(bool, bool) onComplete,
+  ) async {
+    try {
+      final results = await DnsTestManager.testMultipleDns(
+        _dnsRecords,
+        showProgress: true,
+        onProgress: onProgress,
+      );
+
+      if (mounted) {
+        setState(() {
+          _pingCache = results;
+          _sortDnsRecords();
+        });
+
+        // نمایش نتیجه تست
+        await _showTestResults(results);
+        onComplete(false, true); // cancelled=false, completed=true
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      onComplete(true, false); // cancelled=true, completed=false
+    }
+  }
+
+  Future<void> _showTestResults(Map<String, int> results) async {
+    final prefs = await SharedPreferences.getInstance();
+    final dontShow = prefs.getBool('dont_show_dns_test_dialog') ?? false;
+
+    if (!dontShow && mounted) {
+      final List<String> resultTexts = _dnsRecords.asMap().entries.map((entry) {
+        final index = entry.key;
+        final record = entry.value;
+        final ping1 = results['${record.id}_1'] ?? -1;
+        final ping2 = results['${record.id}_2'] ?? -1;
+        String dns1Label = 'DNS1';
+        String dns2Label = 'DNS2';
+        int firstPing = ping1;
+        int secondPing = ping2;
+
+        if (ping1 >= 0 && ping2 >= 0) {
+          if (ping2 < ping1) {
+            firstPing = ping2;
+            secondPing = ping1;
+            dns1Label = 'DNS2';
+            dns2Label = 'DNS1';
+          }
+        } else if (ping1 < 0 && ping2 >= 0) {
+          firstPing = ping2;
+          secondPing = ping1;
+          dns1Label = 'DNS2';
+          dns2Label = 'DNS1';
+        }
+
+        return '${index + 1}. ${record.label}\n'
+            '$dns1Label: ${firstPing >= 0 ? '✅' : '❌'} (پینگ: ${firstPing >= 0 ? '$firstPing ms' : '---'})\n'
+            '$dns2Label: ${secondPing >= 0 ? '✅' : '❌'} (پینگ: ${secondPing >= 0 ? '$secondPing ms' : '---'})';
+      }).toList();
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(context.tr('testResultAllDns')),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 300,
+              child: ListView(
+                children: resultTexts.map((e) => Text(e)).toList(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(context.tr('close')),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await prefs.setBool('dont_show_dns_test_dialog', true);
+                  if (mounted && Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text(context.tr('dontShowAgain')),
+              ),
+            ],
+          ),
+        );
       }
     }
   }
@@ -717,10 +760,9 @@ class _DnsListPageState extends State<DnsListPage> {
             final key = (e['ip1'] + '_' + (e['ip2'] ?? ''))
                 .replaceAll(' ', '')
                 .toLowerCase();
-            final editedKey =
-                (editedRecord.ip1 + '_' + (editedRecord.ip2 ?? ''))
-                    .replaceAll(' ', '')
-                    .toLowerCase();
+            final editedKey = ('${editedRecord.ip1}_${editedRecord.ip2 ?? ''}')
+                .replaceAll(' ', '')
+                .toLowerCase();
             return e['id'] == record.id || key == editedKey;
           });
           userDnsList.add(editedRecord.toJson());
@@ -762,6 +804,14 @@ class _DnsListPageState extends State<DnsListPage> {
         appBar: AppBar(
           elevation: 0,
           backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color:
+                  isDark ? AppColors.darkIconPrimary : const Color(0xFF222B45),
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
           title: Text(
             context.tr('selectDns'),
             style: TextStyle(

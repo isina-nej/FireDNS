@@ -146,6 +146,13 @@ class _TicketPageState extends State<TicketPage>
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
           context.tr('sendTicket'),
           style: TextStyle(

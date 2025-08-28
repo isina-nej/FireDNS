@@ -1,5 +1,60 @@
 {
     "cmake.sourceDirectory": "E:/project/FireDNS/firedns/linux",
     "python-envs.defaultEnvManager": "ms-python.python:system",
-    "python-envs.pythonProjects": []
+    "python-envs.pythonProjects": [],
+    "dart.flutterSdkPath": ".fvm/flutter_sdk",
+    "dart.sdkPath": ".fvm/flutter_sdk/bin/cache/dart-sdk",
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/build": true,
+        "**/.dart_tool": true,
+        "**/android/app/build": true,
+        "**/ios/build": true,
+        "**/windows/build": true,
+        "**/web/build": true
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.dart_tool": true,
+        "**/build": true,
+        "**/android/app/build": true,
+        "**/ios/build": true,
+        "**/windows/build": true,
+        "**/web/build": true,
+        "**/.fvm": true,
+        "**/packages": true
+    },
+    "dart.analysisExcludedFolders": [
+        "build",
+        ".dart_tool",
+        "android/app/build",
+        "ios/build",
+        "windows/build",
+        "web/build"
+    ],
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    "dart.lineLength": 80,
+    "[dart]": {
+        "editor.defaultFormatter": "Dart-Code.dart-code",
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true,
+        "editor.rulers": [
+            80
+        ],
+        "editor.selectionHighlight": false,
+        "editor.suggest.snippetsPreventQuickSuggestions": false,
+        "editor.suggestSelection": "first",
+        "editor.tabCompletion": "onlySnippets",
+        "editor.wordBasedSuggestions": "off"
+    },
+    "emmet.includeLanguages": {
+        "dart": "html"
+    },
+    "files.associations": {
+        "*.dart": "dart"
+    }
 }

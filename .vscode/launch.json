@@ -1,0 +1,74 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "FireDNS (Debug)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor",
+                "development",
+                "--target",
+                "lib/main.dart"
+            ],
+            "cwd": "."
+        },
+        {
+            "name": "FireDNS (Profile)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "flutterMode": "profile",
+            "args": [
+                "--flavor",
+                "development",
+                "--target",
+                "lib/main.dart"
+            ],
+            "cwd": "."
+        },
+        {
+            "name": "FireDNS (Release)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "flutterMode": "release",
+            "args": [
+                "--flavor",
+                "production",
+                "--target",
+                "lib/main.dart"
+            ],
+            "cwd": "."
+        },
+        {
+            "name": "FireDNS (Windows)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "deviceId": "windows",
+            "args": [
+                "--flavor",
+                "development",
+                "--target",
+                "lib/main.dart"
+            ],
+            "cwd": "."
+        },
+        {
+            "name": "FireDNS (Android)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "deviceId": "android",
+            "args": [
+                "--flavor",
+                "development",
+                "--target",
+                "lib/main.dart"
+            ],
+            "cwd": "."
+        }
+    ]
+}

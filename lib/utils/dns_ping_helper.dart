@@ -7,7 +7,8 @@ import '../path/path.dart'; // Assuming DnsService and DnsStatus are defined her
 import '../constants/dns_constants.dart'; // برای DnsConstants.methodChannel
 
 class DnsPingHelper {
-  static const platform = MethodChannel(DnsConstants.methodChannel); // استفاده از channel موجود
+  static const platform =
+      MethodChannel(DnsConstants.methodChannel); // استفاده از channel موجود
   static bool cancelRequested = false;
   static int testCount = 5; // تعداد تست برای تست پیشرفته
 
@@ -54,33 +55,39 @@ class DnsPingHelper {
       final ip1 = record['ip1'];
       final ip2 = record['ip2'];
 
-      allFutures.add(ping(ip1).timeout(const Duration(seconds: 1)).then((ping1) => {
-            'id': id,
-            'which': 1,
-            'ping': ping1,
-            'index': index,
-            'label': label,
-          }).catchError((e) => {
-            'id': id,
-            'which': 1,
-            'ping': -1,
-            'index': index,
-            'label': label,
-          }));
+      allFutures.add(ping(ip1)
+          .timeout(const Duration(seconds: 1))
+          .then((ping1) => {
+                'id': id,
+                'which': 1,
+                'ping': ping1,
+                'index': index,
+                'label': label,
+              })
+          .catchError((e) => {
+                'id': id,
+                'which': 1,
+                'ping': -1,
+                'index': index,
+                'label': label,
+              }));
 
-      allFutures.add(ping(ip2).timeout(const Duration(seconds: 1)).then((ping2) => {
-            'id': id,
-            'which': 2,
-            'ping': ping2,
-            'index': index,
-            'label': label,
-          }).catchError((e) => {
-            'id': id,
-            'which': 2,
-            'ping': -1,
-            'index': index,
-            'label': label,
-          }));
+      allFutures.add(ping(ip2)
+          .timeout(const Duration(seconds: 1))
+          .then((ping2) => {
+                'id': id,
+                'which': 2,
+                'ping': ping2,
+                'index': index,
+                'label': label,
+              })
+          .catchError((e) => {
+                'id': id,
+                'which': 2,
+                'ping': -1,
+                'index': index,
+                'label': label,
+              }));
     }
 
     final allResponses = await Future.wait(allFutures);
@@ -166,6 +173,11 @@ class DnsPingHelper {
   /// لغو تست پینگ
   static void cancelPingTest() {
     cancelRequested = true;
+  }
+
+  /// ریست کردن حالت لغو
+  static void resetCancelState() {
+    cancelRequested = false;
   }
 
   static Future<Map<String, int>> testAllDns({
@@ -282,8 +294,16 @@ class DnsPingHelper {
       int pingB1 = pingCache['${b.id}_1'] ?? 999999;
       int pingB2 = pingCache['${b.id}_2'] ?? 999999;
 
-      int sortA = pingA1 >= 0 ? pingA1 : pingA2 >= 0 ? pingA2 : 999999;
-      int sortB = pingB1 >= 0 ? pingB1 : pingB2 >= 0 ? pingB2 : 999999;
+      int sortA = pingA1 >= 0
+          ? pingA1
+          : pingA2 >= 0
+              ? pingA2
+              : 999999;
+      int sortB = pingB1 >= 0
+          ? pingB1
+          : pingB2 >= 0
+              ? pingB2
+              : 999999;
       return sortA.compareTo(sortB);
     });
 

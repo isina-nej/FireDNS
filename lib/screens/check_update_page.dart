@@ -87,6 +87,13 @@ class _CheckUpdatePageState extends State<CheckUpdatePage>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         iconTheme: IconThemeData(
           color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
         ),

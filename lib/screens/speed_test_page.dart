@@ -186,6 +186,10 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: ShaderMask(
           shaderCallback: (Rect bounds) {
             return LinearGradient(
