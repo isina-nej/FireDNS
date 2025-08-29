@@ -5,6 +5,7 @@ import '../path/path.dart';
 
 import '../utils/responsive_size.dart';
 import '../widgets/semi_transparent_text.dart';
+import '../services/navigation_service.dart';
 // assume AppColors, context.tr
 
 class SpeedTestCard extends StatelessWidget {
@@ -12,10 +13,10 @@ class SpeedTestCard extends StatelessWidget {
   final ThemeManager themeManager;
 
   const SpeedTestCard({
-    Key? key,
+    super.key,
     required this.height,
     required this.themeManager,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,12 +32,12 @@ class SpeedTestCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(
           responsiveSize(12, context, min: 6, max: 16, scaleByHeight: true),
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.shadow,
             spreadRadius: 1,
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -50,12 +51,7 @@ class SpeedTestCard extends StatelessWidget {
               // دکمه اجرای تست سرعت
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SpeedTestPage(),
-                    ),
-                  );
+                  NavigationService.navigateToPage(const SpeedTestPage());
                 },
                 child: Container(
                   padding: EdgeInsets.symmetric(
@@ -133,7 +129,7 @@ class SpeedTestCard extends StatelessWidget {
                       color: AppColors.textSuccess.withOpacity(0.3),
                       blurRadius: 8,
                       spreadRadius: 1,
-                      offset: Offset(0, 2),
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -176,7 +172,7 @@ class SpeedTestCard extends StatelessWidget {
             backgroundColor: AppColors.textSuccess,
             opacity: 0.1,
             borderRadius: BorderRadius.circular(10),
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           ),
           SizedBox(
             height: responsiveSize(
@@ -188,7 +184,7 @@ class SpeedTestCard extends StatelessWidget {
             ),
           ),
           Container(
-            padding: EdgeInsets.all(8),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: (isDark
                       ? AppColors.darkTextSecondary

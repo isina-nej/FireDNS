@@ -184,7 +184,18 @@ class AppLocalizations {
       // 'downloadSpeed': 'دانلود: ${0} Mbps',
       'finalResults': 'نتایج نهایی',
       'unknown': 'نامشخص',
-      'retryTest': 'تلاش مجدد'
+      'retryTest': 'تلاش مجدد',
+      // متن‌های جدید اضافه شده
+      'ipPastedFromClipboard': 'IP از کلیپ‌بورد وارد شد',
+      'clipboardReadError': 'خطا در خواندن از کلیپ‌بورد',
+      'invalidIpFormatInClipboard': 'فرمت IP در کلیپ‌بورد صحیح نیست',
+      'testingAllDns': 'در حال تست همه DNSها...',
+      'testingSequentialDns': 'در حال تست ترتیبی DNSها...',
+      'appLoadingError': 'خطا در بارگذاری برنامه',
+      'pleaseRestartApp': 'لطفاً برنامه را مجدداً باز کنید',
+      'retry': 'تلاش مجدد',
+      'addCustomDnsDescription': 'پیکربندی سرور DNS سفارشی خود را اضافه کنید',
+      'dnsServers': 'سرورهای DNS'
     },
     'en': {
       'deviceLanguage': 'Device Language',
@@ -362,7 +373,18 @@ class AppLocalizations {
       'downloadSpeed': 'Download: ${0} Mbps',
       'finalResults': 'Final Results',
       'unknown': 'Unknown',
-      'retryTest': 'Try Again'
+      'retryTest': 'Try Again',
+      // متن‌های جدید اضافه شده
+      'ipPastedFromClipboard': 'IP pasted from clipboard',
+      'clipboardReadError': 'Error reading from clipboard',
+      'invalidIpFormatInClipboard': 'Invalid IP format in clipboard',
+      'testingAllDns': 'Testing all DNS...',
+      'testingSequentialDns': 'Testing sequential DNS...',
+      'appLoadingError': 'Error loading app',
+      'pleaseRestartApp': 'Please restart the app',
+      'retry': 'Retry',
+      'addCustomDnsDescription': 'Add your custom DNS server configuration',
+      'dnsServers': 'DNS Servers'
     },
     'ar': {
       'deviceLanguage': 'لغة الجهاز',
@@ -523,7 +545,18 @@ class AppLocalizations {
       'downloadSpeed': 'سرعة التحميل: ${0} ميجابت/ثانية',
       'finalResults': 'النتائج النهائية',
       'unknown': 'غير معروف',
-      'retryTest': 'إعادة المحاولة'
+      'retryTest': 'إعادة المحاولة',
+      // متن‌های جدید اضافه شده
+      'ipPastedFromClipboard': 'تم لصق عنوان IP من الحافظة',
+      'clipboardReadError': 'خطأ في القراءة من الحافظة',
+      'invalidIpFormatInClipboard': 'تنسيق IP غير صحيح في الحافظة',
+      'testingAllDns': 'اختبار جميع خوادم DNS...',
+      'testingSequentialDns': 'اختبار خوادم DNS بالتسلسل...',
+      'appLoadingError': 'خطأ في تحميل التطبيق',
+      'pleaseRestartApp': 'يرجى إعادة تشغيل التطبيق',
+      'retry': 'إعادة المحاولة',
+      'addCustomDnsDescription': 'أضف تكوين خادم DNS المخصص الخاص بك',
+      'dnsServers': 'خوادم DNS'
     },
     'ru': {
       'deviceLanguage': 'Язык устройства',
@@ -678,7 +711,19 @@ class AppLocalizations {
       'darkMode': 'Темный режим',
       'systemMode': 'Система',
       'dark': 'Тёмный',
-      'light': 'Светлый'
+      'light': 'Светлый',
+      // متن‌های جدید اضافه شده
+      'ipPastedFromClipboard': 'IP вставлен из буфера обмена',
+      'clipboardReadError': 'Ошибка чтения из буфера обмена',
+      'invalidIpFormatInClipboard': 'Неверный формат IP в буфере обмена',
+      'testingAllDns': 'Тестирование всех DNS...',
+      'testingSequentialDns': 'Последовательное тестирование DNS...',
+      'appLoadingError': 'Ошибка загрузки приложения',
+      'pleaseRestartApp': 'Пожалуйста, перезапустите приложение',
+      'retry': 'Повторить',
+      'addCustomDnsDescription':
+          'Добавьте конфигурацию вашего пользовательского DNS-сервера',
+      'dnsServers': 'DNS-серверы'
     },
     'zh': {
       'deviceLanguage': '设备语言',
@@ -824,7 +869,18 @@ class AppLocalizations {
       'averageDownload': '平均下载速度',
       'maxDownload': '最大下载速度',
       'averageUpload': '平均上传速度',
-      'maxUpload': '最大上传速度'
+      'maxUpload': '最大上传速度',
+      // متن‌های جدید اضافه شده
+      'ipPastedFromClipboard': 'IP已从剪贴板粘贴',
+      'clipboardReadError': '从剪贴板读取错误',
+      'invalidIpFormatInClipboard': '剪贴板中的IP格式无效',
+      'testingAllDns': '正在测试所有DNS...',
+      'testingSequentialDns': '正在顺序测试DNS...',
+      'appLoadingError': '应用程序加载错误',
+      'pleaseRestartApp': '请重新启动应用程序',
+      'retry': '重试',
+      'addCustomDnsDescription': '添加您的自定义DNS服务器配置',
+      'dnsServers': 'DNS服务器'
     },
   };
 

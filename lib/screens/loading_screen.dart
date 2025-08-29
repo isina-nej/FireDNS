@@ -3,7 +3,7 @@ import 'package:lottie/lottie.dart';
 
 /// صفحه لودینگ با انیمیشن زیبا برای حین بارگذاری اولیه برنامه
 class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({Key? key}) : super(key: key);
+  const LoadingScreen({super.key});
 
   @override
   State<LoadingScreen> createState() => _LoadingScreenState();
@@ -45,9 +45,11 @@ class _LoadingScreenState extends State<LoadingScreen>
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor:
-          isDarkMode ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
+    return PopScope(
+      canPop: false, // صفحه loading نباید بک داشته باشد
+      child: Scaffold(
+        backgroundColor:
+            isDarkMode ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
       body: AnimatedBuilder(
         animation: _fadeAnimation,
         builder: (context, child) {
@@ -166,7 +168,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                   const SizedBox(height: 48),
 
                   // نوار پیشرفت
-                  Container(
+                  SizedBox(
                     width: 200,
                     child: Column(
                       children: [
@@ -212,7 +214,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             ),
           );
         },
-      ),
+      ),),
     );
   }
 }

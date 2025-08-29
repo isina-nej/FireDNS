@@ -1,6 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+
 import '../path/path.dart';
 import 'ip_input_field.dart';
 
@@ -245,7 +247,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                               ),
                               const SizedBox(height: AppSizes.spaceXS),
                               Text(
-                                'Add your custom DNS server configuration',
+                                context.tr('addCustomDnsDescription'),
                                 style:
                                     AppTextStyles.bodySmall(context).copyWith(
                                   color: isDark
@@ -317,7 +319,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                                   ),
                                   const SizedBox(width: AppSizes.spaceS),
                                   Text(
-                                    'DNS Servers',
+                                    context.tr('dnsServers'),
                                     style: AppTextStyles.labelLarge(context)
                                         .copyWith(
                                       color: isDark

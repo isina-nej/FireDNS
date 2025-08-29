@@ -17,7 +17,6 @@ class ForceUpdatePage extends StatefulWidget {
     required this.currentAppVersion,
   });
 
-
   @override
   State<ForceUpdatePage> createState() => _ForceUpdatePageState();
 }
@@ -195,37 +194,35 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
             ],
           ),
           const SizedBox(height: 12),
-          ...items
-              .map((item) => Padding(
-                    padding: const EdgeInsets.only(left: 28, bottom: 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isDark
-                                ? AppColors.brightBlue
-                                : AppColors.brightBlue,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            item,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
+          ...items.map((item) => Padding(
+                padding: const EdgeInsets.only(left: 28, bottom: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark
+                            ? AppColors.brightBlue
+                            : AppColors.brightBlue,
+                      ),
                     ),
-                  ))
-              .toList(),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        item,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
         ],
       ),
     );
@@ -360,194 +357,199 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
       builder: (context, themeManager, child) {
         final isDark = themeManager.isDarkModeActive(context);
 
-        return Scaffold(
-          backgroundColor:
-              isDark ? AppColors.darkBackground : AppColors.backgroundLight,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: _updateInfo?.updateType == UpdateType.mandatory
-                ? null
-                : IconButton(
-                    icon: Icon(Icons.close,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-          ),
-          body: Center(
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: _isLoading
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          color: AppColors.brightBlue,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          context.tr('checkingForUpdates'),
-                          style: TextStyle(
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.textSecondary,
+        return PopScope(
+          canPop: _updateInfo?.updateType != UpdateType.mandatory,
+          child: Scaffold(
+            backgroundColor:
+                isDark ? AppColors.darkBackground : AppColors.backgroundLight,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: _updateInfo?.updateType == UpdateType.mandatory
+                  ? null
+                  : IconButton(
+                      icon: Icon(Icons.close,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.textPrimary),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+            ),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 16.0),
+                child: _isLoading
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(
+                            color: AppColors.brightBlue,
                           ),
-                        ),
-                      ],
-                    )
-                  : _errorMessage.isNotEmpty
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 48,
-                              color: Colors.red,
+                          const SizedBox(height: 16),
+                          Text(
+                            context.tr('checkingForUpdates'),
+                            style: TextStyle(
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.textSecondary,
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _errorMessage,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.red,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.refresh),
-                              label: Text(context.tr('tryAgain')),
-                              onPressed: _fetchUpdateInfo,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.brightBlue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 24, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : SingleChildScrollView(
-                          child: Column(
+                          ),
+                        ],
+                      )
+                    : _errorMessage.isNotEmpty
+                        ? Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              ScaleTransition(
-                                scale: _animation,
-                                child: Container(
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: (isDark
-                                        ? Colors.red.withOpacity(0.1)
-                                        : Colors.red.withOpacity(0.05)),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.system_update,
-                                    size: 64,
-                                    color: isDark
-                                        ? Colors.redAccent.shade100
-                                        : Colors.redAccent,
-                                  ),
+                              const Icon(
+                                Icons.error_outline,
+                                size: 48,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _errorMessage,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.red,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 24),
-                              FadeTransition(
-                                opacity: _animation,
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      context.tr('newVersionAvailable'),
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: isDark
-                                            ? AppColors.darkTextPrimary
-                                            : AppColors.textPrimary,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    if (_updateInfo != null) ...[
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        _updateInfo!.description,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: isDark
-                                              ? AppColors.darkTextSecondary
-                                              : AppColors.textSecondary,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 24),
-                                      // Version information
-                                      Container(
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: isDark
-                                              ? Colors.grey.shade900
-                                              : Colors.grey.shade100,
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: isDark
-                                                ? Colors.grey.shade800
-                                                : Colors.grey.shade300,
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            _buildVersionRow(
-                                              context.tr('currentVersion'),
-                                              _updateInfo!.currentVersion,
-                                              isDark,
-                                            ),
-                                            Divider(
-                                              color: isDark
-                                                  ? Colors.grey.shade800
-                                                  : Colors.grey.shade300,
-                                            ),
-                                            _buildVersionRow(
-                                              context.tr('newVersion'),
-                                              _updateInfo!.latestVersion,
-                                              isDark,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 24),
-                                      if (_updateInfo!.features.isNotEmpty) ...[
-                                        _buildInfoSection(
-                                          context.tr('newFeatures'),
-                                          _updateInfo!.features,
-                                          Icons.star_outline,
-                                          isDark,
-                                        ),
-                                        const SizedBox(height: 16),
-                                      ],
-                                      if (_updateInfo!.changes.isNotEmpty) ...[
-                                        _buildInfoSection(
-                                          context.tr('changes'),
-                                          _updateInfo!.changes,
-                                          Icons.change_circle_outlined,
-                                          isDark,
-                                        ),
-                                        const SizedBox(height: 24),
-                                      ],
-                                      _buildUpdateButtons(_updateInfo!),
-                                    ],
-                                  ],
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.refresh),
+                                label: Text(context.tr('tryAgain')),
+                                onPressed: _fetchUpdateInfo,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.brightBlue,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
                               ),
                             ],
+                          )
+                        : SingleChildScrollView(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ScaleTransition(
+                                  scale: _animation,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      color: (isDark
+                                          ? Colors.red.withOpacity(0.1)
+                                          : Colors.red.withOpacity(0.05)),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.system_update,
+                                      size: 64,
+                                      color: isDark
+                                          ? Colors.redAccent.shade100
+                                          : Colors.redAccent,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                FadeTransition(
+                                  opacity: _animation,
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        context.tr('newVersionAvailable'),
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark
+                                              ? AppColors.darkTextPrimary
+                                              : AppColors.textPrimary,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      if (_updateInfo != null) ...[
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          _updateInfo!.description,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: isDark
+                                                ? AppColors.darkTextSecondary
+                                                : AppColors.textSecondary,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 24),
+                                        // Version information
+                                        Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: isDark
+                                                ? Colors.grey.shade900
+                                                : Colors.grey.shade100,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: isDark
+                                                  ? Colors.grey.shade800
+                                                  : Colors.grey.shade300,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              _buildVersionRow(
+                                                context.tr('currentVersion'),
+                                                _updateInfo!.currentVersion,
+                                                isDark,
+                                              ),
+                                              Divider(
+                                                color: isDark
+                                                    ? Colors.grey.shade800
+                                                    : Colors.grey.shade300,
+                                              ),
+                                              _buildVersionRow(
+                                                context.tr('newVersion'),
+                                                _updateInfo!.latestVersion,
+                                                isDark,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 24),
+                                        if (_updateInfo!
+                                            .features.isNotEmpty) ...[
+                                          _buildInfoSection(
+                                            context.tr('newFeatures'),
+                                            _updateInfo!.features,
+                                            Icons.star_outline,
+                                            isDark,
+                                          ),
+                                          const SizedBox(height: 16),
+                                        ],
+                                        if (_updateInfo!
+                                            .changes.isNotEmpty) ...[
+                                          _buildInfoSection(
+                                            context.tr('changes'),
+                                            _updateInfo!.changes,
+                                            Icons.change_circle_outlined,
+                                            isDark,
+                                          ),
+                                          const SizedBox(height: 24),
+                                        ],
+                                        _buildUpdateButtons(_updateInfo!),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+              ),
             ),
           ),
         );

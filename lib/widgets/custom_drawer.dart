@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import '../screens/settings_page.dart';
+import 'package:provider/provider.dart';
+
+import '../path/path.dart';
 import '../screens/about_page.dart';
 import '../screens/check_update_page.dart';
 import '../screens/ticket_page.dart';
-import 'package:provider/provider.dart';
-import '../path/path.dart';
+import '../services/navigation_service.dart';
 
 class CustomDrawer extends StatefulWidget {
-  const CustomDrawer({Key? key}) : super(key: key);
+  const CustomDrawer({super.key});
 
   @override
   State<CustomDrawer> createState() => _CustomDrawerState();
@@ -56,10 +57,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             ),
             onTap: () {
               Navigator.pop(context); // بستن drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsPage()),
-              );
+              NavigationService.navigateToPage(const SettingsPage());
             },
           ),
           ListTile(
@@ -76,11 +74,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             ),
             onTap: () {
               Navigator.pop(context); // بستن drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const CheckUpdatePage()),
-              );
+              NavigationService.navigateToPage(const CheckUpdatePage());
             },
           ),
           ListTile(
@@ -97,10 +91,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             ),
             onTap: () {
               Navigator.pop(context); // بستن drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const TicketPage()),
-              );
+              NavigationService.navigateToPage(const TicketPage());
             },
           ),
           ListTile(
@@ -117,10 +108,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             ),
             onTap: () {
               Navigator.pop(context); // بستن drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AboutPage()),
-              );
+              NavigationService.navigateToPage(const AboutPage());
             },
           ),
         ],

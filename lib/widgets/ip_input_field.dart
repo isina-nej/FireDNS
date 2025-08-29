@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../l10n/localization_extension.dart';
 import '../styles/app_colors.dart';
 
 class IpInputField extends StatefulWidget {
@@ -10,13 +12,13 @@ class IpInputField extends StatefulWidget {
   final bool isDarkMode;
 
   const IpInputField({
-    Key? key,
+    super.key,
     required this.label,
     required this.onComplete,
     required this.isDarkMode,
     this.initialValue,
     this.onNext,
-  }) : super(key: key);
+  });
 
   @override
   State<IpInputField> createState() => _IpInputFieldState();
@@ -168,7 +170,7 @@ class _IpInputFieldState extends State<IpInputField> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('IP از کلیپ‌بورد وارد شد'),
+                content: Text(context.tr('ipPastedFromClipboard')),
                 duration: const Duration(seconds: 1),
                 backgroundColor: Colors.green,
               ),
@@ -183,9 +185,9 @@ class _IpInputFieldState extends State<IpInputField> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('خطا در خواندن از کلیپ‌بورد'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.tr('clipboardReadError')),
+            duration: const Duration(seconds: 2),
             backgroundColor: Colors.red,
           ),
         );
@@ -196,9 +198,9 @@ class _IpInputFieldState extends State<IpInputField> {
   void _showInvalidIpError() {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('فرمت IP در کلیپ‌بورد صحیح نیست'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.tr('invalidIpFormatInClipboard')),
+          duration: const Duration(seconds: 2),
           backgroundColor: Colors.orange,
         ),
       );

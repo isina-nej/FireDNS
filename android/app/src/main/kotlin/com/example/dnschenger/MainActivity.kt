@@ -22,8 +22,21 @@ import android.os.Handler
 import android.os.Looper
 import android.content.pm.ServiceInfo
 import kotlin.concurrent.thread
+import android.view.KeyEvent
 
 class MainActivity : FlutterActivity() {
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            // Let Flutter handle the back button
+            return super.onKeyDown(keyCode, event)
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onBackPressed() {
+        // Let Flutter handle the back button through PopScope
+        super.onBackPressed()
+    }
     override fun onResume() {
         super.onResume()
         val sharedPreferences = getSharedPreferences("DNSPreferences", Context.MODE_PRIVATE)

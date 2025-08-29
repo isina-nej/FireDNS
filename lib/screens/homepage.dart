@@ -1,25 +1,23 @@
 // lib/pages/fire_dns_home_page.dart
 
-import 'package:flutter/material.dart';
 // import 'package:lottie/lottie.dart';
 import 'dart:async';
-import '../path/path.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import '../api/services/dns_usage_api_service.dart';
-import '../api/models/dns_usage_request.dart';
+import 'dart:io' show Platform;
+
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'package:sim_card_info/sim_card_info.dart';
-import '../widgets/notification_bell.dart';
-import '../widgets/custom_drawer.dart';
-import 'dart:io' show Platform;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../path/path.dart';
 
 class FireDNSHomePage extends StatefulWidget {
   final String title;
 
-  const FireDNSHomePage({Key? key, required this.title}) : super(key: key);
+  const FireDNSHomePage({super.key, required this.title});
 
   @override
   State<FireDNSHomePage> createState() => _FireDNSHomePageState();
@@ -42,7 +40,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   // State variables
   bool _vpnActive = false;
   bool _vpnLoading = false;
-  bool _autoPingEnabled = false;
+  final bool _autoPingEnabled = false;
 
   // SnackBar management
   DateTime? _lastSnackBarTime;
@@ -360,29 +358,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       String? mobileNetworkType;
 
       if (connectivity == ConnectivityResult.mobile) {
-        // دریافت اطلاعات واقعی سیم کارت و اپراتور
-        try {
-          final _simCardInfoPlugin = SimCardInfo();
-          final simCardInfo = await _simCardInfoPlugin.getSimInfo() ?? [];
-          if (simCardInfo.isNotEmpty) {
-            final simCard = simCardInfo.first;
-            connectionType =
-                simCard.carrierName.isNotEmpty ? simCard.carrierName : 'MOBILE';
-            carrierName = simCard.carrierName;
-
-            // برای نوع شبکه، از اطلاعات موجود استفاده می‌کنیم
-            mobileNetworkType = 'Unknown';
-          } else {
-            connectionType = 'MOBILE';
-            carrierName = 'Unknown';
-            mobileNetworkType = 'Unknown';
-          }
-        } catch (e) {
-          debugPrint('خطا در دریافت اطلاعات سیم کارت: $e');
-          connectionType = 'MOBILE';
-          carrierName = 'Unknown';
-          mobileNetworkType = 'Unknown';
-        }
+        // استفاده از اطلاعات پیش‌فرض برای اتصال موبایل
+        connectionType = 'MOBILE';
+        carrierName = 'Unknown';
+        mobileNetworkType = 'Unknown';
       }
 
       final networkInfoData = NetworkInfo(
@@ -590,28 +569,27 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     final isDark = themeManager.isDarkModeActive(context);
     return ListenableBuilder(
       listenable: themeManager,
-      builder: (context, _) => WillPopScope(
-          onWillPop: () async {
-            if (_vpnActive) {
-              // اگر VPN فعال است، اجازه اجرا در پس‌زمینه را بده
-              return false;
+      builder: (context, _) => PopScope(
+          canPop: false, // Prevent automatic pop on homepage
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop) {
+              // منطق double-back برای خروج
+              final now = DateTime.now();
+              if (_lastBackPressTime == null ||
+                  now.difference(_lastBackPressTime!) >
+                      const Duration(seconds: 2)) {
+                _lastBackPressTime = now;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(context.tr('pressBackAgainToExit')),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                // خروج از برنامه
+                SystemNavigator.pop();
+              }
             }
-
-            // منطق double-back برای خروج
-            final now = DateTime.now();
-            if (_lastBackPressTime == null ||
-                now.difference(_lastBackPressTime!) >
-                    const Duration(seconds: 2)) {
-              _lastBackPressTime = now;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(context.tr('pressBackAgainToExit')),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-              return false;
-            }
-            return true;
           },
           child: Scaffold(
             key: _scaffoldKey,

@@ -432,13 +432,15 @@ class _DnsListPageState extends State<DnsListPage> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
-        return WillPopScope(
-          onWillPop: () async {
-            isCancelled = true;
-            DnsTestManager.stopSequentialTest();
-            DnsPingHelper.cancelPingTest();
-            Navigator.of(dialogContext).pop();
-            return false;
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop) {
+              isCancelled = true;
+              DnsTestManager.stopSequentialTest();
+              DnsPingHelper.cancelPingTest();
+              Navigator.of(dialogContext).pop();
+            }
           },
           child: StatefulBuilder(
             builder: (context, setDialogState) {
@@ -449,6 +451,16 @@ class _DnsListPageState extends State<DnsListPage> {
                     if (mounted && !isCancelled) {
                       setDialogState(() {
                         progress = p;
+                        // اگر progress به 100% رسید، تست کامل شده
+                        if (p >= 1.0 && !isCompleted) {
+                          isCompleted = true;
+                          // کمی صبر کن تا کاربر progress کامل رو ببینه
+                          Future.delayed(const Duration(milliseconds: 500), () {
+                            if (mounted && !isCancelled) {
+                              Navigator.of(dialogContext).pop();
+                            }
+                          });
+                        }
                       });
                     }
                   },
@@ -456,7 +468,10 @@ class _DnsListPageState extends State<DnsListPage> {
                     isCancelled = cancelled;
                     isCompleted = completed;
                     if (cancelled || completed) {
-                      Navigator.of(dialogContext).pop();
+                      // مطمئن شو که dialog بسته می‌شه
+                      if (mounted && Navigator.canPop(dialogContext)) {
+                        Navigator.of(dialogContext).pop();
+                      }
                     }
                   },
                 );
@@ -518,9 +533,14 @@ class _DnsListPageState extends State<DnsListPage> {
           _sortDnsRecords();
         });
 
-        // نمایش نتیجه تست
-        await _showTestResults(results);
+        // اول dialog رو ببند، بعد نتایج رو نمایش بده
         onComplete(false, true); // cancelled=false, completed=true
+
+        // نمایش نتیجه تست بعد از بسته شدن progress dialog
+        await Future.delayed(const Duration(milliseconds: 300)); // کمی صبر کن
+        if (mounted) {
+          await _showTestResults(results);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -787,16 +807,15 @@ class _DnsListPageState extends State<DnsListPage> {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
 
-    return WillPopScope(
-      onWillPop: () async {
-        if (_testDialogOpen) {
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop && _testDialogOpen) {
           // توقف تست و برگشت به عقب
           DnsTestManager.stopSequentialTest();
           DnsPingHelper.cancelPingTest();
           setState(() => _testDialogOpen = false);
-          return true;
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor:

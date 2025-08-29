@@ -1,31 +1,32 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'services/navigation_service.dart';
+import 'api/models/update_info.dart';
+import 'api/services/api_client.dart';
+import 'l10n/app_localizations.dart';
 import 'routes/app_routes.dart';
-import 'services/local_notification_service.dart';
-import 'styles/theme_manager.dart';
-import 'styles/language_manager.dart';
-import 'services/notification_service.dart';
-import 'services/notification_service_provider.dart';
-import 'services/dns_test_settings_service.dart';
-import 'services/firebase_messaging_service.dart';
-import 'services/fcm_token_manager.dart';
-import 'utils/update_checker.dart';
 import 'screens/force_update_page.dart';
 import 'screens/loading_screen.dart';
 import 'screens/splash_screen.dart';
-import 'api/models/update_info.dart';
-import 'api/services/api_client.dart';
 import 'services/crash_reporting_service.dart';
+import 'services/dns_test_settings_service.dart';
+import 'services/fcm_token_manager.dart';
+import 'services/firebase_messaging_service.dart';
 import 'services/flutter_error_handler.dart';
+import 'services/local_notification_service.dart';
+import 'services/navigation_service.dart';
+import 'services/notification_service.dart';
+import 'services/notification_service_provider.dart';
+import 'styles/language_manager.dart';
+import 'styles/theme_manager.dart';
+import 'utils/update_checker.dart';
 
 // Background message handler برای FCM
 @pragma('vm:entry-point')
@@ -236,19 +237,20 @@ Future<void> main() async {
               children: [
                 const Icon(Icons.error, size: 64, color: Colors.red),
                 const SizedBox(height: 16),
-                const Text(
-                  'خطا در بارگذاری برنامه',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  AppLocalizations.translate('appLoadingError', 'fa'),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                const Text('لطفاً برنامه را مجدداً باز کنید'),
+                Text(AppLocalizations.translate('pleaseRestartApp', 'fa')),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
                     // بازنشانی برنامه
                     main();
                   },
-                  child: const Text('تلاش مجدد'),
+                  child: Text(AppLocalizations.translate('retry', 'fa')),
                 ),
               ],
             ),

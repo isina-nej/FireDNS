@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -85,7 +87,7 @@ class LanguageManager extends ChangeNotifier {
   Future<void> loadLanguage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final deviceLocale = WidgetsBinding.instance.window.locale;
+      final deviceLocale = PlatformDispatcher.instance.locale;
 
       // اگر زبان قبلاً تنظیم نشده است
       if (!prefs.containsKey(_languageKey)) {
@@ -101,7 +103,7 @@ class LanguageManager extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       // در صورت بروز خطا، از زبان دستگاه یا انگلیسی استفاده کن
-      final deviceLocale = WidgetsBinding.instance.window.locale;
+      final deviceLocale = PlatformDispatcher.instance.locale;
       _locale = getDeviceLanguage(deviceLocale);
     }
   }

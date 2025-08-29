@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../path/path.dart';
 import '../utils/responsive_size.dart';
 import '../widgets/semi_transparent_text.dart';
+import '../services/navigation_service.dart';
 // assume AppColors, context.tr, DnsListPage, etc
 
 class ConfigurationCard extends StatelessWidget {
@@ -18,7 +19,7 @@ class ConfigurationCard extends StatelessWidget {
   final Function(String) showSnackBar;
 
   const ConfigurationCard({
-    Key? key,
+    super.key,
     required this.height,
     required this.themeManager,
     required this.onDnsSelected,
@@ -27,7 +28,7 @@ class ConfigurationCard extends StatelessWidget {
     required this.activateVpn,
     required this.loadSelectedDnsLabel,
     required this.showSnackBar,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,12 +44,12 @@ class ConfigurationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(
           responsiveSize(12, context, min: 6, max: 16, scaleByHeight: true),
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.shadow,
             spreadRadius: 1,
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -62,11 +63,8 @@ class ConfigurationCard extends StatelessWidget {
               // دکمه Switch (فعال)
               GestureDetector(
                 onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DnsListPage(),
-                    ),
+                  final result = await NavigationService.navigateToPage(
+                    const DnsListPage(),
                   );
 
                   // اگر کاربر DNS جدیدی انتخاب کرده
@@ -172,7 +170,7 @@ class ConfigurationCard extends StatelessWidget {
                       color: AppColors.textSuccess.withOpacity(0.3),
                       blurRadius: 8,
                       spreadRadius: 1,
-                      offset: Offset(0, 2),
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -244,7 +242,7 @@ class ConfigurationCard extends StatelessWidget {
             backgroundColor: AppColors.brightBlue,
             opacity: 0.1,
             borderRadius: BorderRadius.circular(10),
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           ),
           SizedBox(
             height: responsiveSize(
@@ -256,7 +254,7 @@ class ConfigurationCard extends StatelessWidget {
             ),
           ),
           Container(
-            padding: EdgeInsets.all(8),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: (isDark
                       ? AppColors.darkTextSecondary

@@ -10,6 +10,12 @@ class NavigationService {
     );
   }
 
+  static Future<dynamic> navigateToPageReplacement(Widget page) {
+    return navigatorKey.currentState!.pushReplacement(
+      MaterialPageRoute(builder: (context) => page),
+    );
+  }
+
   static Future<dynamic> navigateToRoute(String routeName,
       {Object? arguments}) {
     return navigatorKey.currentState!

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// صفحه Splash اولیه که فوراً نمایش داده می‌شود
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -38,16 +38,18 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor:
-          isDarkMode ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
-      body: AnimatedBuilder(
-        animation: _logoAnimation,
-        builder: (context, child) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+    return PopScope(
+      canPop: false, // صفحه splash نباید بک داشته باشد
+      child: Scaffold(
+        backgroundColor:
+            isDarkMode ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
+        body: AnimatedBuilder(
+          animation: _logoAnimation,
+          builder: (context, child) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                 // Logo با انیمیشن ساده
                 Transform.scale(
                   scale: _logoAnimation.value,
@@ -120,9 +122,10 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                 ),
               ],
-            ),
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
     );
   }

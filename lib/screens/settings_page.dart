@@ -1,11 +1,13 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../path/path.dart';
 import '../services/notification_service.dart';
-import '../services/dns_test_settings_service.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+  const SettingsPage({super.key});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -19,7 +21,7 @@ class _SettingsPageState extends State<SettingsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final languageManager =
           Provider.of<LanguageManager>(context, listen: false);
-      final deviceLocale = WidgetsBinding.instance.window.locale;
+      final deviceLocale = PlatformDispatcher.instance.locale;
       languageManager.getDeviceLanguage(deviceLocale);
     });
   }
@@ -29,111 +31,114 @@ class _SettingsPageState extends State<SettingsPage> {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
 
-    return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-        elevation: 0,
-        title: Text(
-          context.tr('settings'),
-          style: TextStyle(
-            fontFamily:
-                Provider.of<LanguageManager>(context, listen: false).fontFamily,
-            color: isDark ? AppColors.darkTextPrimary : Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        backgroundColor:
+            isDark ? AppColors.darkBackground : const Color(0xFFF5F5F5),
+        appBar: AppBar(
+          backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+          elevation: 0,
+          title: Text(
+            context.tr('settings'),
+            style: TextStyle(
+              fontFamily: Provider.of<LanguageManager>(context, listen: false)
+                  .fontFamily,
+              color: isDark ? AppColors.darkTextPrimary : Colors.black,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back,
+                color: isDark ? AppColors.darkIconPrimary : Colors.black54),
+            onPressed: () => Navigator.pop(context),
           ),
         ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back,
-              color: isDark ? AppColors.darkIconPrimary : Colors.black54),
-          onPressed: () => Navigator.pop(context),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _buildSettingSection(
+              title: context.tr('general'),
+              items: [
+                Consumer<LanguageManager>(
+                  builder: (context, languageManager, child) {
+                    return _buildSettingItem(
+                      icon: Icons.language,
+                      title: context.tr('language'),
+                      subtitle: languageManager.languageName,
+                      onTap: () {
+                        _showLanguageSelectionDialog(context, languageManager);
+                      },
+                    );
+                  },
+                ),
+                _buildSettingItem(
+                  icon: Icons.dark_mode,
+                  title: context.tr('appTheme'),
+                  subtitle: themeManager.getThemeName(context),
+                  onTap: () {
+                    _showThemeSelectionDialog(context, themeManager);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSettingSection(
+              title: context.tr('notifications'),
+              items: [
+                Consumer<NotificationService>(
+                  builder: (context, notificationService, child) {
+                    return _buildSettingItem(
+                      icon: Icons.notifications,
+                      title: context.tr('notificationsEnabled'),
+                      isSwitch: true,
+                      switchValue: notificationService.notificationsEnabled,
+                      onChanged: (value) {
+                        notificationService.toggleNotifications();
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSettingSection(
+              title: context.tr('dnsTest'),
+              items: [
+                Consumer<DnsTestSettingsService>(
+                  builder: (context, dnsTestSettingsService, child) {
+                    return _buildSettingItem(
+                      icon: Icons.dns,
+                      title: context.tr('testType'),
+                      subtitle: dnsTestSettingsService.getTestTypeName(
+                        dnsTestSettingsService.testType,
+                        context,
+                      ),
+                      onTap: () {
+                        _showTestTypeSelectionDialog(
+                            context, dnsTestSettingsService);
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSettingSection(
+              title: context.tr('aboutUs'),
+              items: [
+                _buildSettingItem(
+                  icon: Icons.info_outline,
+                  title: context.tr('appVersion'),
+                  subtitle: '2.0.0',
+                  // onTap: () {},
+                ),
+              ],
+            ),
+          ],
         ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildSettingSection(
-            title: context.tr('general'),
-            items: [
-              Consumer<LanguageManager>(
-                builder: (context, languageManager, child) {
-                  return _buildSettingItem(
-                    icon: Icons.language,
-                    title: context.tr('language'),
-                    subtitle: languageManager.languageName,
-                    onTap: () {
-                      _showLanguageSelectionDialog(context, languageManager);
-                    },
-                  );
-                },
-              ),
-              _buildSettingItem(
-                icon: Icons.dark_mode,
-                title: context.tr('appTheme'),
-                subtitle: themeManager.getThemeName(context),
-                onTap: () {
-                  _showThemeSelectionDialog(context, themeManager);
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildSettingSection(
-            title: context.tr('notifications'),
-            items: [
-              Consumer<NotificationService>(
-                builder: (context, notificationService, child) {
-                  return _buildSettingItem(
-                    icon: Icons.notifications,
-                    title: context.tr('notificationsEnabled'),
-                    isSwitch: true,
-                    switchValue: notificationService.notificationsEnabled,
-                    onChanged: (value) {
-                      notificationService.toggleNotifications();
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildSettingSection(
-            title: context.tr('dnsTest'),
-            items: [
-              Consumer<DnsTestSettingsService>(
-                builder: (context, dnsTestSettingsService, child) {
-                  return _buildSettingItem(
-                    icon: Icons.dns,
-                    title: context.tr('testType'),
-                    subtitle: dnsTestSettingsService.getTestTypeName(
-                      dnsTestSettingsService.testType,
-                      context,
-                    ),
-                    onTap: () {
-                      _showTestTypeSelectionDialog(
-                          context, dnsTestSettingsService);
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildSettingSection(
-            title: context.tr('aboutUs'),
-            items: [
-              _buildSettingItem(
-                icon: Icons.info_outline,
-                title: context.tr('appVersion'),
-                subtitle: '2.0.0',
-                // onTap: () {},
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -298,7 +303,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final isDark = Provider.of<ThemeManager>(context, listen: false)
         .isDarkModeActive(context);
     final isSelected = languageManager.locale.languageCode == code;
-    final deviceLocale = WidgetsBinding.instance.window.locale;
+    final deviceLocale = PlatformDispatcher.instance.locale;
     final isDeviceLanguage = deviceLocale.languageCode == code;
 
     return ListTile(

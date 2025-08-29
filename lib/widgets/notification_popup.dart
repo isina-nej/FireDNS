@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../api/models/notification_model.dart';
-import '../services/notification_service.dart';
-import '../path/path.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../api/models/notification_model.dart';
+import '../path/path.dart';
+import '../services/navigation_service.dart';
+import '../services/notification_service.dart';
 
 /// ویجت پاپ‌آپ اعلانات با طراحی بهبود یافته
 class NotificationPopup extends StatefulWidget {
@@ -125,7 +127,7 @@ class _NotificationPopupState extends State<NotificationPopup>
           SnackBar(
             content: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.check_circle_outline,
                   color: AppColors.pureWhite,
                   size: 20,
@@ -159,7 +161,7 @@ class _NotificationPopupState extends State<NotificationPopup>
           SnackBar(
             content: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.delete_outline,
                   color: AppColors.pureWhite,
                   size: 20,
@@ -346,7 +348,7 @@ class _NotificationPopupState extends State<NotificationPopup>
                     width: 1,
                   ),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.notifications_active_rounded,
                   color: AppColors.brightBlue,
                   size: 28,
@@ -521,7 +523,7 @@ class _NotificationPopupState extends State<NotificationPopup>
                 color: AppColors.brightBlue.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: CircularProgressIndicator(
+              child: const CircularProgressIndicator(
                 color: AppColors.brightBlue,
                 strokeWidth: 3,
               ),
@@ -611,14 +613,14 @@ class _NotificationPopupState extends State<NotificationPopup>
               const SizedBox(height: 24),
               TextButton.icon(
                 onPressed: _refreshNotifications,
-                icon: Icon(
+                icon: const Icon(
                   Icons.refresh_rounded,
                   size: 18,
                   color: AppColors.brightBlue,
                 ),
                 label: Text(
                   context.tr('checkForNotifications'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.brightBlue,
                     fontWeight: FontWeight.w600,
                   ),
@@ -767,7 +769,7 @@ class _NotificationPopupState extends State<NotificationPopup>
                               width: 10,
                               height: 10,
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
+                                gradient: const LinearGradient(
                                   colors: [
                                     AppColors.brightBlue,
                                     AppColors.gradientOrange,
@@ -958,8 +960,7 @@ class _NotificationPopupState extends State<NotificationPopup>
     _closePopup();
 
     // Navigate to notifications page
-    Navigator.pushNamed(
-      context,
+    NavigationService.navigateToRoute(
       '/notifications',
       arguments: {
         'highlightNotificationId': notification.id,

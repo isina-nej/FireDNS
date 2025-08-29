@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import '../screens/settings_page.dart';
+
 import '../screens/about_page.dart';
+import '../screens/settings_page.dart';
+import '../services/navigation_service.dart';
 
 /// Animated Drawer Menu Widget for AppBar
 class AnimatedDrawerMenu extends StatefulWidget {
+  const AnimatedDrawerMenu({super.key});
+
   @override
   State<AnimatedDrawerMenu> createState() => _AnimatedDrawerMenuState();
 }
@@ -25,27 +29,27 @@ class _AnimatedDrawerMenuState extends State<AnimatedDrawerMenu>
       duration: const Duration(milliseconds: 350),
     );
     _opacityAnim = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _offsetAnim1 = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-          ),
-        );
-    _offsetAnim2 = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.2, 0.7, curve: Curves.easeOut),
-          ),
-        );
-    _offsetAnim3 = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
-          ),
-        );
+    _offsetAnim1 =
+        Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+      ),
+    );
+    _offsetAnim2 =
+        Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.2, 0.7, curve: Curves.easeOut),
+      ),
+    );
+    _offsetAnim3 =
+        Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
+      ),
+    );
   }
 
   @override
@@ -69,23 +73,17 @@ class _AnimatedDrawerMenuState extends State<AnimatedDrawerMenu>
     _toggleMenu();
     switch (value) {
       case 'settings':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const SettingsPage()),
-        );
+        NavigationService.navigateToPage(const SettingsPage());
         break;
       case 'about':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AboutPage()),
-        );
+        NavigationService.navigateToPage(const AboutPage());
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final menuColor = const Color(0xFFE8E8E8); // Match card color
+    const menuColor = Color(0xFFE8E8E8); // Match card color
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -110,11 +108,11 @@ class _AnimatedDrawerMenuState extends State<AnimatedDrawerMenu>
                           decoration: BoxDecoration(
                             color: menuColor,
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
+                            boxShadow: const [
                               BoxShadow(
                                 color: Colors.black12,
                                 blurRadius: 12,
-                                offset: const Offset(0, 4),
+                                offset: Offset(0, 4),
                               ),
                             ],
                           ),

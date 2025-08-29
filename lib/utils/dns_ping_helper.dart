@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:isolate';
 import '../path/path.dart'; // Assuming DnsService and DnsStatus are defined here
 import '../constants/dns_constants.dart'; // برای DnsConstants.methodChannel
+import '../l10n/localization_extension.dart';
 
 class DnsPingHelper {
   static const platform =
@@ -198,9 +199,9 @@ class DnsPingHelper {
 
     if (!auto && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('در حال تست همه DNSها...'),
-          duration: Duration(seconds: 1),
+        SnackBar(
+          content: Text(context.tr('testingAllDns')),
+          duration: const Duration(seconds: 1),
         ),
       );
     }
@@ -273,9 +274,9 @@ class DnsPingHelper {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('در حال تست ترتیبی DNSها...'),
-          duration: Duration(seconds: 1),
+        SnackBar(
+          content: Text(context.tr('testingSequentialDns')),
+          duration: const Duration(seconds: 1),
         ),
       );
     }

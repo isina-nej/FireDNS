@@ -909,14 +909,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "3.0.0"
-  sim_card_info:
-    dependency: "direct main"
-    description:
-      name: sim_card_info
-      sha256: d22c1fc597a962d1feed75e9b6415c8db8040d3eb78ed2f3a0e7832afb024488
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "1.0.2"
   sky_engine:
     dependency: transitive
     description: flutter
