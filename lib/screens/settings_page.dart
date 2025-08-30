@@ -318,7 +318,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                               values: [
                                                 ValueDelegate.color(
                                                   const ['**'],
-                                                  value: Colors.white,
+                                                  value: const Color.fromARGB(255, 47, 47, 47),
                                                 ),
                                               ],
                                             )

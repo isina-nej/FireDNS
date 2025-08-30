@@ -1,11 +1,7 @@
-// lib/widgets/connection_status_card.dart
-
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
-// assume AppColors, context.tr, etc are imported or passed
 import '../path/path.dart';
-// import other necessary
 import '../utils/responsive_size.dart';
 import '../widgets/semi_transparent_text.dart';
 
@@ -38,6 +34,11 @@ class ConnectionStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = themeManager.isDarkModeActive(context);
+
+    // Simple debug print
+    print(
+        '� ConnectionStatusCard build - vpnActive: $vpnActive, vpnLoading: $vpnLoading');
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(
@@ -217,84 +218,86 @@ class ConnectionStatusCard extends StatelessWidget {
                                       ),
                                     );
                                   },
-                                  child: vpnLoading
-                                      ? SizedBox(
-                                          key: const ValueKey('loading'),
-                                          width: responsiveSize(
-                                            70,
-                                            context,
-                                            min: 40,
-                                            max: 90,
-                                            scaleByHeight: true,
-                                          ),
-                                          height: responsiveSize(
-                                            70,
-                                            context,
-                                            min: 40,
-                                            max: 90,
-                                            scaleByHeight: true,
-                                          ),
+                                  child: (() {
+                                    print(
+                                        '🎯 AnimatedSwitcher - vpnLoading: $vpnLoading, vpnActive: $vpnActive');
+                                    if (vpnLoading) {
+                                      print('🎯 Showing loading icon');
+                                      return SizedBox(
+                                        key: const ValueKey('loading'),
+                                        width: responsiveSize(
+                                          70,
+                                          context,
+                                          min: 40,
+                                          max: 90,
+                                          scaleByHeight: true,
+                                        ),
+                                        height: responsiveSize(
+                                          70,
+                                          context,
+                                          min: 40,
+                                          max: 90,
+                                          scaleByHeight: true,
+                                        ),
+                                        child: Lottie.asset(
+                                          'assets/icone/process.json',
+                                          fit: BoxFit.contain,
+                                          repeat: true,
+                                          animate: true,
+                                        ),
+                                      );
+                                    } else if (vpnActive) {
+                                      print('🎯 Showing WiFiConnecting icon');
+                                      return SizedBox(
+                                        key: const ValueKey('connected'),
+                                        width: responsiveSize(
+                                          70,
+                                          context,
+                                          min: 40,
+                                          max: 90,
+                                          scaleByHeight: true,
+                                        ),
+                                        height: responsiveSize(
+                                          70,
+                                          context,
+                                          min: 40,
+                                          max: 90,
+                                          scaleByHeight: true,
+                                        ),
                                           child: Lottie.asset(
-                                            'assets/icone/process.json',
+                                            'assets/icone/WiFiConnecting.json',
                                             fit: BoxFit.contain,
                                             repeat: true,
                                             animate: true,
-                                          ),
-                                        )
-                                      : vpnActive
-                                          ? SizedBox(
-                                              key: const ValueKey('connected'),
-                                              width: responsiveSize(
-                                                70,
-                                                context,
-                                                min: 40,
-                                                max: 90,
-                                                scaleByHeight: true,
-                                              ),
-                                              height: responsiveSize(
-                                                70,
-                                                context,
-                                                min: 40,
-                                                max: 90,
-                                                scaleByHeight: true,
-                                              ),
-                                              child: ColorFiltered(
-                                                colorFilter:
-                                                    const ColorFilter.mode(
-                                                  AppColors.pureWhite,
-                                                  BlendMode.srcIn,
-                                                ),
-                                                child: Lottie.asset(
-                                                  'assets/icone/WiFiConnecting.json',
-                                                  fit: BoxFit.contain,
-                                                  repeat: true,
-                                                  animate: true,
-                                                ),
-                                              ),
-                                            )
-                                          : SizedBox(
-                                              key: const ValueKey('power'),
-                                              width: responsiveSize(
-                                                70,
-                                                context,
-                                                min: 40,
-                                                max: 90,
-                                                scaleByHeight: true,
-                                              ),
-                                              height: responsiveSize(
-                                                70,
-                                                context,
-                                                min: 40,
-                                                max: 90,
-                                                scaleByHeight: true,
-                                              ),
-                                              child: Lottie.asset(
-                                                'assets/icone/power.json',
-                                                fit: BoxFit.contain,
-                                                repeat: true,
-                                                animate: true,
-                                              ),
-                                            ),
+                                        ),
+                                      );
+                                    } else {
+                                      print('🎯 Showing power icon');
+                                      return SizedBox(
+                                        key: const ValueKey('power'),
+                                        width: responsiveSize(
+                                          70,
+                                          context,
+                                          min: 40,
+                                          max: 90,
+                                          scaleByHeight: true,
+                                        ),
+                                        height: responsiveSize(
+                                          70,
+                                          context,
+                                          min: 40,
+                                          max: 90,
+                                          scaleByHeight: true,
+                                        ),
+                                        child: Lottie.asset(
+                                          'assets/icone/power.json',
+                                          fit: BoxFit.contain,
+                                          repeat: true,
+                                          animate: true,
+                                        ),
+                                      );
+                                    }
+                                  })(),
                                 ),
                               ],
                             ),

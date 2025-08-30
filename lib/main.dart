@@ -26,7 +26,6 @@ import 'services/fcm_token_manager.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/flutter_error_handler.dart';
 import 'services/local_notification_service.dart';
-import 'services/navigation_service.dart';
 import 'services/notification_service.dart';
 import 'services/notification_service_provider.dart';
 import 'styles/language_manager.dart';

@@ -162,8 +162,14 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
           setState(() {
             _vpnActive = isActive;
-            _vpnLoading = false;
+            // Only set loading to false if we're not in a loading state that should be managed by _toggleVpn
+            if (!_vpnLoading) {
+              _vpnLoading = false;
+            }
           });
+
+          debugPrint(
+              '📡 Stream listener - Updated state: vpnActive=$isActive, vpnLoading=${_vpnLoading ? _vpnLoading : false}');
 
           // Lottie animation optimization
           if (isActive && !wasActive) {
@@ -185,10 +191,13 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           }
         } else {
           debugPrint('Status unchanged, just updating loading state');
-          if (_vpnLoading) {
+          // Only update loading state if we're not currently in a toggle operation
+          if (_vpnLoading && mounted) {
             setState(() {
               _vpnLoading = false;
             });
+            debugPrint(
+                '📡 Stream listener - Set vpnLoading=false due to unchanged status');
           }
         }
       }
@@ -315,6 +324,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         _vpnLoading = false;
         _vpnActive = newStatus;
       });
+
+      debugPrint(
+          '🔄 _toggleVpn - Final state: vpnActive=$newStatus, vpnLoading=false');
 
       await _reportDnsUsage(newStatus);
     } catch (e) {
@@ -662,18 +674,22 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                           children: [
                             Expanded(
                               flex: 12,
-                              child: ConnectionStatusCard(
-                                height: cardHeight,
-                                themeManager: _themeManager,
-                                vpnActive: _vpnActive,
-                                vpnLoading: _vpnLoading,
-                                lottieController: _lottieController,
-                                onToggleVpn: () => _toggleVpn(!_vpnActive),
-                                selectedDnsLabel: _selectedDnsLabel,
-                                selectedDnsIp: _selectedDnsIp,
-                                dns1Controller: _dns1Controller,
-                                dns2Controller: _dns2Controller,
-                              ),
+                              child: (() {
+                                print(
+                                    '🏠 HomePage build - vpnActive: $_vpnActive, vpnLoading: $_vpnLoading');
+                                return ConnectionStatusCard(
+                                  height: cardHeight,
+                                  themeManager: _themeManager,
+                                  vpnActive: _vpnActive,
+                                  vpnLoading: _vpnLoading,
+                                  lottieController: _lottieController,
+                                  onToggleVpn: () => _toggleVpn(!_vpnActive),
+                                  selectedDnsLabel: _selectedDnsLabel,
+                                  selectedDnsIp: _selectedDnsIp,
+                                  dns1Controller: _dns1Controller,
+                                  dns2Controller: _dns2Controller,
+                                );
+                              })(),
                             ),
                             const SizedBox(height: 8),
                             Expanded(

@@ -1,6 +1,8 @@
 import 'dart:async';
-import 'package:flutter/services.dart';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
 import '../constants/dns_constants.dart';
 
 /// سرویس مدیریت وضعیت VPN
@@ -32,8 +34,20 @@ class VpnStatusService {
     _vpnStatusSubscription = _vpnStatusChannel.receiveBroadcastStream().listen(
       (status) {
         debugPrint('Received VPN status: $status');
-        final isActive = status == "VPN_STARTED";
-        _vpnStatusController.add(isActive);
+        // Handle different status values properly
+        bool? isActive;
+        if (status == "VPN_STARTED") {
+          isActive = true;
+        } else if (status == "DNS_STOPPED" || status == "VPN_STOPPED") {
+          isActive = false;
+        } else if (status == "DNS_TEST_SUCCESS") {
+          // DNS_TEST_SUCCESS doesn't change the active state, just indicates test passed
+          return; // Don't emit anything for DNS_TEST_SUCCESS
+        }
+        // Only emit if we have a clear active/inactive status
+        if (isActive != null) {
+          _vpnStatusController.add(isActive);
+        }
       },
       onError: (error) {
         debugPrint('Error listening to VPN status: $error');
