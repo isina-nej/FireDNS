@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../styles/app_colors.dart';
 
 /// مدل وضعیت DNS که شامل اطلاعات پینگ و وضعیت دسترسی است
@@ -17,35 +18,50 @@ class DnsStatus {
   /// رنگ پس‌زمینه بر اساس وضعیت پینگ
   Color get backgroundColor {
     if (!isReachable) return unreachableColor;
-
-    if (ping < 0) return Colors.grey;
-
-    // اگر پینگ کمتر از 100ms باشد، از سبز به زرد
-    if (ping <= 100) {
-      return Color.lerp(bestPingColor, mediumPingColor, ping / 100) ??
-          bestPingColor;
-    }
-    // اگر پینگ بین 100ms تا 300ms باشد، از زرد به قرمز
-    else if (ping <= 300) {
-      return Color.lerp(mediumPingColor, badPingColor, (ping - 100) / 200) ??
-          mediumPingColor;
-    }
-    // اگر پینگ بیشتر از 300ms باشد، قرمز
-    else {
-      return badPingColor;
-    }
+    if (ping <= 50) return bestPingColor;
+    if (ping <= 100) return mediumPingColor;
+    return badPingColor;
   }
 
-  /// متن نمایشی وضعیت
+  /// رنگ متن بر اساس وضعیت پینگ
+  Color get textColor {
+    if (!isReachable) return Colors.white;
+    if (ping <= 50) return Colors.white;
+    if (ping <= 100) return Colors.black;
+    return Colors.white;
+  }
+
+  /// آیکون بر اساس وضعیت پینگ
+  IconData get icon {
+    if (!isReachable) return Icons.signal_wifi_off;
+    if (ping <= 50) return Icons.signal_wifi_4_bar;
+    if (ping <= 100) return Icons.network_wifi_3_bar;
+    return Icons.network_wifi_2_bar;
+  }
+
+  /// متن وضعیت بر اساس پینگ
+  String get statusText {
+    if (!isReachable) return 'غیر قابل دسترسی';
+    if (ping <= 50) return 'عالی';
+    if (ping <= 100) return 'خوب';
+    return 'ضعیف';
+  }
+
+  /// متن نمایش برای وضعیت پینگ
   String get displayText {
     if (!isReachable) return 'ناموجود';
-    if (ping < 0) return '--';
     return '$ping ms';
   }
 
   /// کپی کردن با مقادیر جدید
-  DnsStatus copyWith({int? ping, bool? isReachable}) {
-    return DnsStatus(ping ?? this.ping, isReachable ?? this.isReachable);
+  DnsStatus copyWith({
+    int? ping,
+    bool? isReachable,
+  }) {
+    return DnsStatus(
+      ping ?? this.ping,
+      isReachable ?? this.isReachable,
+    );
   }
 
   @override

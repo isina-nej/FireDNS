@@ -8,10 +8,13 @@ import 'dart:io' show Platform;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../blocs/dns/dns_bloc.dart';
+import '../blocs/dns/dns_state.dart';
 import '../path/path.dart';
 
 class FireDNSHomePage extends StatefulWidget {
@@ -146,7 +149,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       VpnStatusService.startListening();
     }
 
-    // تنها VPN status stream را listen کنیم
+    // Initialize VPN status subscription
     _vpnStatusSubscription = VpnStatusService.vpnStatusStream.listen((
       isActive,
     ) {
@@ -197,11 +200,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         });
       }
     });
-
-    // حذف data usage subscription که استفاده نمی‌شود
-    // _dataUsageSubscription = VpnStatusService.dataUsageStream.listen(
-    //   (usage) {},
-    // );
   }
 
   void _disposeControllers() {
@@ -567,138 +565,147 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   Widget build(BuildContext context) {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
-    return ListenableBuilder(
-      listenable: themeManager,
-      builder: (context, _) => PopScope(
-          canPop: false, // Prevent automatic pop on homepage
-          onPopInvokedWithResult: (didPop, result) {
-            if (!didPop) {
-              // منطق double-back برای خروج
-              final now = DateTime.now();
-              if (_lastBackPressTime == null ||
-                  now.difference(_lastBackPressTime!) >
-                      const Duration(seconds: 2)) {
-                _lastBackPressTime = now;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(context.tr('pressBackAgainToExit')),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              } else {
-                // خروج از برنامه
-                SystemNavigator.pop();
-              }
-            }
-          },
-          child: Scaffold(
-            key: _scaffoldKey,
-            drawer: const CustomDrawer(),
-            backgroundColor:
-                isDark ? AppColors.darkBackground : AppColors.backgroundLight,
-            appBar: AppBar(
-              backgroundColor:
-                  isDark ? AppColors.darkBackground : AppColors.backgroundLight,
-              elevation: 0,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.menu,
-                  color: isDark
-                      ? AppColors.darkIconPrimary
-                      : AppColors.textPrimary,
-                ),
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-              ),
-              title: Text(
-                context.tr('appTitle'),
-                style: TextStyle(
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              centerTitle: true,
-              toolbarHeight: kToolbarHeight,
-              actions: [
-                const NotificationBell(),
-                IconButton(
-                  icon: CircleAvatar(
-                    backgroundColor: AppColors.backgroundGrey,
-                    child: Icon(
-                      Icons.person_outline,
+
+    return BlocBuilder<DnsBloc, DnsState>(
+      builder: (context, dnsState) {
+        return ListenableBuilder(
+          listenable: themeManager,
+          builder: (context, _) => PopScope(
+              canPop: false, // Prevent automatic pop on homepage
+              onPopInvokedWithResult: (didPop, result) {
+                if (!didPop) {
+                  // منطق double-back برای خروج
+                  final now = DateTime.now();
+                  if (_lastBackPressTime == null ||
+                      now.difference(_lastBackPressTime!) >
+                          const Duration(seconds: 2)) {
+                    _lastBackPressTime = now;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(context.tr('pressBackAgainToExit')),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  } else {
+                    // خروج از برنامه
+                    SystemNavigator.pop();
+                  }
+                }
+              },
+              child: Scaffold(
+                key: _scaffoldKey,
+                drawer: const CustomDrawer(),
+                backgroundColor: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.backgroundLight,
+                appBar: AppBar(
+                  backgroundColor: isDark
+                      ? AppColors.darkBackground
+                      : AppColors.backgroundLight,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: Icon(
+                      Icons.menu,
                       color: isDark
                           ? AppColors.darkIconPrimary
                           : AppColors.textPrimary,
-                      size: 20,
+                    ),
+                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  ),
+                  title: Text(
+                    context.tr('appTitle'),
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  onPressed: () {
-                    _showSnackBar(context.tr('profileComingSoon'));
-                  },
-                ),
-              ],
-            ),
-            body: Padding(
-              padding: const EdgeInsets.all(16),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  const minCardHeight = 170.0;
-                  const totalSpacing = 24.0;
-                  final availableHeight = constraints.maxHeight - totalSpacing;
-                  double cardHeight = availableHeight / 3;
-                  if (cardHeight < minCardHeight) cardHeight = minCardHeight;
-                  const cardPadding = EdgeInsets.all(12);
-                  return Padding(
-                    padding: cardPadding,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        Expanded(
-                          flex: 12,
-                          child: ConnectionStatusCard(
-                            height: cardHeight,
-                            themeManager: _themeManager,
-                            vpnActive: _vpnActive,
-                            vpnLoading: _vpnLoading,
-                            lottieController: _lottieController,
-                            onToggleVpn: () => _toggleVpn(!_vpnActive),
-                            selectedDnsLabel: _selectedDnsLabel,
-                            selectedDnsIp: _selectedDnsIp,
-                            dns1Controller: _dns1Controller,
-                            dns2Controller: _dns2Controller,
-                          ),
+                  centerTitle: true,
+                  toolbarHeight: kToolbarHeight,
+                  actions: [
+                    const NotificationBell(),
+                    IconButton(
+                      icon: CircleAvatar(
+                        backgroundColor: AppColors.backgroundGrey,
+                        child: Icon(
+                          Icons.person_outline,
+                          color: isDark
+                              ? AppColors.darkIconPrimary
+                              : AppColors.textPrimary,
+                          size: 20,
                         ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          flex: 10,
-                          child: SpeedTestCard(
-                            height: cardHeight,
-                            themeManager: _themeManager,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          flex: 10,
-                          child: ConfigurationCard(
-                            height: cardHeight,
-                            themeManager: _themeManager,
-                            onDnsSelected: _handleDnsSelected,
-                            vpnActive: _vpnActive,
-                            deactivateVpn: _deactivateVpn,
-                            activateVpn: _activateVpn,
-                            loadSelectedDnsLabel: _loadSelectedDnsLabel,
-                            showSnackBar: _showSnackBar,
-                          ),
-                        ),
-                      ],
+                      ),
+                      onPressed: () {
+                        _showSnackBar(context.tr('profileComingSoon'));
+                      },
                     ),
-                  );
-                },
-              ),
-            ),
-          )),
+                  ],
+                ),
+                body: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const minCardHeight = 170.0;
+                      const totalSpacing = 24.0;
+                      final availableHeight =
+                          constraints.maxHeight - totalSpacing;
+                      double cardHeight = availableHeight / 3;
+                      if (cardHeight < minCardHeight)
+                        cardHeight = minCardHeight;
+                      const cardPadding = EdgeInsets.all(12);
+                      return Padding(
+                        padding: cardPadding,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            Expanded(
+                              flex: 12,
+                              child: ConnectionStatusCard(
+                                height: cardHeight,
+                                themeManager: _themeManager,
+                                vpnActive: _vpnActive,
+                                vpnLoading: _vpnLoading,
+                                lottieController: _lottieController,
+                                onToggleVpn: () => _toggleVpn(!_vpnActive),
+                                selectedDnsLabel: _selectedDnsLabel,
+                                selectedDnsIp: _selectedDnsIp,
+                                dns1Controller: _dns1Controller,
+                                dns2Controller: _dns2Controller,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              flex: 10,
+                              child: SpeedTestCard(
+                                height: cardHeight,
+                                themeManager: _themeManager,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              flex: 10,
+                              child: ConfigurationCard(
+                                height: cardHeight,
+                                themeManager: _themeManager,
+                                onDnsSelected: _handleDnsSelected,
+                                vpnActive: _vpnActive,
+                                deactivateVpn: _deactivateVpn,
+                                activateVpn: _activateVpn,
+                                loadSelectedDnsLabel: _loadSelectedDnsLabel,
+                                showSnackBar: _showSnackBar,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              )),
+        );
+      },
     );
   }
 }

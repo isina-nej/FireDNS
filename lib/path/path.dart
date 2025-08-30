@@ -32,6 +32,7 @@ export '../services/dns_service.dart';
 export '../services/vpn_status_service.dart';
 export '../services/crash_reporting_service.dart';
 export '../services/flutter_error_handler.dart';
+export '../services/logger_service.dart';
 
 // styles
 export '../styles/app_base_styles.dart';
@@ -55,5 +56,7 @@ export '../widgets/add_dns_dialog.dart';
 export '../widgets/connection_status_card.dart';
 export '../widgets/speed_test_card.dart';
 export '../widgets/configuration_card.dart';
+export '../widgets/optimized_speed_widgets.dart';
+export '../widgets/error_boundary.dart';
 
 export '../services/dns_test_settings_service.dart';

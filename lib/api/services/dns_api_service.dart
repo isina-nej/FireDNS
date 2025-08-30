@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+
 import '../../path/path.dart';
 
 /// سرویس API برای مدیریت DNS
@@ -59,7 +60,7 @@ class DnsApiService {
       return response;
     } on FormatException catch (e) {
       debugPrint('JSON Parse Error: $e');
-      return ApiResponse<List<DnsRecord>>(
+      return const ApiResponse<List<DnsRecord>>(
         status: false,
         message: 'خطا در تجزیه پاسخ سرور',
         errorCode: 'JSON_PARSE_ERROR',
@@ -269,6 +270,25 @@ class DnsApiService {
         status: false,
         message: 'خطا در ایجاد DNS: ${e.toString()}',
         errorCode: 'CREATE_DNS_ERROR',
+      );
+    }
+  }
+
+  /// حذف DNS کاربر
+  Future<ApiResponse<bool>> deleteDnsRecord(String dnsId) async {
+    try {
+      final response = await _apiClient.delete<bool>(
+        '/api/dns/$dnsId',
+        fromJson: (data) => true, // Assuming successful deletion returns true
+      );
+
+      return response;
+    } catch (e) {
+      debugPrint('Error deleting DNS record: $e');
+      return ApiResponse<bool>(
+        status: false,
+        message: 'خطا در حذف DNS: ${e.toString()}',
+        errorCode: 'DELETE_DNS_ERROR',
       );
     }
   }

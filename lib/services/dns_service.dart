@@ -1,10 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
-import '../models/dns_status.dart';
-import '../models/google_connectivity_result.dart';
-import '../constants/dns_constants.dart';
-import '../utils/dns_validator.dart';
+import '../path/path.dart';
 
 /// نتیجه تغییر DNS
 class DnsChangeResult {
@@ -24,7 +21,7 @@ class DnsService {
   static Future<DnsStatus> testDnsIPv6(String dns) async {
     try {
       final result = await _platform.invokeMethod('testDnsIPv6', {'dns': dns});
-      debugPrint('Raw ping result (IPv6): $result');
+      LoggerService().debug('Raw ping result (IPv6): $result');
       if (result is Map) {
         final ping = (result['ping'] as int?) ?? -1;
         final isReachable = result['isReachable'] == true;
@@ -33,7 +30,7 @@ class DnsService {
     } catch (e) {
       debugPrint('Error in testDnsIPv6: $e');
     }
-    return DnsStatus(-1, false);
+    return const DnsStatus(-1, false);
   }
 
   static const _platform = MethodChannel(DnsConstants.methodChannel);
@@ -115,19 +112,21 @@ class DnsService {
       // تست دسترسی DNS ها - اما اجازه ادامه بده حتی اگر در دسترس نباشند
       bool dns1Reachable = false;
       bool dns2Reachable = false;
-      
+
       try {
         final dns1Status = await testDns(dns1);
         dns1Reachable = dns1Status.isReachable;
         if (!dns1Reachable) {
-          debugPrint('Warning: Primary DNS is not reachable: $dns1 (continuing anyway)');
+          debugPrint(
+              'Warning: Primary DNS is not reachable: $dns1 (continuing anyway)');
         }
-        
+
         if (dns2.isNotEmpty) {
           final dns2Status = await testDns(dns2);
           dns2Reachable = dns2Status.isReachable;
           if (!dns2Reachable) {
-            debugPrint('Warning: Secondary DNS is not reachable: $dns2 (continuing anyway)');
+            debugPrint(
+                'Warning: Secondary DNS is not reachable: $dns2 (continuing anyway)');
           }
         }
       } catch (e) {
@@ -137,13 +136,13 @@ class DnsService {
       // تغییر DNS - حتی اگر DNS ها در دسترس نباشند
       await _platform.invokeMethod('setDns', {'dns1': dns1, 'dns2': dns2});
       debugPrint('DNS changed successfully: $dns1, $dns2');
-      
+
       // اگر DNS ها در دسترس نبودند، پیام هشدار نمایش بده
       if (!dns1Reachable || (dns2.isNotEmpty && !dns2Reachable)) {
         return DnsChangeResult(
           success: true,
           message: DnsConstants.errorMessages['vpnActivatedWithWarning'] ??
-                  "VPN activated, but DNS servers might not be reachable. Connection might be limited.",
+              "VPN activated, but DNS servers might not be reachable. Connection might be limited.",
         );
       } else {
         return DnsChangeResult(
@@ -227,18 +226,6 @@ class DnsService {
     }
   }
 
-  /// دریافت لیست DNS های محبوب
-  // static List<Map<String, String>> getPopularDnsServers() {
-    // return DnsConstants.popularDnsServers.entries
-  //       .map(
-  //         (entry) => {
-  //           'name': entry.key,
-  //           'primary': entry.value['primary']!,
-  //           'secondary': entry.value['secondary']!,
-  //         },
-  //       )
-  //       .toList();
-  // }
 
   /// بررسی آماده بودن سرویس
   static Future<bool> isServiceReady() async {

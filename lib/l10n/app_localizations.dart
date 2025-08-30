@@ -870,7 +870,6 @@ class AppLocalizations {
       'maxDownload': '最大下载速度',
       'averageUpload': '平均上传速度',
       'maxUpload': '最大上传速度',
-      // متن‌های جدید اضافه شده
       'ipPastedFromClipboard': 'IP已从剪贴板粘贴',
       'clipboardReadError': '从剪贴板读取错误',
       'invalidIpFormatInClipboard': '剪贴板中的IP格式无效',

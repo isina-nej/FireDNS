@@ -5,8 +5,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api/services/dns_api_service.dart';
+import 'blocs/dns/dns_bloc.dart';
+import 'services/logger_service.dart';
 
 import 'api/models/update_info.dart';
 import 'api/services/api_client.dart';
@@ -346,6 +350,12 @@ class _FireDNSAppState extends State<FireDNSApp> {
         ),
         ChangeNotifierProvider<DnsTestSettingsService>.value(
             value: widget.dnsTestSettingsService),
+        BlocProvider<DnsBloc>(
+          create: (context) => DnsBloc(
+            dnsApiService: DnsApiService(),
+            logger: LoggerService(),
+          ),
+        ),
       ],
       child: Builder(
         builder: (context) {

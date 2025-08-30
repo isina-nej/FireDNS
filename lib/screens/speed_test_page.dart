@@ -139,18 +139,22 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
     final speedTest = FlutterInternetSpeedTest();
     _speedTestInstance = speedTest;
 
+    // Use a single setState call for better performance
+    void updateState(VoidCallback callback) {
+      if (_isDisposed || !mounted) return;
+      setState(callback);
+    }
+
     speedTest.startTesting(
       useFastApi: true,
       onStarted: () {
-        if (_isDisposed || !mounted) return;
-        setState(() {
+        updateState(() {
           status = _downloadingText;
           showDownloadGauge = true;
         });
       },
       onProgress: (double percent, TestResult data) {
-        if (_isDisposed || !mounted) return;
-        setState(() {
+        updateState(() {
           if (data.type == TestType.download) {
             downloadSpeed = data.transferRate;
             status = _downloadingText;
@@ -174,22 +178,19 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
         });
       },
       onDownloadComplete: (TestResult data) {
-        if (_isDisposed || !mounted) return;
-        setState(() {
+        updateState(() {
           downloadSpeed = data.transferRate;
           status = _uploadingText;
           showDownloadGauge = false;
         });
       },
       onUploadComplete: (TestResult data) {
-        if (_isDisposed || !mounted) return;
-        setState(() {
+        updateState(() {
           uploadSpeed = data.transferRate;
         });
       },
       onCompleted: (TestResult download, TestResult upload) {
-        if (_isDisposed || !mounted) return;
-        setState(() {
+        updateState(() {
           downloadSpeed = download.transferRate;
           uploadSpeed = upload.transferRate;
           isTesting = false;
@@ -198,15 +199,13 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
         });
       },
       onError: (String errorMessage, String speedTestError) {
-        if (_isDisposed || !mounted) return;
-        setState(() {
+        updateState(() {
           isTesting = false;
           status = _speedTestErrorText;
         });
       },
       onCancel: () {
-        if (_isDisposed || !mounted) return;
-        setState(() {
+        updateState(() {
           isTesting = false;
           status = _testCancelledText;
         });
