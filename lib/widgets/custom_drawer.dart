@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart' show Lottie, LottieDelegates, ValueDelegate;
 import 'package:provider/provider.dart';
 
 import '../path/path.dart';
-import '../screens/about_page.dart';
 import '../screens/check_update_page.dart';
-import '../screens/ticket_page.dart';
 import '../services/navigation_service.dart';
+import '../services/professional_navigation_service.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({super.key});
@@ -44,9 +44,23 @@ class _CustomDrawerState extends State<CustomDrawer> {
             ),
           ),
           ListTile(
-            leading: Icon(
-              Icons.settings,
-              color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
+            leading: SizedBox(
+              width: 48,
+              height: 48,
+              child: Lottie.asset(
+                'assets/icone/settings.json',
+                fit: BoxFit.contain,
+                delegates: isDark
+                    ? LottieDelegates(
+                        values: [
+                          ValueDelegate.color(
+                            const ['**'],
+                            value: Colors.deepPurpleAccent,
+                          ),
+                        ],
+                      )
+                    : null,
+              ),
             ),
             title: Text(
               context.tr('settings'),
@@ -57,13 +71,27 @@ class _CustomDrawerState extends State<CustomDrawer> {
             ),
             onTap: () {
               Navigator.pop(context); // بستن drawer
-              NavigationService.navigateToPage(const SettingsPage());
+              NavigationService.navigateToSettings(context);
             },
           ),
           ListTile(
-            leading: Icon(
-              Icons.system_update_alt,
-              color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
+            leading: SizedBox(
+              width: 48,
+              height: 48,
+              child: Lottie.asset(
+                'assets/icone/success_animation.json',
+                fit: BoxFit.contain,
+                delegates: isDark
+                    ? LottieDelegates(
+                        values: [
+                          ValueDelegate.color(
+                            const ['**'],
+                            value: Colors.amberAccent,
+                          ),
+                        ],
+                      )
+                    : null,
+              ),
             ),
             title: Text(
               context.tr('checkForUpdates'),
@@ -74,13 +102,31 @@ class _CustomDrawerState extends State<CustomDrawer> {
             ),
             onTap: () {
               Navigator.pop(context); // بستن drawer
-              NavigationService.navigateToPage(const CheckUpdatePage());
+              ProfessionalNavigationService.fadeThrough(
+                context,
+                const CheckUpdatePage(),
+                duration: const Duration(milliseconds: 350),
+              );
             },
           ),
           ListTile(
-            leading: Icon(
-              Icons.support_agent,
-              color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
+            leading: SizedBox(
+              width: 48,
+              height: 48,
+              child: Lottie.asset(
+                'assets/icone/support.json',
+                fit: BoxFit.contain,
+                delegates: isDark
+                    ? LottieDelegates(
+                        values: [
+                          ValueDelegate.color(
+                            const ['**'],
+                            value: Colors.blueAccent,
+                          ),
+                        ],
+                      )
+                    : null,
+              ),
             ),
             title: Text(
               context.tr('sendTicket'),
@@ -91,13 +137,27 @@ class _CustomDrawerState extends State<CustomDrawer> {
             ),
             onTap: () {
               Navigator.pop(context); // بستن drawer
-              NavigationService.navigateToPage(const TicketPage());
+              NavigationService.navigateToTicket(context);
             },
           ),
           ListTile(
-            leading: Icon(
-              Icons.info_outline,
-              color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
+            leading: SizedBox(
+              width: 48,
+              height: 48,
+              child: Lottie.asset(
+                'assets/icone/about.json',
+                fit: BoxFit.contain,
+                delegates: isDark
+                    ? LottieDelegates(
+                        values: [
+                          ValueDelegate.color(
+                            const ['**'],
+                            value: Colors.greenAccent,
+                          ),
+                        ],
+                      )
+                    : null,
+              ),
             ),
             title: Text(
               context.tr('aboutUs'),
@@ -108,7 +168,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             ),
             onTap: () {
               Navigator.pop(context); // بستن drawer
-              NavigationService.navigateToPage(const AboutPage());
+              NavigationService.navigateToAbout(context);
             },
           ),
         ],

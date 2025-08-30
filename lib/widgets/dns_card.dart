@@ -1,11 +1,12 @@
 // lib/widgets/dns_card.dart
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:flutter/gestures.dart';
+import 'package:provider/provider.dart';
+
 import '../path/path.dart'; // Assuming AppColors, context.tr are defined here or in imports
 import '../widgets/animated_overflow_label.dart';
-import 'package:provider/provider.dart';
 
 class DnsCard extends StatelessWidget {
   final DnsRecord record;
@@ -229,7 +230,7 @@ class DnsCard extends StatelessWidget {
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
                                     final text = record.ip1;
-                                    final textStyle = const TextStyle(
+                                    const textStyle = TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFF607D8B),
                                     );
@@ -304,7 +305,7 @@ class DnsCard extends StatelessWidget {
                                                     ),
                                                   )
                                                 : Text(
-                                                    '${bestPing} ms',
+                                                    '$bestPing ms',
                                                     style: TextStyle(
                                                       color: pingColor,
                                                       fontWeight:
@@ -348,7 +349,7 @@ class DnsCard extends StatelessWidget {
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
                                     final text = record.ip2 ?? '';
-                                    final textStyle = const TextStyle(
+                                    const textStyle = TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFF90A4AE),
                                     );
@@ -423,7 +424,7 @@ class DnsCard extends StatelessWidget {
                                                     ),
                                                   )
                                                 : Text(
-                                                    '${bestPing2} ms',
+                                                    '$bestPing2 ms',
                                                     style: TextStyle(
                                                       color: ping2Color,
                                                       fontWeight:

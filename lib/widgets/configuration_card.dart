@@ -1,11 +1,13 @@
 // lib/widgets/configuration_card.dart
 
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../path/path.dart';
+import '../services/navigation_service.dart';
 import '../utils/responsive_size.dart';
 import '../widgets/semi_transparent_text.dart';
-import '../services/navigation_service.dart';
 // assume AppColors, context.tr, DnsListPage, etc
 
 class ConfigurationCard extends StatelessWidget {
@@ -149,14 +151,14 @@ class ConfigurationCard extends StatelessWidget {
               // آیکون تنظیمات با افکت سایه
               Container(
                 width: responsiveSize(
-                  32,
+                  48,
                   context,
                   min: 24,
                   max: 50,
                   scaleByHeight: true,
                 ),
                 height: responsiveSize(
-                  32,
+                  48,
                   context,
                   min: 24,
                   max: 50,
@@ -174,45 +176,9 @@ class ConfigurationCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(
-                      Icons.settings,
-                      color: AppColors.pureWhite,
-                      size: responsiveSize(
-                        16,
-                        context,
-                        min: 12,
-                        max: 20,
-                        scaleByHeight: true,
-                      ),
-                    ),
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        width: responsiveSize(
-                          6,
-                          context,
-                          min: 4,
-                          max: 8,
-                          scaleByHeight: true,
-                        ),
-                        height: responsiveSize(
-                          6,
-                          context,
-                          min: 4,
-                          max: 8,
-                          scaleByHeight: true,
-                        ),
-                        decoration: const BoxDecoration(
-                          color: AppColors.textSuccess,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ],
+                child: Lottie.asset(
+                  'assets/icone/settings.json',
+                  fit: BoxFit.contain,
                 ),
               ),
             ],

@@ -43,6 +43,8 @@ dependencies:
   bloc: ^8.1.2
   flutter_bloc: ^8.1.3
   equatable: ^2.0.5
+  animations: ^2.0.11
+  get: ^4.6.6
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -57,8 +59,28 @@ flutter:
   assets:
     - assets/icone/Fire.json
     - assets/icone/laptop.json
+    - assets/icone/settings.json
     - assets/icone/success_animation.json
-    # - assets/config/firebase-service-account.json
+    - assets/icone/telegram.json
+    - assets/icone/instagram.json
+    - assets/icone/linkedin.json
+    - assets/icone/tiktok.json
+    - assets/icone/twitter.json
+    - assets/icone/about.json
+    - assets/icone/language.json
+    - assets/icone/notifications.json
+    - assets/icone/theme.json
+    - assets/icone/info.json
+    - assets/icone/dns.json
+    - assets/icone/test_type.json
+    - assets/icone/power.json
+    - assets/icone/support.json
+    - assets/icone/speed_test_alt.json
+    - assets/icone/github_alt.json
+    - assets/icone/website_new.json
+    - assets/icone/connected.json
+    - assets/icone/WiFiConnecting.json
+    - assets/icone/process.json
     - assets/logo/logo.png
   fonts:
       - family: IranSansX

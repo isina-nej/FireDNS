@@ -26,6 +26,10 @@ export '../screens/homepage.dart';
 export '../screens/dns_list.dart';
 export '../screens/speed_test_page.dart';
 export '../screens/settings_page.dart';
+export '../screens/notification_list_page.dart';
+export '../screens/profile_page.dart';
+export '../screens/about_page.dart';
+export '../screens/ticket_page.dart';
 
 // services
 export '../services/dns_service.dart';

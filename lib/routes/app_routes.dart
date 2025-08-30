@@ -1,5 +1,6 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
-import '../screens/notification_list_page.dart';
+
 import '../path/path.dart';
 
 class AppRoutes {
@@ -17,11 +18,20 @@ class AppRoutes {
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case home:
-        return MaterialPageRoute(
-          builder: (context) => FireDNSHomePage(
-            title: context.tr('appTitle'),
-            key: const ValueKey('home_page'),
+        return PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const FireDNSHomePage(
+            title: 'FireDNS',
+            key: ValueKey('home_page'),
           ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeThroughTransition(
+              animation: animation,
+              secondaryAnimation: secondaryAnimation,
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 350),
           settings: settings,
         );
       case notifications:
@@ -30,19 +40,39 @@ class AppRoutes {
         final highlightNotificationId =
             args?['highlightNotificationId'] as String?;
 
-        return MaterialPageRoute(
-          builder: (context) => NotificationListPage(
+        return PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              NotificationListPage(
             highlightNotificationId: highlightNotificationId,
           ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SharedAxisTransition(
+              animation: animation,
+              secondaryAnimation: secondaryAnimation,
+              transitionType: SharedAxisTransitionType.horizontal,
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 400),
           settings: settings,
         );
       default:
         // اگر مسیر شناخته شده نبود، به صفحه اصلی برمی‌گردیم
-        return MaterialPageRoute(
-          builder: (context) => FireDNSHomePage(
-            title: context.tr('appTitle'),
-            key: const ValueKey('home_page'),
+        return PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const FireDNSHomePage(
+            title: 'FireDNS',
+            key: ValueKey('home_page'),
           ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeThroughTransition(
+              animation: animation,
+              secondaryAnimation: secondaryAnimation,
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 350),
+          settings: settings,
         );
     }
   }

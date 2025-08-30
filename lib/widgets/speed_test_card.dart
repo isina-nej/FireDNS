@@ -1,11 +1,12 @@
 // lib/widgets/speed_test_card.dart
 
 import 'package:flutter/material.dart';
-import '../path/path.dart';
+import 'package:lottie/lottie.dart';
 
+import '../path/path.dart';
+import '../services/navigation_service.dart';
 import '../utils/responsive_size.dart';
 import '../widgets/semi_transparent_text.dart';
-import '../services/navigation_service.dart';
 // assume AppColors, context.tr
 
 class SpeedTestCard extends StatelessWidget {
@@ -108,14 +109,14 @@ class SpeedTestCard extends StatelessWidget {
               // آیکون سرعت با افکت سایه
               Container(
                 width: responsiveSize(
-                  32,
+                  48,
                   context,
                   min: 24,
                   max: 50,
                   scaleByHeight: true,
                 ),
                 height: responsiveSize(
-                  32,
+                  48,
                   context,
                   min: 24,
                   max: 50,
@@ -133,16 +134,9 @@ class SpeedTestCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.speed,
-                  color: AppColors.pureWhite,
-                  size: responsiveSize(
-                    18,
-                    context,
-                    min: 14,
-                    max: 25,
-                    scaleByHeight: true,
-                  ),
+                child: Lottie.asset(
+                  'assets/icone/speed_test_alt.json',
+                  fit: BoxFit.contain,
                 ),
               ),
             ],

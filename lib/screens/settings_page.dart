@@ -1,7 +1,9 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart' show Lottie, LottieDelegates, ValueDelegate;
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../path/path.dart';
 import '../services/notification_service.dart';
@@ -65,7 +67,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 Consumer<LanguageManager>(
                   builder: (context, languageManager, child) {
                     return _buildSettingItem(
-                      icon: Icons.language,
+                      icon: 'assets/icone/language.json',
                       title: context.tr('language'),
                       subtitle: languageManager.languageName,
                       onTap: () {
@@ -75,7 +77,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   },
                 ),
                 _buildSettingItem(
-                  icon: Icons.dark_mode,
+                  icon: 'assets/icone/theme.json',
                   title: context.tr('appTheme'),
                   subtitle: themeManager.getThemeName(context),
                   onTap: () {
@@ -91,7 +93,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 Consumer<NotificationService>(
                   builder: (context, notificationService, child) {
                     return _buildSettingItem(
-                      icon: Icons.notifications,
+                      icon: 'assets/icone/notifications.json',
                       title: context.tr('notificationsEnabled'),
                       isSwitch: true,
                       switchValue: notificationService.notificationsEnabled,
@@ -110,7 +112,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 Consumer<DnsTestSettingsService>(
                   builder: (context, dnsTestSettingsService, child) {
                     return _buildSettingItem(
-                      icon: Icons.dns,
+                      icon: 'assets/icone/dns.json',
                       title: context.tr('testType'),
                       subtitle: dnsTestSettingsService.getTestTypeName(
                         dnsTestSettingsService.testType,
@@ -127,10 +129,68 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 16),
             _buildSettingSection(
+              title: 'شبکه‌های اجتماعی',
+              items: [
+                _buildSettingItem(
+                  icon: 'assets/icone/twitter.json',
+                  title: 'Twitter',
+                  onTap: () async {
+                    final url = Uri.parse('https://x.com/isina_nej');
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url);
+                    }
+                  },
+                ),
+                _buildSettingItem(
+                  icon: 'assets/icone/linkedin.json',
+                  title: 'LinkedIn',
+                  onTap: () async {
+                    final url =
+                        Uri.parse('https://www.linkedin.com/in/isina-nej/');
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url);
+                    }
+                  },
+                ),
+                _buildSettingItem(
+                  icon: 'assets/icone/telegram.json',
+                  title: 'Telegram',
+                  onTap: () async {
+                    final url = Uri.parse('https://t.me/Fire_DNS');
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url);
+                    }
+                  },
+                ),
+                _buildSettingItem(
+                  icon: 'assets/icone/github_alt.json',
+                  title: 'GitHub',
+                  onTap: () async {
+                    final url =
+                        Uri.parse('https://github.com/isina-nej/FireDNS');
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url);
+                    }
+                  },
+                ),
+                _buildSettingItem(
+                  icon: 'assets/icone/website_new.json',
+                  title: 'Website',
+                  onTap: () async {
+                    final url = Uri.parse('https://Fire-DNS.ir');
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url);
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSettingSection(
               title: context.tr('aboutUs'),
               items: [
                 _buildSettingItem(
-                  icon: Icons.info_outline,
+                  icon: 'assets/icone/info.json',
                   title: context.tr('appVersion'),
                   subtitle: '2.0.0',
                   // onTap: () {},
@@ -186,7 +246,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildSettingItem({
-    required IconData icon,
+    dynamic icon, // Can be IconData or String (for Lottie asset)
     required String title,
     String? subtitle,
     VoidCallback? onTap,
@@ -206,9 +266,69 @@ class _SettingsPageState extends State<SettingsPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                Icon(icon,
-                    color: isDark ? AppColors.brightBlue : Colors.blue,
-                    size: 24),
+                if (icon is IconData)
+                  Icon(icon,
+                      color: isDark ? AppColors.brightBlue : Colors.blue,
+                      size: 64)
+                else if (icon is String)
+                  SizedBox(
+                    width: 64,
+                    height: 64,
+                    child: Lottie.asset(
+                      icon,
+                      fit: BoxFit.contain,
+                      delegates: icon == 'assets/icone/notifications.json'
+                          ? LottieDelegates(
+                              values: [
+                                ValueDelegate.color(
+                                  const ['**'],
+                                  value: Colors.yellow,
+                                ),
+                              ],
+                            )
+                          : icon == 'assets/icone/laptop.json'
+                              ? LottieDelegates(
+                                  values: [
+                                    ValueDelegate.color(
+                                      const ['**'],
+                                      value: Colors.lightBlueAccent,
+                                    ),
+                                  ],
+                                )
+                              : icon == 'assets/icone/info.json'
+                                  ? LottieDelegates(
+                                      values: [
+                                        ValueDelegate.color(
+                                          const ['**'],
+                                          value: Colors.tealAccent,
+                                        ),
+                                      ],
+                                    )
+                                  : icon == 'assets/icone/website_new.json'
+                                      ? LottieDelegates(
+                                          values: [
+                                            ValueDelegate.color(
+                                              const ['**'],
+                                              value: Colors.blueAccent,
+                                            ),
+                                          ],
+                                        )
+                                      : icon == 'assets/icone/github_alt.json'
+                                          ? LottieDelegates(
+                                              values: [
+                                                ValueDelegate.color(
+                                                  const ['**'],
+                                                  value: Colors.white,
+                                                ),
+                                              ],
+                                            )
+                                          : null,
+                    ),
+                  )
+                else
+                  Icon(Icons.help_outline,
+                      color: isDark ? AppColors.brightBlue : Colors.blue,
+                      size: 64),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -242,9 +362,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   Switch(
                     value: switchValue,
                     onChanged: onChanged,
-                    activeColor: isDark ? AppColors.brightBlue : Colors.blue,
+                    activeThumbColor:
+                        isDark ? AppColors.brightBlue : Colors.blue,
                   )
-                else
+                else if (onTap != null)
                   Icon(
                     Icons.arrow_forward_ios,
                     color: isDark ? AppColors.darkIconSecondary : Colors.grey,

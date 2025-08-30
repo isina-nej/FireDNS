@@ -39,7 +39,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.firedns"
-        minSdk = 23 // Updated for firebase_messaging compatibility
+        minSdk = flutter.minSdkVersion // Updated for firebase_messaging compatibility
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

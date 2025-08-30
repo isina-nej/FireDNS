@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api/services/dns_api_service.dart';
 import 'blocs/dns/dns_bloc.dart';
@@ -366,8 +367,7 @@ class _FireDNSAppState extends State<FireDNSApp> {
                   _buildTheme(themeManager.lightTheme, languageManager);
               final dark = _buildTheme(themeManager.darkTheme, languageManager);
 
-              return MaterialApp(
-                navigatorKey: NavigationService.navigatorKey,
+              return GetMaterialApp(
                 title: 'Fire DNS',
                 theme: light,
                 darkTheme: dark,

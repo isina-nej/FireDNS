@@ -2,11 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+
+// assume AppColors, context.tr, etc are imported or passed
+import '../path/path.dart';
 // import other necessary
 import '../utils/responsive_size.dart';
 import '../widgets/semi_transparent_text.dart';
-// assume AppColors, context.tr, etc are imported or passed
-import '../path/path.dart';
 
 class ConnectionStatusCard extends StatelessWidget {
   final double height;
@@ -21,7 +22,7 @@ class ConnectionStatusCard extends StatelessWidget {
   final TextEditingController dns2Controller;
 
   const ConnectionStatusCard({
-    Key? key,
+    super.key,
     required this.height,
     required this.themeManager,
     required this.vpnActive,
@@ -32,7 +33,7 @@ class ConnectionStatusCard extends StatelessWidget {
     required this.selectedDnsIp,
     required this.dns1Controller,
     required this.dns2Controller,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -48,12 +49,12 @@ class ConnectionStatusCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(
           responsiveSize(14, context, min: 6, max: 20, scaleByHeight: true),
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.shadow,
             spreadRadius: 1,
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -63,7 +64,7 @@ class ConnectionStatusCard extends StatelessWidget {
           Positioned.fill(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final double factor = 1.2; // کاهش اندازه انیمیشن
+                const double factor = 1.2; // کاهش اندازه انیمیشن
                 return Opacity(
                   opacity: 0.45, // کاهش شفافیت برای وضوح بیشتر متن‌ها
                   child: Align(
@@ -100,7 +101,8 @@ class ConnectionStatusCard extends StatelessWidget {
           ),
           // استفاده از SingleChildScrollView برای جلوگیری از سرریز
           SingleChildScrollView(
-            physics: NeverScrollableScrollPhysics(), // غیرفعال کردن اسکرول دستی
+            physics:
+                const NeverScrollableScrollPhysics(), // غیرفعال کردن اسکرول دستی
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -129,12 +131,12 @@ class ConnectionStatusCard extends StatelessWidget {
                         duration: const Duration(milliseconds: 500),
                         tween: ColorTween(
                           begin: vpnLoading
-                              ? AppColors.textSuccess
+                              ? AppColors.brightBlue
                               : (vpnActive
-                                  ? AppColors.textSuccess
+                                  ? AppColors.brightBlue
                                   : AppColors.statusDisconnected),
                           end: vpnActive
-                              ? AppColors.textSuccess
+                              ? AppColors.brightBlue
                               : AppColors.statusDisconnected,
                         ),
                         builder: (context, color, _) {
@@ -167,57 +169,134 @@ class ConnectionStatusCard extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              transitionBuilder:
-                                  (Widget child, Animation<double> animation) {
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: ScaleTransition(
-                                    scale: animation,
-                                    child: child,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // دایره پس‌زمینه
+                                Container(
+                                  width: responsiveSize(
+                                    70,
+                                    context,
+                                    min: 40,
+                                    max: 90,
+                                    scaleByHeight: true,
                                   ),
-                                );
-                              },
-                              child: vpnLoading
-                                  ? Center(
-                                      key: const ValueKey('loading'),
-                                      child: SizedBox(
-                                        width: responsiveSize(
-                                          36,
-                                          context,
-                                          min: 20,
-                                          max: 40,
-                                          scaleByHeight: true,
-                                        ),
-                                        height: responsiveSize(
-                                          36,
-                                          context,
-                                          min: 20,
-                                          max: 40,
-                                          scaleByHeight: true,
-                                        ),
-                                        child: CircularProgressIndicator(
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                            AppColors.pureWhite,
+                                  height: responsiveSize(
+                                    70,
+                                    context,
+                                    min: 40,
+                                    max: 90,
+                                    scaleByHeight: true,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        color ?? AppColors.statusDisconnected,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: (color ??
+                                                AppColors.statusDisconnected)
+                                            .withOpacity(0.3),
+                                        blurRadius: 12,
+                                        spreadRadius: 2,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // آیکن‌ها روی دایره
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 300),
+                                  transitionBuilder: (Widget child,
+                                      Animation<double> animation) {
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: ScaleTransition(
+                                        scale: animation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: vpnLoading
+                                      ? SizedBox(
+                                          key: const ValueKey('loading'),
+                                          width: responsiveSize(
+                                            70,
+                                            context,
+                                            min: 40,
+                                            max: 90,
+                                            scaleByHeight: true,
                                           ),
-                                          strokeWidth: 4,
-                                        ),
-                                      ),
-                                    )
-                                  : Icon(
-                                      Icons.power_settings_new,
-                                      key: const ValueKey('power'),
-                                      color: AppColors.pureWhite,
-                                      size: responsiveSize(
-                                        40,
-                                        context,
-                                        min: 24,
-                                        max: 48,
-                                        scaleByHeight: true,
-                                      ),
-                                    ),
+                                          height: responsiveSize(
+                                            70,
+                                            context,
+                                            min: 40,
+                                            max: 90,
+                                            scaleByHeight: true,
+                                          ),
+                                          child: Lottie.asset(
+                                            'assets/icone/process.json',
+                                            fit: BoxFit.contain,
+                                            repeat: true,
+                                            animate: true,
+                                          ),
+                                        )
+                                      : vpnActive
+                                          ? SizedBox(
+                                              key: const ValueKey('connected'),
+                                              width: responsiveSize(
+                                                70,
+                                                context,
+                                                min: 40,
+                                                max: 90,
+                                                scaleByHeight: true,
+                                              ),
+                                              height: responsiveSize(
+                                                70,
+                                                context,
+                                                min: 40,
+                                                max: 90,
+                                                scaleByHeight: true,
+                                              ),
+                                              child: ColorFiltered(
+                                                colorFilter:
+                                                    const ColorFilter.mode(
+                                                  AppColors.pureWhite,
+                                                  BlendMode.srcIn,
+                                                ),
+                                                child: Lottie.asset(
+                                                  'assets/icone/WiFiConnecting.json',
+                                                  fit: BoxFit.contain,
+                                                  repeat: true,
+                                                  animate: true,
+                                                ),
+                                              ),
+                                            )
+                                          : SizedBox(
+                                              key: const ValueKey('power'),
+                                              width: responsiveSize(
+                                                70,
+                                                context,
+                                                min: 40,
+                                                max: 90,
+                                                scaleByHeight: true,
+                                              ),
+                                              height: responsiveSize(
+                                                70,
+                                                context,
+                                                min: 40,
+                                                max: 90,
+                                                scaleByHeight: true,
+                                              ),
+                                              child: Lottie.asset(
+                                                'assets/icone/power.json',
+                                                fit: BoxFit.contain,
+                                                repeat: true,
+                                                animate: true,
+                                              ),
+                                            ),
+                                ),
+                              ],
                             ),
                           );
                         },

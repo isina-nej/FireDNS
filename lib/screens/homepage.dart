@@ -247,8 +247,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
         if (_vpnActive || status) {
           setState(() {
-            _vpnActive = status;
             _vpnLoading = false;
+            _vpnActive = status;
           });
 
           VpnStatusService.notifyVpnStatus(status);
@@ -256,14 +256,14 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       } catch (e) {
         debugPrint('Error checking initial status: $e');
         setState(() {
-          _vpnActive = false;
           _vpnLoading = false;
+          _vpnActive = false;
         });
       }
     } else {
       setState(() {
-        _vpnActive = false;
         _vpnLoading = false;
+        _vpnActive = false;
       });
     }
   }
@@ -312,8 +312,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       debugPrint('New service status after toggle: $newStatus');
 
       setState(() {
-        _vpnActive = newStatus;
         _vpnLoading = false;
+        _vpnActive = newStatus;
       });
 
       await _reportDnsUsage(newStatus);
@@ -428,8 +428,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         );
 
         setState(() {
-          _vpnActive = actualStatus;
           _vpnLoading = false;
+          _vpnActive = actualStatus;
         });
       } catch (e) {
         debugPrint('Error activating VPN: $e');
@@ -444,8 +444,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           isDarkModeActive: () => _themeManager.isDarkModeActive(context),
         );
         setState(() {
-          _vpnActive = false;
           _vpnLoading = false;
+          _vpnActive = false;
         });
 
         // ارسال گزارش خطا در فعال‌سازی DNS
@@ -515,16 +515,16 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         try {
           final actualStatus = await DnsService.getServiceStatus();
           setState(() {
-            _vpnActive = actualStatus;
             _vpnLoading = false;
+            _vpnActive = actualStatus;
           });
 
           // ارسال گزارش تغییر وضعیت DNS به سرور
           await _reportDnsUsage(actualStatus);
         } catch (_) {
           setState(() {
-            _vpnActive = false;
             _vpnLoading = false;
+            _vpnActive = false;
           });
 
           // ارسال گزارش خطا به سرور
@@ -533,8 +533,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       }
     } else {
       setState(() {
-        _vpnActive = false;
         _vpnLoading = false;
+        _vpnActive = false;
       });
     }
   }

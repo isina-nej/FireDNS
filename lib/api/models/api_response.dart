@@ -18,9 +18,9 @@ class ApiResponse<T> {
     T Function(dynamic)? fromJsonT,
   ) {
     return ApiResponse<T>(
-      status: json['status'] as bool,
-      message: json['message'] as String,
-      errorCode: json['errorCode'] as String?,
+      status: json['status'] is bool ? json['status'] : false,
+      message: json['message']?.toString() ?? 'پیام خطا موجود نیست',
+      errorCode: json['errorCode']?.toString(),
       data: json['data'] != null && fromJsonT != null
           ? fromJsonT(json['data'])
           : json['data'] as T?,
