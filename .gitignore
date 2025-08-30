@@ -1,3 +1,20 @@
+# Android related
+*.apk
+*.aab
+
+# Signing keys
+my-release-key.jks
+android/app/my-release-key.jks
+
+# Firebase service account keys
+assets/config/firebase-service-account.json
+config/firebase-service-account.json
+
+# Environment variables
+.env
+.env.local
+.env.production
+
 # Miscellaneous
 *.class
 *.log
