@@ -103,11 +103,12 @@ class _AnimatedDrawerMenuState extends State<AnimatedDrawerMenu>
                       child: FadeTransition(
                         opacity: _opacityAnim,
                         child: Container(
-                          width: 160,
+                          width: MediaQuery.of(context).size.width * 0.4,
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(
                             color: menuColor,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(
+                                MediaQuery.of(context).size.width * 0.03),
                             boxShadow: const [
                               BoxShadow(
                                 color: Colors.black12,
@@ -176,8 +177,10 @@ class _AnimatedMenuItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            Icon(icon, color: Colors.black54, size: 22),
-            const SizedBox(width: 12),
+            Icon(icon,
+                color: Colors.black54,
+                size: MediaQuery.of(context).size.width * 0.055),
+            SizedBox(width: MediaQuery.of(context).size.width * 0.03),
             Text(
               text,
               style: const TextStyle(

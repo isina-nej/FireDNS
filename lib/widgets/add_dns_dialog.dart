@@ -177,24 +177,27 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
         ),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.pureWhite,
-          borderRadius: BorderRadius.circular(AppSizes.radiusXXL),
+          borderRadius:
+              BorderRadius.circular(MediaQuery.of(context).size.width * 0.05),
           boxShadow: [
             BoxShadow(
               color: isDark ? AppColors.darkShadow : AppColors.cardShadow,
-              blurRadius: AppSizes.elevationVeryHigh * 2,
+              blurRadius: MediaQuery.of(context).size.width * 0.04,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppSizes.radiusXXL),
+          borderRadius:
+              BorderRadius.circular(MediaQuery.of(context).size.width * 0.05),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Header Section
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(AppSizes.paddingXXL),
+                padding:
+                    EdgeInsets.all(MediaQuery.of(context).size.width * 0.06),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -216,21 +219,23 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(AppSizes.paddingM),
+                          padding: EdgeInsets.all(
+                              MediaQuery.of(context).size.width * 0.03),
                           decoration: BoxDecoration(
                             color: isDark
                                 ? AppColors.brightBlue
                                 : AppColors.primaryBlue,
-                            borderRadius:
-                                BorderRadius.circular(AppSizes.radiusM),
+                            borderRadius: BorderRadius.circular(
+                                MediaQuery.of(context).size.width * 0.02),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.dns_rounded,
                             color: AppColors.pureWhite,
-                            size: AppSizes.iconL,
+                            size: MediaQuery.of(context).size.width * 0.06,
                           ),
                         ),
-                        const SizedBox(width: AppSizes.spaceL),
+                        SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.04),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +250,9 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: AppSizes.spaceXS),
+                              SizedBox(
+                                  height: MediaQuery.of(context).size.height *
+                                      0.005),
                               Text(
                                 context.tr('addCustomDnsDescription'),
                                 style:
@@ -267,7 +274,8 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
               // Content Section
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppSizes.paddingXXL),
+                  padding:
+                      EdgeInsets.all(MediaQuery.of(context).size.width * 0.06),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -286,18 +294,20 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                           focusNode: _labelFocusNode,
                         ),
 
-                        const SizedBox(height: AppSizes.spaceXL),
+                        SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.025),
 
                         // DNS Servers Section
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(AppSizes.paddingL),
+                          padding: EdgeInsets.all(
+                              MediaQuery.of(context).size.width * 0.04),
                           decoration: BoxDecoration(
                             color: isDark
                                 ? AppColors.darkSurfaceVariant
                                 : AppColors.selectedLight,
-                            borderRadius:
-                                BorderRadius.circular(AppSizes.radiusL),
+                            borderRadius: BorderRadius.circular(
+                                MediaQuery.of(context).size.width * 0.02),
                             border: Border.all(
                               color: isDark
                                   ? AppColors.brightBlue.withValues(alpha: 0.3)
@@ -315,9 +325,12 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                                     color: isDark
                                         ? AppColors.brightBlue
                                         : AppColors.primaryBlue,
-                                    size: AppSizes.iconM,
+                                    size: MediaQuery.of(context).size.width *
+                                        0.05,
                                   ),
-                                  const SizedBox(width: AppSizes.spaceS),
+                                  SizedBox(
+                                      width: MediaQuery.of(context).size.width *
+                                          0.02),
                                   Text(
                                     context.tr('dnsServers'),
                                     style: AppTextStyles.labelLarge(context)
@@ -330,7 +343,9 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: AppSizes.spaceL),
+                              SizedBox(
+                                  height: MediaQuery.of(context).size.height *
+                                      0.02),
 
                               // Primary DNS
                               IpInputField(
@@ -344,7 +359,9 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                                 },
                               ),
 
-                              const SizedBox(height: AppSizes.spaceL),
+                              SizedBox(
+                                  height: MediaQuery.of(context).size.height *
+                                      0.02),
 
                               // Secondary DNS
                               Focus(
@@ -372,7 +389,8 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
               // Action Buttons Section
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(AppSizes.paddingXXL),
+                padding:
+                    EdgeInsets.all(MediaQuery.of(context).size.width * 0.06),
                 decoration: BoxDecoration(
                   color: isDark
                       ? AppColors.darkBackground
@@ -382,7 +400,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                       color: isDark
                           ? AppColors.darkBorder.withValues(alpha: 0.2)
                           : AppColors.lightGray,
-                      width: AppSizes.borderThin,
+                      width: MediaQuery.of(context).size.width * 0.001,
                     ),
                   ),
                 ),
@@ -399,7 +417,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
                       ),
                     ),
 
-                    const SizedBox(width: AppSizes.spaceL),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.04),
 
                     // Add Button
                     Expanded(
@@ -441,7 +459,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: AppSizes.spaceS),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
         TextFormField(
           controller: controller,
           focusNode: focusNode,
@@ -453,7 +471,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
             prefixIcon: Icon(
               icon,
               color: isDark ? AppColors.brightBlue : AppColors.primaryBlue,
-              size: AppSizes.iconM,
+              size: MediaQuery.of(context).size.width * 0.05,
             ),
             hintStyle: AppTextStyles.bodyMedium(context).copyWith(
               color: isDark ? AppColors.darkTextLight : AppColors.textLight,
@@ -462,7 +480,8 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
             fillColor:
                 isDark ? AppColors.darkCardBackground : AppColors.pureWhite,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              borderRadius: BorderRadius.circular(
+                  MediaQuery.of(context).size.width * 0.02),
               borderSide: BorderSide(
                 color: isDark
                     ? AppColors.darkBorder.withValues(alpha: 0.3)
@@ -470,7 +489,8 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              borderRadius: BorderRadius.circular(
+                  MediaQuery.of(context).size.width * 0.02),
               borderSide: BorderSide(
                 color: isDark
                     ? AppColors.darkBorder.withValues(alpha: 0.3)
@@ -478,22 +498,24 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              borderRadius: BorderRadius.circular(
+                  MediaQuery.of(context).size.width * 0.02),
               borderSide: BorderSide(
                 color: isDark ? AppColors.brightBlue : AppColors.primaryBlue,
-                width: AppSizes.borderMedium,
+                width: MediaQuery.of(context).size.width * 0.002,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusL),
-              borderSide: const BorderSide(
+              borderRadius: BorderRadius.circular(
+                  MediaQuery.of(context).size.width * 0.02),
+              borderSide: BorderSide(
                 color: AppColors.textError,
-                width: AppSizes.borderMedium,
+                width: MediaQuery.of(context).size.width * 0.002,
               ),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingL,
-              vertical: AppSizes.paddingL,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width * 0.04,
+              vertical: MediaQuery.of(context).size.width * 0.04,
             ),
           ),
           validator: validator,
@@ -510,7 +532,7 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
     required bool isDark,
   }) {
     return SizedBox(
-      height: AppSizes.buttonHeight + 4,
+      height: MediaQuery.of(context).size.height * 0.06,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -520,29 +542,31 @@ class _AddDnsDialogState extends State<AddDnsDialog> {
           foregroundColor: isSecondary
               ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
               : AppColors.pureWhite,
-          elevation: isSecondary ? 0 : AppSizes.elevationMedium,
+          elevation:
+              isSecondary ? 0 : MediaQuery.of(context).size.width * 0.005,
           shadowColor: isDark ? AppColors.darkShadow : AppColors.cardShadow,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+            borderRadius:
+                BorderRadius.circular(MediaQuery.of(context).size.width * 0.02),
             side: isSecondary
                 ? BorderSide(
                     color: isDark
                         ? AppColors.darkBorder.withValues(alpha: 0.5)
                         : AppColors.lightGray,
-                    width: AppSizes.borderThin,
+                    width: MediaQuery.of(context).size.width * 0.001,
                   )
                 : BorderSide.none,
           ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.paddingXL,
-            vertical: AppSizes.paddingL,
+          padding: EdgeInsets.symmetric(
+            horizontal: MediaQuery.of(context).size.width * 0.05,
+            vertical: MediaQuery.of(context).size.width * 0.04,
           ),
         ),
         child: isLoading
-            ? const SizedBox(
-                width: AppSizes.iconM,
-                height: AppSizes.iconM,
-                child: CircularProgressIndicator(
+            ? SizedBox(
+                width: MediaQuery.of(context).size.width * 0.05,
+                height: MediaQuery.of(context).size.width * 0.05,
+                child: const CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     AppColors.pureWhite,

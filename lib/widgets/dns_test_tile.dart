@@ -2,13 +2,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../path/path.dart'; // Assuming AppColors, context.tr are imported
 // import '../utils/dns_service.dart'; // Assuming DnsService is here
 
 class DnsTestTile extends StatefulWidget {
   final String domain;
   final DnsRecord record;
-  const DnsTestTile({required this.domain, required this.record});
+  const DnsTestTile({super.key, required this.domain, required this.record});
 
   @override
   State<DnsTestTile> createState() => _DnsTestTileState();
@@ -57,10 +58,10 @@ class _DnsTestTileState extends State<DnsTestTile> {
         ),
       ),
       trailing: _loading
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
+          ? SizedBox(
+              width: MediaQuery.of(context).size.width * 0.06,
+              height: MediaQuery.of(context).size.width * 0.06,
+              child: const CircularProgressIndicator(strokeWidth: 2),
             )
           : status != null
               ? Text(

@@ -55,12 +55,12 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.error_outline,
             color: Colors.red,
-            size: 48,
+            size: MediaQuery.of(context).size.width * 0.12,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
           const Text(
             'Unexpected Error',
             style: TextStyle(
@@ -69,7 +69,7 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
               color: Colors.red,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.01),
           Text(
             _error?.toString() ?? 'Unknown error occurred',
             style: const TextStyle(

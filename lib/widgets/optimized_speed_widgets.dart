@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../path/path.dart';
 
 /// ویجت بهینه‌سازی شده برای نمایش نتایج تست سرعت
@@ -30,7 +31,7 @@ class OptimizedSpeedResultTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark ? Colors.white12 : Colors.grey.shade200,
-          width: 1,
+          width: MediaQuery.of(context).size.width * 0.00025,
         ),
       ),
       child: Row(
@@ -38,11 +39,11 @@ class OptimizedSpeedResultTile extends StatelessWidget {
           if (icon != null) ...[
             Icon(
               icon,
-              size: 20,
+              size: MediaQuery.of(context).size.width * 0.05,
               color:
                   iconColor ?? (isDark ? Colors.white70 : Colors.grey.shade600),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: MediaQuery.of(context).size.width * 0.03),
           ],
           Expanded(
             child: Text(
@@ -96,18 +97,18 @@ class OptimizedInfoTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark ? Colors.white12 : Colors.grey.shade200,
-          width: 1,
+          width: MediaQuery.of(context).size.width * 0.00025,
         ),
       ),
       child: Row(
         children: [
           Icon(
             icon,
-            size: 24,
+            size: MediaQuery.of(context).size.width * 0.06,
             color: iconColor ??
                 (isDark ? AppColors.brightBlue : Colors.blueAccent),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: MediaQuery.of(context).size.width * 0.04),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,7 +124,7 @@ class OptimizedInfoTile extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.0025),
                 Text(
                   value,
                   style: TextStyle(

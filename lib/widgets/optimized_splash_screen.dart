@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Splash screen بهینه برای startup
 class OptimizedSplashScreen extends StatelessWidget {
-  const OptimizedSplashScreen({Key? key}) : super(key: key);
+  const OptimizedSplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,17 +15,17 @@ class OptimizedSplashScreen extends StatelessWidget {
             children: [
               // لوگوی کوچک و بهینه
               SizedBox(
-                width: 80,
-                height: 80,
+                width: MediaQuery.of(context).size.width * 0.2,
+                height: MediaQuery.of(context).size.width * 0.2,
                 child: Image.asset(
                   'assets/logo/logo.png',
-                  width: 80,
-                  height: 80,
+                  width: MediaQuery.of(context).size.width * 0.2,
+                  height: MediaQuery.of(context).size.width * 0.2,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.03),
               const CircularProgressIndicator(),
-              const SizedBox(height: 16),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
               const Text(
                 'بارگذاری...',
                 style: TextStyle(

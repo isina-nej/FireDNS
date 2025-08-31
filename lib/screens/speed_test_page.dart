@@ -340,8 +340,15 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                         initialValue: downloadSpeed,
                                         appearance: CircularSliderAppearance(
                                           customWidths: CustomSliderWidths(
-                                            progressBarWidth: 20,
-                                            trackWidth: 18,
+                                            progressBarWidth:
+                                                MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.05,
+                                            trackWidth: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.045,
                                           ),
                                           customColors: CustomSliderColors(
                                             progressBarColor: isTesting
@@ -381,7 +388,10 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                           ),
                                           startAngle: 150,
                                           angleRange: 240,
-                                          size: 240,
+                                          size: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.6,
                                         ),
                                       )
                                     : SleekCircularSlider(
@@ -390,8 +400,15 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                         initialValue: uploadSpeed,
                                         appearance: CircularSliderAppearance(
                                           customWidths: CustomSliderWidths(
-                                            progressBarWidth: 20,
-                                            trackWidth: 18,
+                                            progressBarWidth:
+                                                MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.05,
+                                            trackWidth: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.045,
                                           ),
                                           customColors: CustomSliderColors(
                                             progressBarColor: isTesting
@@ -431,11 +448,16 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                           ),
                                           startAngle: 150,
                                           angleRange: 240,
-                                          size: 240,
+                                          size: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.6,
                                         ),
                                       ),
                               ),
-                              const SizedBox(height: 28),
+                              SizedBox(
+                                  height: MediaQuery.of(context).size.height *
+                                      0.035),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceEvenly,
@@ -462,7 +484,9 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 18),
+                              SizedBox(
+                                  height: MediaQuery.of(context).size.height *
+                                      0.022),
                               AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 400),
                                 child: isTesting
@@ -483,7 +507,9 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                       )
                                     : const SizedBox.shrink(),
                               ),
-                              const SizedBox(height: 10),
+                              SizedBox(
+                                  height: MediaQuery.of(context).size.height *
+                                      0.012),
                               AnimatedOpacity(
                                 duration: const Duration(milliseconds: 400),
                                 opacity: isTesting ? 1 : 0.0,
@@ -501,7 +527,8 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 36),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.045),
                       if (!isTesting) ...[
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 500),
@@ -537,7 +564,9 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                         isDark ? Colors.white : Colors.black87,
                                   ),
                                 ),
-                                const SizedBox(height: 14),
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.017),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
@@ -554,7 +583,9 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 10),
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.012),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
@@ -571,7 +602,9 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 18),
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.022),
                                 SizedBox(
                                   width: double.infinity,
                                   child: Container(
@@ -667,10 +700,10 @@ class InfoTile extends StatelessWidget {
       children: [
         Icon(
           icon,
-          size: 28,
+          size: MediaQuery.of(context).size.width * 0.07,
           color: isDark ? AppColors.brightBlue : Colors.blueAccent,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
         Text(
           label,
           style: TextStyle(
@@ -678,7 +711,7 @@ class InfoTile extends StatelessWidget {
             color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade700,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.005),
         Text(
           value,
           style: TextStyle(
@@ -713,7 +746,7 @@ class ResultTile extends StatelessWidget {
             color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade700,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.005),
         Text(
           value,
           style: TextStyle(

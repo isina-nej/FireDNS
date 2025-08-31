@@ -50,171 +50,177 @@ class _LoadingScreenState extends State<LoadingScreen>
       child: Scaffold(
         backgroundColor:
             isDarkMode ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
-      body: AnimatedBuilder(
-        animation: _fadeAnimation,
-        builder: (context, child) {
-          return Opacity(
-            opacity: _fadeAnimation.value,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Container با انیمیشن و لوگو
-                  Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDarkMode
-                              ? Colors.orange.withValues(alpha: 0.3)
-                              : Colors.blue.withValues(alpha: 0.2),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: Stack(
-                      children: [
-                        // انیمیشن Fire در پس‌زمینه
-                        Positioned.fill(
-                          child: Lottie.asset(
-                            'assets/icone/Fire.json',
-                            fit: BoxFit.contain,
-                            repeat: true,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.local_fire_department,
-                                size: 100,
-                                color: isDarkMode ? Colors.orange : Colors.blue,
-                              );
-                            },
+        body: AnimatedBuilder(
+          animation: _fadeAnimation,
+          builder: (context, child) {
+            return Opacity(
+              opacity: _fadeAnimation.value,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Container با انیمیشن و لوگو
+                    Container(
+                      width: MediaQuery.of(context).size.width * 0.4,
+                      height: MediaQuery.of(context).size.width * 0.4,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: isDarkMode
+                                ? Colors.orange.withValues(alpha: 0.3)
+                                : Colors.blue.withValues(alpha: 0.2),
+                            blurRadius: 20,
+                            spreadRadius: 5,
                           ),
-                        ),
-                        // Logo در وسط
-                        Center(
-                          child: Container(
-                            width: 70,
-                            height: 70,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(15),
-                              color: isDarkMode
-                                  ? Colors.white.withValues(alpha: 0.1)
-                                  : Colors.white.withValues(alpha: 0.8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          // انیمیشن Fire در پس‌زمینه
+                          Positioned.fill(
+                            child: Lottie.asset(
+                              'assets/icone/Fire.json',
+                              fit: BoxFit.contain,
+                              repeat: true,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.local_fire_department,
+                                  size:
+                                      MediaQuery.of(context).size.width * 0.25,
+                                  color:
+                                      isDarkMode ? Colors.orange : Colors.blue,
+                                );
+                              },
+                            ),
+                          ),
+                          // Logo در وسط
+                          Center(
+                            child: Container(
+                              width: MediaQuery.of(context).size.width * 0.15,
+                              height: MediaQuery.of(context).size.width * 0.15,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                color: isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.white.withValues(alpha: 0.8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(15),
+                                child: Image.asset(
+                                  'assets/logo/logo.png',
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.dns,
+                                      size: MediaQuery.of(context).size.width *
+                                          0.0875,
+                                      color: isDarkMode
+                                          ? Colors.white
+                                          : Colors.black,
+                                    );
+                                  },
                                 ),
-                              ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.04),
+
+                    // نام برنامه
+                    Text(
+                      'Fire DNS',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color:
+                            isDarkMode ? Colors.white : const Color(0xFF2D3748),
+                        letterSpacing: 1.5,
+                        shadows: [
+                          Shadow(
+                            color: isDarkMode
+                                ? Colors.orange.withValues(alpha: 0.3)
+                                : Colors.blue.withValues(alpha: 0.2),
+                            blurRadius: 5,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                    Text(
+                      'DNS over HTTPS',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.06),
+
+                    // نوار پیشرفت
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.5,
+                      child: Column(
+                        children: [
+                          Container(
+                            height: MediaQuery.of(context).size.height * 0.005,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(2),
+                              color: isDarkMode
+                                  ? Colors.grey[800]
+                                  : Colors.grey[300],
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: Image.asset(
-                                'assets/logo/logo.png',
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(
-                                    Icons.dns,
-                                    size: 35,
-                                    color: isDarkMode
-                                        ? Colors.white
-                                        : Colors.black,
-                                  );
-                                },
+                              borderRadius: BorderRadius.circular(2),
+                              child: LinearProgressIndicator(
+                                backgroundColor: Colors.transparent,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  isDarkMode ? Colors.orange : Colors.blue,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // نام برنامه
-                  Text(
-                    'Fire DNS',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color:
-                          isDarkMode ? Colors.white : const Color(0xFF2D3748),
-                      letterSpacing: 1.5,
-                      shadows: [
-                        Shadow(
-                          color: isDarkMode
-                              ? Colors.orange.withValues(alpha: 0.3)
-                              : Colors.blue.withValues(alpha: 0.2),
-                          blurRadius: 5,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  Text(
-                    'DNS over HTTPS',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-
-                  const SizedBox(height: 48),
-
-                  // نوار پیشرفت
-                  SizedBox(
-                    width: 200,
-                    child: Column(
-                      children: [
-                        Container(
-                          height: 4,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2),
-                            color: isDarkMode
-                                ? Colors.grey[800]
-                                : Colors.grey[300],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: LinearProgressIndicator(
-                              backgroundColor: Colors.transparent,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                isDarkMode ? Colors.orange : Colors.blue,
-                              ),
+                          SizedBox(
+                              height:
+                                  MediaQuery.of(context).size.height * 0.02),
+                          Text(
+                            'در حال بارگذاری...',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600],
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'در حال بارگذاری...',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isDarkMode
-                                ? Colors.grey[400]
-                                : Colors.grey[600],
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 32),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.04),
 
-                  // نقاط انیمیشن
-                  _AnimatedDots(isDarkMode: isDarkMode),
-                ],
+                    // نقاط انیمیشن
+                    _AnimatedDots(isDarkMode: isDarkMode),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      ),),
+            );
+          },
+        ),
+      ),
     );
   }
 }
@@ -263,8 +269,8 @@ class _AnimatedDotsState extends State<_AnimatedDots>
             return Transform.scale(
               scale: scale,
               child: Container(
-                width: 8,
-                height: 8,
+                width: MediaQuery.of(context).size.width * 0.02,
+                height: MediaQuery.of(context).size.width * 0.02,
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
                   color: (widget.isDarkMode

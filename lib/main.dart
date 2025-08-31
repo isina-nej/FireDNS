@@ -4,17 +4,17 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'api/services/dns_api_service.dart';
-import 'blocs/dns/dns_bloc.dart';
-import 'services/logger_service.dart';
 
 import 'api/models/update_info.dart';
 import 'api/services/api_client.dart';
+import 'api/services/dns_api_service.dart';
+import 'blocs/dns/dns_bloc.dart';
 import 'l10n/app_localizations.dart';
 import 'routes/app_routes.dart';
 import 'screens/force_update_page.dart';
@@ -26,6 +26,7 @@ import 'services/fcm_token_manager.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/flutter_error_handler.dart';
 import 'services/local_notification_service.dart';
+import 'services/logger_service.dart';
 import 'services/notification_service.dart';
 import 'services/notification_service_provider.dart';
 import 'styles/language_manager.dart';
@@ -69,6 +70,11 @@ class _BootResult {
 Future<_BootResult> _bootstrap() async {
   debugPrint('[BOOT] Starting bootstrap sequence');
   WidgetsFlutterBinding.ensureInitialized();
+
+  // قفل کردن برنامه به حالت عمودی
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
 
   // راه‌اندازی سیستم گزارش خطاها
   FlutterErrorHandler.initialize();

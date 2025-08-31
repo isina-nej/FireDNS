@@ -50,78 +50,78 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                // Logo با انیمیشن ساده
-                Transform.scale(
-                  scale: _logoAnimation.value,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: isDarkMode
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : Colors.white.withValues(alpha: 0.9),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDarkMode
-                              ? Colors.orange.withValues(alpha: 0.3)
-                              : Colors.blue.withValues(alpha: 0.2),
-                          blurRadius: 15,
-                          spreadRadius: 3,
+                  // Logo با انیمیشن ساده
+                  Transform.scale(
+                    scale: _logoAnimation.value,
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.3,
+                      height: MediaQuery.of(context).size.width * 0.3,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: isDarkMode
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : Colors.white.withValues(alpha: 0.9),
+                        boxShadow: [
+                          BoxShadow(
+                            color: isDarkMode
+                                ? Colors.orange.withValues(alpha: 0.3)
+                                : Colors.blue.withValues(alpha: 0.2),
+                            blurRadius: 15,
+                            spreadRadius: 3,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/logo/logo.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.dns,
+                              size: MediaQuery.of(context).size.width * 0.15,
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        'assets/logo/logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.dns,
-                            size: 60,
-                            color: isDarkMode ? Colors.white : Colors.black,
-                          );
-                        },
                       ),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 24),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.03),
 
-                // نام برنامه
-                FadeTransition(
-                  opacity: _logoAnimation,
-                  child: Text(
-                    'Fire DNS',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color:
-                          isDarkMode ? Colors.white : const Color(0xFF2D3748),
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // نوار پیشرفت ساده
-                FadeTransition(
-                  opacity: _logoAnimation,
-                  child: SizedBox(
-                    width: 200,
-                    child: LinearProgressIndicator(
-                      backgroundColor:
-                          isDarkMode ? Colors.grey[800] : Colors.grey[300],
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isDarkMode ? Colors.orange : Colors.blue,
+                  // نام برنامه
+                  FadeTransition(
+                    opacity: _logoAnimation,
+                    child: Text(
+                      'Fire DNS',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color:
+                            isDarkMode ? Colors.white : const Color(0xFF2D3748),
+                        letterSpacing: 1.5,
                       ),
                     ),
                   ),
-                ),
-              ],
+
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+
+                  // نوار پیشرفت ساده
+                  FadeTransition(
+                    opacity: _logoAnimation,
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.5,
+                      child: LinearProgressIndicator(
+                        backgroundColor:
+                            isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isDarkMode ? Colors.orange : Colors.blue,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           },

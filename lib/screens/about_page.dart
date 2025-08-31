@@ -99,7 +99,7 @@ class AboutPage extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.03),
                 Center(
                   child: Text(
                     context.tr('appName'),
@@ -113,7 +113,7 @@ class AboutPage extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                 Center(
                   child: Container(
                     padding:
@@ -135,7 +135,7 @@ class AboutPage extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.03),
                 Card(
                   elevation: isDark ? 0 : 3,
                   color: isDark
@@ -151,14 +151,14 @@ class AboutPage extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16.5,
-                        height: 1.7,
+                        height: MediaQuery.of(context).size.height * 0.002,
                         color:
                             isDark ? AppColors.darkTextPrimary : Colors.black87,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.04),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -169,7 +169,7 @@ class AboutPage extends StatelessWidget {
                       url: 'https://Fire-DNS.ir',
                       color: Colors.blue,
                     ),
-                    const SizedBox(width: 18),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.04),
                     _modernInfoButton(
                       context,
                       icon: Icons.telegram,
@@ -179,7 +179,7 @@ class AboutPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 48),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.06),
                 Card(
                   elevation: isDark ? 0 : 2,
                   color: isDark
@@ -199,8 +199,11 @@ class AboutPage extends StatelessWidget {
                             Icon(Icons.groups,
                                 color:
                                     isDark ? AppColors.brightBlue : Colors.blue,
-                                size: 26),
-                            const SizedBox(width: 8),
+                                size:
+                                    MediaQuery.of(context).size.width * 0.065),
+                            SizedBox(
+                                width:
+                                    MediaQuery.of(context).size.width * 0.02),
                             Text(
                               context.tr('developmentTeam'),
                               style: TextStyle(
@@ -213,13 +216,14 @@ class AboutPage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.02),
                         Text(
                           context.tr('thankYouMessage'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 15,
-                            height: 1.6,
+                            height: MediaQuery.of(context).size.height * 0.002,
                             color: isDark
                                 ? AppColors.darkTextSecondary
                                 : Colors.grey.shade700,
@@ -259,13 +263,14 @@ class AboutPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: color.withOpacity(isDark ? 0.5 : 0.3),
-            width: 1.2,
+            width: MediaQuery.of(context).size.width * 0.003,
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: 8),
+            Icon(icon,
+                color: color, size: MediaQuery.of(context).size.width * 0.055),
+            SizedBox(width: MediaQuery.of(context).size.width * 0.02),
             Text(
               label,
               style: TextStyle(

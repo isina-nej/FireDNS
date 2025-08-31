@@ -86,7 +86,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
             _buildSettingSection(
               title: context.tr('notifications'),
               items: [
@@ -105,7 +105,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
             _buildSettingSection(
               title: context.tr('dnsTest'),
               items: [
@@ -127,7 +127,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
             _buildSettingSection(
               title: 'شبکه‌های اجتماعی',
               items: [
@@ -185,7 +185,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
             _buildSettingSection(
               title: context.tr('aboutUs'),
               items: [
@@ -269,11 +269,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 if (icon is IconData)
                   Icon(icon,
                       color: isDark ? AppColors.brightBlue : Colors.blue,
-                      size: 64)
+                      size: MediaQuery.of(context).size.width * 0.16)
                 else if (icon is String)
                   SizedBox(
-                    width: 64,
-                    height: 64,
+                    width: MediaQuery.of(context).size.width * 0.15,
+                    height: MediaQuery.of(context).size.width * 0.15,
                     child: Lottie.asset(
                       icon,
                       fit: BoxFit.contain,
@@ -318,7 +318,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                               values: [
                                                 ValueDelegate.color(
                                                   const ['**'],
-                                                  value: const Color.fromARGB(255, 47, 47, 47),
+                                                  value: const Color.fromARGB(
+                                                      255, 47, 47, 47),
                                                 ),
                                               ],
                                             )
@@ -328,8 +329,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 else
                   Icon(Icons.help_outline,
                       color: isDark ? AppColors.brightBlue : Colors.blue,
-                      size: 64),
-                const SizedBox(width: 16),
+                      size: MediaQuery.of(context).size.width * 0.16),
+                SizedBox(width: MediaQuery.of(context).size.width * 0.04),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,7 +345,8 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ),
                       if (subtitle != null) ...[
-                        const SizedBox(height: 4),
+                        SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.005),
                         Text(
                           subtitle,
                           style: TextStyle(
@@ -369,7 +371,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   Icon(
                     Icons.arrow_forward_ios,
                     color: isDark ? AppColors.darkIconSecondary : Colors.grey,
-                    size: 16,
+                    size: MediaQuery.of(context).size.width * 0.04,
                   ),
               ],
             ),
@@ -551,11 +553,11 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 if (subtitleIcon != null)
                   Icon(subtitleIcon,
-                      size: 16,
+                      size: MediaQuery.of(context).size.width * 0.04,
                       color: isDark
                           ? AppColors.brightBlue
                           : AppColors.primaryBlue),
-                const SizedBox(width: 4),
+                SizedBox(width: MediaQuery.of(context).size.width * 0.01),
                 Text(
                   subtitle,
                   style: TextStyle(

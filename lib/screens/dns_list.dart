@@ -21,7 +21,11 @@ class DnsListPage extends StatefulWidget {
   State<DnsListPage> createState() => _DnsListPageState();
 }
 
-class _DnsListPageState extends State<DnsListPage> {
+class _DnsListPageState extends State<DnsListPage>
+    with TickerProviderStateMixin {
+  late AnimationController _animationController;
+  late List<Animation<double>> _animations;
+
   Set<String> _userDnsIds = {};
 
   Future<void> _loadUserDnsIds() async {
@@ -113,6 +117,11 @@ class _DnsListPageState extends State<DnsListPage> {
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _animations = [];
     Future.microtask(() async {
       await DnsService.stopVpn();
       await _loadLikedDns();
@@ -185,6 +194,7 @@ class _DnsListPageState extends State<DnsListPage> {
         _loadingList = false;
         _sortDnsRecords();
       });
+      _startAnimation();
       prefs.setString(
         'cached_dns_list',
         jsonEncode(newRecords.map((e) => e.toJson()).toList()),
@@ -223,6 +233,7 @@ class _DnsListPageState extends State<DnsListPage> {
         _loadingList = false;
         _sortDnsRecords();
       });
+      _startAnimation();
     }
   }
 
@@ -267,6 +278,7 @@ class _DnsListPageState extends State<DnsListPage> {
           if (cachedSelected != null) _selectedDnsId = cachedSelected;
           _pingCache = pingCache;
         });
+        _startAnimation();
       } catch (_) {}
     } else if (userDnsRecords.isNotEmpty) {
       final pingCache = await DnsPingHelper.loadPingCache();
@@ -275,6 +287,7 @@ class _DnsListPageState extends State<DnsListPage> {
         if (cachedSelected != null) _selectedDnsId = cachedSelected;
         _pingCache = pingCache;
       });
+      _startAnimation();
     }
   }
 
@@ -282,7 +295,28 @@ class _DnsListPageState extends State<DnsListPage> {
   void dispose() {
     _dnsApiService.dispose();
     _searchController.dispose();
+    _animationController.dispose();
     super.dispose();
+  }
+
+  void _createAnimations(int itemCount) {
+    _animations = List.generate(itemCount, (index) {
+      final start = index * 0.05;
+      final end = start + 0.3;
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _animationController,
+          curve: Interval(start.clamp(0.0, 1.0), end.clamp(0.0, 1.0),
+              curve: Curves.easeOut),
+        ),
+      );
+    });
+  }
+
+  void _startAnimation() {
+    _createAnimations(_dnsRecords.length);
+    _animationController.reset();
+    _animationController.forward();
   }
 
   Future<void> _fetchDnsList() async {
@@ -318,6 +352,7 @@ class _DnsListPageState extends State<DnsListPage> {
           _loadingList = false;
           _sortDnsRecords();
         });
+        _startAnimation();
         prefs.setString(
           'cached_dns_list',
           jsonEncode(records.map((e) => e.toJson()).toList()),
@@ -483,9 +518,9 @@ class _DnsListPageState extends State<DnsListPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                     Text('${(progress * 100).toInt()}%'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                     Text(
                       context.tr('testingInProgress'),
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
@@ -596,7 +631,7 @@ class _DnsListPageState extends State<DnsListPage> {
             title: Text(context.tr('testResultAllDns')),
             content: SizedBox(
               width: double.maxFinite,
-              height: 300,
+              height: MediaQuery.of(context).size.height * 0.4,
               child: ListView(
                 children: resultTexts.map((e) => Text(e)).toList(),
               ),
@@ -787,16 +822,24 @@ class _DnsListPageState extends State<DnsListPage> {
           });
           userDnsList.add(editedRecord.toJson());
           await prefs.setString('user_dns_list', jsonEncode(userDnsList));
-          final liked = prefs.getStringList('liked_dns_ids') ?? [];
-          if (!liked.contains(editedRecord.id)) {
-            liked.add(editedRecord.id);
-            await prefs.setStringList('liked_dns_ids', liked);
-          }
-          await _loadCachedDnsList();
-          await _loadUserDnsIds();
+
+          // بروزرسانی فوری لیست
           setState(() {
+            // حذف رکورد قدیمی
+            _dnsRecords.removeWhere((r) => r.id == record.id);
+            // اضافه کردن رکورد جدید
+            if (!_dnsRecords.any((r) => r.id == editedRecord.id)) {
+              _dnsRecords.add(editedRecord);
+            }
             _sortDnsRecords();
           });
+
+          // بروزرسانی state لوکال از shared preferences
+          await _loadLikedDns();
+          await _loadUserDnsIds();
+
+          // بروزرسانی cache در پس‌زمینه
+          await _loadCachedDnsList();
         },
       ),
     );
@@ -846,10 +889,10 @@ class _DnsListPageState extends State<DnsListPage> {
           actions: [
             _testDialogOpen
                 ? IconButton(
-                    icon: const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
+                    icon: SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.06,
+                      height: MediaQuery.of(context).size.width * 0.06,
+                      child: const CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Color(0xFF5A9CFF),
                       ),
@@ -867,7 +910,7 @@ class _DnsListPageState extends State<DnsListPage> {
                           color: isDark
                               ? AppColors.brightBlue
                               : AppColors.primaryBlue,
-                          size: 28,
+                          size: MediaQuery.of(context).size.width * 0.07,
                         ),
                         tooltip: context.tr('dnsTest'),
                         color: isDark
@@ -878,7 +921,7 @@ class _DnsListPageState extends State<DnsListPage> {
                           PopupMenuItem(
                             value: 'simultaneous',
                             child: SizedBox(
-                              width: 180,
+                              width: MediaQuery.of(context).size.width * 0.4,
                               child: Text(
                                 context.tr('simultaneousTest'),
                                 style: TextStyle(
@@ -899,7 +942,7 @@ class _DnsListPageState extends State<DnsListPage> {
                           PopupMenuItem(
                             value: 'sequential',
                             child: SizedBox(
-                              width: 180,
+                              width: MediaQuery.of(context).size.width * 0.4,
                               child: Text(
                                 context.tr('sequentialTest'),
                                 style: TextStyle(
@@ -920,7 +963,7 @@ class _DnsListPageState extends State<DnsListPage> {
                           PopupMenuItem(
                             value: 'advanced',
                             child: SizedBox(
-                              width: 180,
+                              width: MediaQuery.of(context).size.width * 0.4,
                               child: Text(
                                 context.tr('advancedTest'),
                                 style: TextStyle(
@@ -971,7 +1014,7 @@ class _DnsListPageState extends State<DnsListPage> {
                           color: isDark
                               ? AppColors.brightBlue
                               : AppColors.primaryBlue,
-                          size: 28,
+                          size: MediaQuery.of(context).size.width * 0.07,
                         ),
                         tooltip: context.tr('dnsTest'),
                         onPressed: !_loadingList && _dnsRecords.isNotEmpty
@@ -1007,7 +1050,7 @@ class _DnsListPageState extends State<DnsListPage> {
                 PopupMenuItem(
                   value: 'default',
                   child: SizedBox(
-                    width: 160,
+                    width: MediaQuery.of(context).size.width * 0.35,
                     child: Text(
                       context.tr('default'),
                       style: TextStyle(
@@ -1028,7 +1071,7 @@ class _DnsListPageState extends State<DnsListPage> {
                 PopupMenuItem(
                   value: 'ping',
                   child: SizedBox(
-                    width: 160,
+                    width: MediaQuery.of(context).size.width * 0.35,
                     child: Text(
                       context.tr('lowestPing'),
                       style: TextStyle(
@@ -1049,7 +1092,7 @@ class _DnsListPageState extends State<DnsListPage> {
                 PopupMenuItem(
                   value: 'name',
                   child: SizedBox(
-                    width: 160,
+                    width: MediaQuery.of(context).size.width * 0.35,
                     child: Text(
                       context.tr('sortByName'),
                       style: TextStyle(
@@ -1095,7 +1138,7 @@ class _DnsListPageState extends State<DnsListPage> {
                 PopupMenuItem(
                   value: 'customTest',
                   child: SizedBox(
-                    width: 180,
+                    width: MediaQuery.of(context).size.width * 0.4,
                     child: Text(
                       context.tr('testDomainWithAllDns'),
                       style: TextStyle(
@@ -1109,7 +1152,7 @@ class _DnsListPageState extends State<DnsListPage> {
                 PopupMenuItem(
                   value: 'refreshDns',
                   child: SizedBox(
-                    width: 180,
+                    width: MediaQuery.of(context).size.width * 0.4,
                     child: Text(
                       context.tr('getNewListFromServer'),
                       style: TextStyle(
@@ -1184,86 +1227,213 @@ class _DnsListPageState extends State<DnsListPage> {
                                           mainAxisExtent: 140,
                                         ),
                                         itemCount: _filteredDnsRecords.length,
-                                        itemBuilder: (context, index) =>
-                                            DnsCard(
-                                          record: _filteredDnsRecords[index],
-                                          index: index,
-                                          isSelected: _selectedDnsId ==
-                                              _filteredDnsRecords[index].id,
-                                          pingCache: _pingCache,
-                                          isUserDns: _isUserDns(
-                                              _filteredDnsRecords[index]),
-                                          onConnect: _connectToDns,
-                                          likedDnsIds: _likedDnsIds.toList(),
-                                          onRePing: (record) async {
-                                            setState(() {
-                                              _pingCache['${record.id}_1'] =
-                                                  -2; // انتظار (لودینگ)
-                                              _pingCache['${record.id}_2'] = -2;
-                                            });
-                                            final ping1 =
-                                                await DnsPingHelper.ping(
-                                                    record.ip1);
-                                            final ping2 =
-                                                await DnsPingHelper.ping(
-                                                    record.ip2 ?? '');
-                                            setState(() {
-                                              _pingCache['${record.id}_1'] =
-                                                  (ping1 < 0) ? -1 : ping1;
-                                              _pingCache['${record.id}_2'] =
-                                                  (ping2 < 0) ? -1 : ping2;
-                                              _sortDnsRecords();
-                                            });
-                                          },
-                                          onToggleLike: _toggleLikeDns,
-                                          onEdit: _editUserDns,
-                                          onDelete: _deleteUserDns,
-                                          isLoading: _isLoading,
-                                        ),
+                                        itemBuilder: (context, index) {
+                                          if (index >= _animations.length) {
+                                            return DnsCard(
+                                              record:
+                                                  _filteredDnsRecords[index],
+                                              index: index,
+                                              isSelected: _selectedDnsId ==
+                                                  _filteredDnsRecords[index].id,
+                                              pingCache: _pingCache,
+                                              isUserDns: _isUserDns(
+                                                  _filteredDnsRecords[index]),
+                                              onConnect: _connectToDns,
+                                              likedDnsIds:
+                                                  _likedDnsIds.toList(),
+                                              onRePing: (record) async {
+                                                setState(() {
+                                                  _pingCache['${record.id}_1'] =
+                                                      -2; // انتظار (لودینگ)
+                                                  _pingCache['${record.id}_2'] =
+                                                      -2;
+                                                });
+                                                final ping1 =
+                                                    await DnsPingHelper.ping(
+                                                        record.ip1);
+                                                final ping2 =
+                                                    await DnsPingHelper.ping(
+                                                        record.ip2 ?? '');
+                                                setState(() {
+                                                  _pingCache['${record.id}_1'] =
+                                                      (ping1 < 0) ? -1 : ping1;
+                                                  _pingCache['${record.id}_2'] =
+                                                      (ping2 < 0) ? -1 : ping2;
+                                                  _sortDnsRecords();
+                                                });
+                                              },
+                                              onToggleLike: _toggleLikeDns,
+                                              onEdit: _editUserDns,
+                                              onDelete: _deleteUserDns,
+                                              isLoading: _isLoading,
+                                            );
+                                          }
+                                          return AnimatedBuilder(
+                                            animation: _animations[index],
+                                            builder: (context, child) {
+                                              return Opacity(
+                                                opacity:
+                                                    _animations[index].value,
+                                                child: Transform.translate(
+                                                  offset: Offset(
+                                                      0,
+                                                      50 *
+                                                          (1 -
+                                                              _animations[index]
+                                                                  .value)),
+                                                  child: child,
+                                                ),
+                                              );
+                                            },
+                                            child: DnsCard(
+                                              record:
+                                                  _filteredDnsRecords[index],
+                                              index: index,
+                                              isSelected: _selectedDnsId ==
+                                                  _filteredDnsRecords[index].id,
+                                              pingCache: _pingCache,
+                                              isUserDns: _isUserDns(
+                                                  _filteredDnsRecords[index]),
+                                              onConnect: _connectToDns,
+                                              likedDnsIds:
+                                                  _likedDnsIds.toList(),
+                                              onRePing: (record) async {
+                                                setState(() {
+                                                  _pingCache['${record.id}_1'] =
+                                                      -2; // انتظار (لودینگ)
+                                                  _pingCache['${record.id}_2'] =
+                                                      -2;
+                                                });
+                                                final ping1 =
+                                                    await DnsPingHelper.ping(
+                                                        record.ip1);
+                                                final ping2 =
+                                                    await DnsPingHelper.ping(
+                                                        record.ip2 ?? '');
+                                                setState(() {
+                                                  _pingCache['${record.id}_1'] =
+                                                      (ping1 < 0) ? -1 : ping1;
+                                                  _pingCache['${record.id}_2'] =
+                                                      (ping2 < 0) ? -1 : ping2;
+                                                  _sortDnsRecords();
+                                                });
+                                              },
+                                              onToggleLike: _toggleLikeDns,
+                                              onEdit: _editUserDns,
+                                              onDelete: _deleteUserDns,
+                                              isLoading: _isLoading,
+                                            ),
+                                          );
+                                        },
                                       );
                                     } else {
                                       return ListView.separated(
                                         physics:
                                             const AlwaysScrollableScrollPhysics(),
                                         itemCount: _filteredDnsRecords.length,
-                                        separatorBuilder: (_, __) =>
-                                            const SizedBox(height: 8),
-                                        itemBuilder: (context, index) =>
-                                            DnsCard(
-                                          record: _filteredDnsRecords[index],
-                                          index: index,
-                                          isSelected: _selectedDnsId ==
-                                              _filteredDnsRecords[index].id,
-                                          pingCache: _pingCache,
-                                          isUserDns: _isUserDns(
-                                              _filteredDnsRecords[index]),
-                                          onConnect: _connectToDns,
-                                          likedDnsIds: _likedDnsIds.toList(),
-                                          onRePing: (record) async {
-                                            setState(() {
-                                              _pingCache['${record.id}_1'] =
-                                                  -2; // انتظار (لودینگ)
-                                              _pingCache['${record.id}_2'] = -2;
-                                            });
-                                            final ping1 =
-                                                await DnsPingHelper.ping(
-                                                    record.ip1);
-                                            final ping2 =
-                                                await DnsPingHelper.ping(
-                                                    record.ip2 ?? '');
-                                            setState(() {
-                                              _pingCache['${record.id}_1'] =
-                                                  (ping1 < 0) ? -1 : ping1;
-                                              _pingCache['${record.id}_2'] =
-                                                  (ping2 < 0) ? -1 : ping2;
-                                              _sortDnsRecords();
-                                            });
-                                          },
-                                          onToggleLike: _toggleLikeDns,
-                                          onEdit: _editUserDns,
-                                          onDelete: _deleteUserDns,
-                                          isLoading: _isLoading,
-                                        ),
+                                        separatorBuilder: (_, __) => SizedBox(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.01),
+                                        itemBuilder: (context, index) {
+                                          if (index >= _animations.length) {
+                                            return DnsCard(
+                                              record:
+                                                  _filteredDnsRecords[index],
+                                              index: index,
+                                              isSelected: _selectedDnsId ==
+                                                  _filteredDnsRecords[index].id,
+                                              pingCache: _pingCache,
+                                              isUserDns: _isUserDns(
+                                                  _filteredDnsRecords[index]),
+                                              onConnect: _connectToDns,
+                                              likedDnsIds:
+                                                  _likedDnsIds.toList(),
+                                              onRePing: (record) async {
+                                                setState(() {
+                                                  _pingCache['${record.id}_1'] =
+                                                      -2; // انتظار (لودینگ)
+                                                  _pingCache['${record.id}_2'] =
+                                                      -2;
+                                                });
+                                                final ping1 =
+                                                    await DnsPingHelper.ping(
+                                                        record.ip1);
+                                                final ping2 =
+                                                    await DnsPingHelper.ping(
+                                                        record.ip2 ?? '');
+                                                setState(() {
+                                                  _pingCache['${record.id}_1'] =
+                                                      (ping1 < 0) ? -1 : ping1;
+                                                  _pingCache['${record.id}_2'] =
+                                                      (ping2 < 0) ? -1 : ping2;
+                                                  _sortDnsRecords();
+                                                });
+                                              },
+                                              onToggleLike: _toggleLikeDns,
+                                              onEdit: _editUserDns,
+                                              onDelete: _deleteUserDns,
+                                              isLoading: _isLoading,
+                                            );
+                                          }
+                                          return AnimatedBuilder(
+                                            animation: _animations[index],
+                                            builder: (context, child) {
+                                              return Opacity(
+                                                opacity:
+                                                    _animations[index].value,
+                                                child: Transform.translate(
+                                                  offset: Offset(
+                                                      0,
+                                                      50 *
+                                                          (1 -
+                                                              _animations[index]
+                                                                  .value)),
+                                                  child: child,
+                                                ),
+                                              );
+                                            },
+                                            child: DnsCard(
+                                              record:
+                                                  _filteredDnsRecords[index],
+                                              index: index,
+                                              isSelected: _selectedDnsId ==
+                                                  _filteredDnsRecords[index].id,
+                                              pingCache: _pingCache,
+                                              isUserDns: _isUserDns(
+                                                  _filteredDnsRecords[index]),
+                                              onConnect: _connectToDns,
+                                              likedDnsIds:
+                                                  _likedDnsIds.toList(),
+                                              onRePing: (record) async {
+                                                setState(() {
+                                                  _pingCache['${record.id}_1'] =
+                                                      -2; // انتظار (لودینگ)
+                                                  _pingCache['${record.id}_2'] =
+                                                      -2;
+                                                });
+                                                final ping1 =
+                                                    await DnsPingHelper.ping(
+                                                        record.ip1);
+                                                final ping2 =
+                                                    await DnsPingHelper.ping(
+                                                        record.ip2 ?? '');
+                                                setState(() {
+                                                  _pingCache['${record.id}_1'] =
+                                                      (ping1 < 0) ? -1 : ping1;
+                                                  _pingCache['${record.id}_2'] =
+                                                      (ping2 < 0) ? -1 : ping2;
+                                                  _sortDnsRecords();
+                                                });
+                                              },
+                                              onToggleLike: _toggleLikeDns,
+                                              onEdit: _editUserDns,
+                                              onDelete: _deleteUserDns,
+                                              isLoading: _isLoading,
+                                            ),
+                                          );
+                                        },
                                       );
                                     }
                                   },
@@ -1331,12 +1501,20 @@ class _DnsListPageState extends State<DnsListPage> {
                                   onChanged: (v) {
                                     setState(() {
                                       _searchQuery = v;
+                                      _createAnimations(
+                                          _filteredDnsRecords.length);
+                                      _animationController.reset();
+                                      _animationController.forward();
                                     });
                                   },
                                   onSubmitted: (v) {
                                     setState(() {
                                       _searchQuery = v;
                                       _showSearch = false;
+                                      _createAnimations(
+                                          _filteredDnsRecords.length);
+                                      _animationController.reset();
+                                      _animationController.forward();
                                     });
                                   },
                                 ),
@@ -1367,15 +1545,20 @@ class _DnsListPageState extends State<DnsListPage> {
               context: context,
               builder: (context) => AddDnsDialog(
                 onAdd: (newRecord) async {
-                  final prefs = await SharedPreferences.getInstance();
-                  final liked = prefs.getStringList('liked_dns_ids') ?? [];
-                  if (!liked.contains(newRecord.id)) {
-                    liked.add(newRecord.id);
-                    await prefs.setStringList('liked_dns_ids', liked);
-                    setState(() {
-                      _likedDnsIds = liked.toSet();
-                    });
-                  }
+                  // بروزرسانی فوری لیست بدون انتظار برای fetch
+                  setState(() {
+                    if (!_dnsRecords
+                        .any((record) => record.id == newRecord.id)) {
+                      _dnsRecords.add(newRecord);
+                      _sortDnsRecords();
+                    }
+                  });
+
+                  // بروزرسانی state لوکال از shared preferences
+                  await _loadLikedDns();
+                  await _loadUserDnsIds();
+
+                  // بروزرسانی cache در پس‌زمینه
                   await fetchDnsListWithTimer(force: true);
                 },
               ),

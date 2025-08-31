@@ -6,11 +6,11 @@ class DnsInfoPopup extends StatelessWidget {
   final int? ping;
 
   const DnsInfoPopup({
-    Key? key,
+    super.key,
     required this.label,
     required this.ip,
     this.ping,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +23,10 @@ class DnsInfoPopup extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(Icons.dns, size: 48, color: Colors.blue.shade700),
-            const SizedBox(height: 16),
+            Icon(Icons.dns,
+                size: MediaQuery.of(context).size.width * 0.12,
+                color: Colors.blue.shade700),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
             Text(
               label,
               style: const TextStyle(
@@ -34,12 +36,14 @@ class DnsInfoPopup extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.015),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.language, color: Colors.grey.shade700, size: 20),
-                const SizedBox(width: 8),
+                Icon(Icons.language,
+                    color: Colors.grey.shade700,
+                    size: MediaQuery.of(context).size.width * 0.05),
+                SizedBox(width: MediaQuery.of(context).size.width * 0.02),
                 Flexible(
                   child: Text(
                     ip,
@@ -49,13 +53,15 @@ class DnsInfoPopup extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.015),
             if (ping != null)
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.speed, color: Colors.green.shade700, size: 20),
-                  const SizedBox(width: 8),
+                  Icon(Icons.speed,
+                      color: Colors.green.shade700,
+                      size: MediaQuery.of(context).size.width * 0.05),
+                  SizedBox(width: MediaQuery.of(context).size.width * 0.02),
                   Text(
                     '$ping ms',
                     style: const TextStyle(
@@ -66,7 +72,7 @@ class DnsInfoPopup extends StatelessWidget {
                   ),
                 ],
               ),
-            const SizedBox(height: 24),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.03),
             Row(
               children: [
                 Expanded(

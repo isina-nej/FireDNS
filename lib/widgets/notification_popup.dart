@@ -127,12 +127,12 @@ class _NotificationPopupState extends State<NotificationPopup>
           SnackBar(
             content: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.check_circle_outline,
                   color: AppColors.pureWhite,
-                  size: 20,
+                  size: MediaQuery.of(context).size.width * 0.05,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: MediaQuery.of(context).size.width * 0.02),
                 Text(context.tr('allNotificationsMarkedAsRead')),
               ],
             ),
@@ -161,12 +161,12 @@ class _NotificationPopupState extends State<NotificationPopup>
           SnackBar(
             content: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.delete_outline,
                   color: AppColors.pureWhite,
-                  size: 20,
+                  size: MediaQuery.of(context).size.width * 0.05,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: MediaQuery.of(context).size.width * 0.02),
                 Text(context.tr('notificationDeleted')),
               ],
             ),
@@ -254,13 +254,15 @@ class _NotificationPopupState extends State<NotificationPopup>
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
               child: Container(
                 width: double.infinity,
-                constraints:
-                    const BoxConstraints(maxWidth: 440, maxHeight: 680),
+                constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.9,
+                    maxHeight: MediaQuery.of(context).size.height * 0.8),
                 decoration: BoxDecoration(
                   color: isDark
                       ? AppColors.darkSurface
                       : AppColors.backgroundWhite,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(
+                      MediaQuery.of(context).size.width * 0.06),
                   boxShadow: [
                     BoxShadow(
                       color: isDark
@@ -348,10 +350,10 @@ class _NotificationPopupState extends State<NotificationPopup>
                     width: 1,
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.notifications_active_rounded,
                   color: AppColors.brightBlue,
-                  size: 28,
+                  size: MediaQuery.of(context).size.width * 0.07,
                 ),
               ),
               if (hasUnread)
@@ -384,7 +386,7 @@ class _NotificationPopupState extends State<NotificationPopup>
             ],
           ),
 
-          const SizedBox(width: 20),
+          SizedBox(width: MediaQuery.of(context).size.width * 0.05),
 
           // Title and Subtitle
           Expanded(
@@ -402,7 +404,7 @@ class _NotificationPopupState extends State<NotificationPopup>
                     height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.005),
                 Text(
                   hasUnread
                       ? context
@@ -436,7 +438,7 @@ class _NotificationPopupState extends State<NotificationPopup>
                   color: Colors.green.shade600,
                   isDark: isDark,
                 ),
-              const SizedBox(width: 4),
+              SizedBox(width: MediaQuery.of(context).size.width * 0.01),
               _buildHeaderButton(
                 context,
                 icon: Icons.refresh_rounded,
@@ -446,7 +448,7 @@ class _NotificationPopupState extends State<NotificationPopup>
                     isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
                 isDark: isDark,
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: MediaQuery.of(context).size.width * 0.01),
               _buildHeaderButton(
                 context,
                 icon: Icons.close_rounded,
@@ -528,7 +530,7 @@ class _NotificationPopupState extends State<NotificationPopup>
                 strokeWidth: 3,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.03),
             Text(
               context.tr('loadingNotifications'),
               style: TextStyle(
@@ -539,7 +541,7 @@ class _NotificationPopupState extends State<NotificationPopup>
                     : AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             Text(
               context.tr('pleaseWait'),
               style: TextStyle(
@@ -580,13 +582,13 @@ class _NotificationPopupState extends State<NotificationPopup>
                 ),
                 child: Icon(
                   Icons.notifications_off_outlined,
-                  size: 56,
+                  size: MediaQuery.of(context).size.width * 0.14,
                   color: isDark
                       ? AppColors.darkTextSecondary
                       : AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.03),
               Text(
                 context.tr('noNotificationsYet'),
                 style: TextStyle(
@@ -598,7 +600,7 @@ class _NotificationPopupState extends State<NotificationPopup>
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.015),
               Text(
                 context.tr('notificationsWillAppearHere'),
                 style: TextStyle(
@@ -610,12 +612,12 @@ class _NotificationPopupState extends State<NotificationPopup>
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.03),
               TextButton.icon(
                 onPressed: _refreshNotifications,
-                icon: const Icon(
+                icon: Icon(
                   Icons.refresh_rounded,
-                  size: 18,
+                  size: MediaQuery.of(context).size.width * 0.045,
                   color: AppColors.brightBlue,
                 ),
                 label: Text(
@@ -732,11 +734,11 @@ class _NotificationPopupState extends State<NotificationPopup>
                   child: Icon(
                     icon,
                     color: iconColor,
-                    size: 22,
+                    size: MediaQuery.of(context).size.width * 0.055,
                   ),
                 ),
 
-                const SizedBox(width: 16),
+                SizedBox(width: MediaQuery.of(context).size.width * 0.04),
 
                 // Content
                 Expanded(
@@ -764,10 +766,12 @@ class _NotificationPopupState extends State<NotificationPopup>
                             ),
                           ),
                           if (!notification.isRead) ...[
-                            const SizedBox(width: 12),
+                            SizedBox(
+                                width:
+                                    MediaQuery.of(context).size.width * 0.03),
                             Container(
-                              width: 10,
-                              height: 10,
+                              width: MediaQuery.of(context).size.width * 0.025,
+                              height: MediaQuery.of(context).size.width * 0.025,
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
                                   colors: [
@@ -790,7 +794,8 @@ class _NotificationPopupState extends State<NotificationPopup>
                         ],
                       ),
 
-                      const SizedBox(height: 8),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.01),
 
                       // Message
                       Text(
@@ -807,7 +812,8 @@ class _NotificationPopupState extends State<NotificationPopup>
                         overflow: TextOverflow.ellipsis,
                       ),
 
-                      const SizedBox(height: 16),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.02),
 
                       // Footer
                       Row(
@@ -854,7 +860,9 @@ class _NotificationPopupState extends State<NotificationPopup>
                                   color: AppColors.brightBlue,
                                   isDark: isDark,
                                 ),
-                              const SizedBox(width: 8),
+                              SizedBox(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.02),
                               _buildActionButton(
                                 context,
                                 icon: Icons.delete_outline_rounded,
@@ -904,7 +912,7 @@ class _NotificationPopupState extends State<NotificationPopup>
           ),
           child: Icon(
             icon,
-            size: 16,
+            size: MediaQuery.of(context).size.width * 0.04,
             color: color,
           ),
         ),

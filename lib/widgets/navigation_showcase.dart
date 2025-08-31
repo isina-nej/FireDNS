@@ -134,7 +134,7 @@ class _DemoPage extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.04),
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Go Back'),

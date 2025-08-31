@@ -45,8 +45,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
           ),
           ListTile(
             leading: SizedBox(
-              width: 48,
-              height: 48,
+              width: MediaQuery.of(context).size.width * 0.12,
+              height: MediaQuery.of(context).size.width * 0.12,
               child: Lottie.asset(
                 'assets/icone/settings.json',
                 fit: BoxFit.contain,
@@ -76,8 +76,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
           ),
           ListTile(
             leading: SizedBox(
-              width: 48,
-              height: 48,
+              width: MediaQuery.of(context).size.width * 0.12,
+              height: MediaQuery.of(context).size.width * 0.12,
               child: Lottie.asset(
                 'assets/icone/success_animation.json',
                 fit: BoxFit.contain,
@@ -111,8 +111,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
           ),
           ListTile(
             leading: SizedBox(
-              width: 48,
-              height: 48,
+              width: MediaQuery.of(context).size.width * 0.12,
+              height: MediaQuery.of(context).size.width * 0.12,
               child: Lottie.asset(
                 'assets/icone/support.json',
                 fit: BoxFit.contain,
@@ -142,8 +142,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
           ),
           ListTile(
             leading: SizedBox(
-              width: 48,
-              height: 48,
+              width: MediaQuery.of(context).size.width * 0.12,
+              height: MediaQuery.of(context).size.width * 0.12,
               child: Lottie.asset(
                 'assets/icone/about.json',
                 fit: BoxFit.contain,

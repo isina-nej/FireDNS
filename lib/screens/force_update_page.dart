@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../api/services/update_api_service.dart';
-import '../api/models/update_info.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../api/models/update_type.dart';
 import '../path/path.dart';
-import 'package:provider/provider.dart';
 
 /// صفحه نمایش و مدیریت آپدیت برنامه
 class ForceUpdatePage extends StatefulWidget {
@@ -167,7 +166,7 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
-          width: 1,
+          width: MediaQuery.of(context).size.width * 0.00025,
         ),
       ),
       child: Column(
@@ -177,10 +176,10 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
             children: [
               Icon(
                 icon,
-                size: 20,
+                size: MediaQuery.of(context).size.width * 0.05,
                 color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: MediaQuery.of(context).size.width * 0.02),
               Text(
                 title,
                 style: TextStyle(
@@ -193,14 +192,14 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
           ...items.map((item) => Padding(
                 padding: const EdgeInsets.only(left: 28, bottom: 8),
                 child: Row(
                   children: [
                     Container(
-                      width: 6,
-                      height: 6,
+                      width: MediaQuery.of(context).size.width * 0.015,
+                      height: MediaQuery.of(context).size.width * 0.015,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isDark
@@ -208,7 +207,7 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                             : AppColors.brightBlue,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.03),
                     Expanded(
                       child: Text(
                         item,
@@ -271,7 +270,7 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.015),
             TextButton.icon(
               icon: const Icon(Icons.update),
               label: Text(context.tr('skipForNow')),
@@ -309,7 +308,7 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.015),
             TextButton.icon(
               icon: const Icon(Icons.update),
               label: Text(context.tr('skipForNow')),
@@ -324,7 +323,7 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                     : AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             TextButton.icon(
               icon: const Icon(Icons.do_not_disturb),
               label: Text(context.tr('dontShowAgain')),
@@ -386,7 +385,9 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                           const CircularProgressIndicator(
                             color: AppColors.brightBlue,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(
+                              height:
+                                  MediaQuery.of(context).size.height * 0.02),
                           Text(
                             context.tr('checkingForUpdates'),
                             style: TextStyle(
@@ -401,12 +402,14 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                         ? Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.error_outline,
-                                size: 48,
+                                size: MediaQuery.of(context).size.width * 0.12,
                                 color: Colors.red,
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(
+                                  height: MediaQuery.of(context).size.height *
+                                      0.02),
                               Text(
                                 _errorMessage,
                                 style: const TextStyle(
@@ -415,7 +418,9 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 24),
+                              SizedBox(
+                                  height: MediaQuery.of(context).size.height *
+                                      0.03),
                               ElevatedButton.icon(
                                 icon: const Icon(Icons.refresh),
                                 label: Text(context.tr('tryAgain')),
@@ -448,14 +453,17 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                                     ),
                                     child: Icon(
                                       Icons.system_update,
-                                      size: 64,
+                                      size: MediaQuery.of(context).size.width *
+                                          0.16,
                                       color: isDark
                                           ? Colors.redAccent.shade100
                                           : Colors.redAccent,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 24),
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.03),
                                 FadeTransition(
                                   opacity: _animation,
                                   child: Column(
@@ -472,7 +480,11 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                                         textAlign: TextAlign.center,
                                       ),
                                       if (_updateInfo != null) ...[
-                                        const SizedBox(height: 8),
+                                        SizedBox(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.01),
                                         Text(
                                           _updateInfo!.description,
                                           style: TextStyle(
@@ -483,7 +495,11 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                                           ),
                                           textAlign: TextAlign.center,
                                         ),
-                                        const SizedBox(height: 24),
+                                        SizedBox(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.03),
                                         // Version information
                                         Container(
                                           padding: const EdgeInsets.all(16),
@@ -497,7 +513,10 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                                               color: isDark
                                                   ? Colors.grey.shade800
                                                   : Colors.grey.shade300,
-                                              width: 1,
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.00025,
                                             ),
                                           ),
                                           child: Column(
@@ -520,7 +539,11 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                                             ],
                                           ),
                                         ),
-                                        const SizedBox(height: 24),
+                                        SizedBox(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.03),
                                         if (_updateInfo!
                                             .features.isNotEmpty) ...[
                                           _buildInfoSection(
@@ -529,7 +552,11 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                                             Icons.star_outline,
                                             isDark,
                                           ),
-                                          const SizedBox(height: 16),
+                                          SizedBox(
+                                              height: MediaQuery.of(context)
+                                                      .size
+                                                      .height *
+                                                  0.02),
                                         ],
                                         if (_updateInfo!
                                             .changes.isNotEmpty) ...[
@@ -539,7 +566,11 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                                             Icons.change_circle_outlined,
                                             isDark,
                                           ),
-                                          const SizedBox(height: 24),
+                                          SizedBox(
+                                              height: MediaQuery.of(context)
+                                                      .size
+                                                      .height *
+                                                  0.03),
                                         ],
                                         _buildUpdateButtons(_updateInfo!),
                                       ],

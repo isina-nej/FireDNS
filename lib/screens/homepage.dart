@@ -646,7 +646,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                           color: isDark
                               ? AppColors.darkIconPrimary
                               : AppColors.textPrimary,
-                          size: 20,
+                          size: MediaQuery.of(context).size.width * 0.05,
                         ),
                       ),
                       onPressed: () {
@@ -659,7 +659,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                   padding: const EdgeInsets.all(16),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      const minCardHeight = 170.0;
+                      final minCardHeight =
+                          MediaQuery.of(context).size.height * 0.2;
                       const totalSpacing = 24.0;
                       final availableHeight =
                           constraints.maxHeight - totalSpacing;
@@ -691,7 +692,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                                 );
                               })(),
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.01),
                             Expanded(
                               flex: 10,
                               child: SpeedTestCard(
@@ -699,7 +702,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                                 themeManager: _themeManager,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.01),
                             Expanded(
                               flex: 10,
                               child: ConfigurationCard(

@@ -97,7 +97,7 @@ class DnsCard extends StatelessWidget {
 
     return ClipRect(
       child: SizedBox(
-        height: 140,
+        height: MediaQuery.of(context).size.height * 0.15,
         child: Card(
           elevation: isSelected ? 4 : 1,
           color: isDark
@@ -119,12 +119,13 @@ class DnsCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: MediaQuery.of(context).size.width * 0.09,
+                    height: MediaQuery.of(context).size.width * 0.09,
                     decoration: BoxDecoration(
                       color:
                           AppColors.primaryBlue.withAlpha((0.08 * 255).round()),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(
+                          MediaQuery.of(context).size.width * 0.03),
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -138,7 +139,7 @@ class DnsCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: MediaQuery.of(context).size.width * 0.03),
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const ClampingScrollPhysics(),
@@ -215,17 +216,21 @@ class DnsCard extends StatelessWidget {
                               ],
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(
+                              height:
+                                  MediaQuery.of(context).size.height * 0.005),
                           Row(
                             children: [
                               Icon(
                                 Icons.dns,
-                                size: 18,
+                                size: MediaQuery.of(context).size.width * 0.045,
                                 color: isDark
                                     ? AppColors.darkIconPrimary
                                     : const Color(0xFF5A9CFF),
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.01),
                               Expanded(
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
@@ -256,7 +261,9 @@ class DnsCard extends StatelessWidget {
                                   },
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.03),
                               if (bestPing != null)
                                 Listener(
                                   behavior: HitTestBehavior.opaque,
@@ -277,16 +284,29 @@ class DnsCard extends StatelessWidget {
                                       children: [
                                         Icon(
                                           Icons.speed,
-                                          size: 18,
+                                          size: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.045,
                                           color: pingColor,
                                         ),
-                                        const SizedBox(width: 2),
+                                        SizedBox(
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.005),
                                         bestPing == -2
-                                            ? const SizedBox(
-                                                width: 18,
-                                                height: 18,
+                                            ? SizedBox(
+                                                width: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.045,
+                                                height: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.045,
                                                 child:
-                                                    CircularProgressIndicator(
+                                                    const CircularProgressIndicator(
                                                   strokeWidth: 2,
                                                 ),
                                               )
@@ -320,8 +340,14 @@ class DnsCard extends StatelessWidget {
                                             margin: const EdgeInsets.only(
                                               left: 2,
                                             ),
-                                            width: 22,
-                                            height: 22,
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.055,
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.055,
                                             child: Lottie.asset(
                                               'assets/icone/Fire.json',
                                               repeat: true,
@@ -334,17 +360,21 @@ class DnsCard extends StatelessWidget {
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          SizedBox(
+                              height:
+                                  MediaQuery.of(context).size.height * 0.0025),
                           Row(
                             children: [
                               Icon(
                                 Icons.dns_outlined,
-                                size: 18,
+                                size: MediaQuery.of(context).size.width * 0.045,
                                 color: isDark
                                     ? AppColors.darkIconSecondary
                                     : const Color(0xFFB0BEC5),
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.01),
                               Expanded(
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
@@ -375,7 +405,9 @@ class DnsCard extends StatelessWidget {
                                   },
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.03),
                               if (bestPing2 != null)
                                 Listener(
                                   behavior: HitTestBehavior.opaque,
@@ -396,16 +428,29 @@ class DnsCard extends StatelessWidget {
                                       children: [
                                         Icon(
                                           Icons.speed,
-                                          size: 18,
+                                          size: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.045,
                                           color: ping2Color,
                                         ),
-                                        const SizedBox(width: 2),
+                                        SizedBox(
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.005),
                                         bestPing2 == -2
-                                            ? const SizedBox(
-                                                width: 18,
-                                                height: 18,
+                                            ? SizedBox(
+                                                width: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.045,
+                                                height: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.045,
                                                 child:
-                                                    CircularProgressIndicator(
+                                                    const CircularProgressIndicator(
                                                   strokeWidth: 2,
                                                 ),
                                               )
@@ -439,8 +484,14 @@ class DnsCard extends StatelessWidget {
                                             margin: const EdgeInsets.only(
                                               left: 2,
                                             ),
-                                            width: 22,
-                                            height: 22,
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.055,
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.055,
                                             child: Lottie.asset(
                                               'assets/icone/Fire.json',
                                               repeat: true,
@@ -458,12 +509,12 @@ class DnsCard extends StatelessWidget {
                     ),
                   ),
                   if (isSelected && isLoading)
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8, top: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8, top: 8),
                       child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        width: MediaQuery.of(context).size.width * 0.06,
+                        height: MediaQuery.of(context).size.width * 0.06,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
                       ),
                     ),
                 ],

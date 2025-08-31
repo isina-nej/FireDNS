@@ -100,13 +100,13 @@ void showEnhancedSnackBar({
                   child: Icon(
                     snackBarStyle.icon,
                     color: Colors.white,
-                    size: 24,
+                    size: MediaQuery.of(context).size.width * 0.06,
                   ),
                 ),
               );
             },
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: MediaQuery.of(context).size.width * 0.03),
           // Message with fade-in animation
           Expanded(
             child: TweenAnimationBuilder<double>(
@@ -131,7 +131,9 @@ void showEnhancedSnackBar({
           // Optional close button
           if (dismissible)
             IconButton(
-              icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+              icon: Icon(Icons.close,
+                  color: Colors.white70,
+                  size: MediaQuery.of(context).size.width * 0.05),
               onPressed: () {
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
               },

@@ -109,7 +109,7 @@ class _NotificationListPageState extends State<NotificationListPage> {
                   children: [
                     const CircularProgressIndicator(
                         color: AppColors.primaryBlue),
-                    const SizedBox(height: 16),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                     Text(context.tr('loadingNotifications'),
                         style: AppTextStyles.bodyMedium(context)),
                   ],
@@ -129,13 +129,16 @@ class _NotificationListPageState extends State<NotificationListPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.error_outline,
-                            size: 48, color: AppColors.textError),
-                        const SizedBox(height: 16),
+                        Icon(Icons.error_outline,
+                            size: MediaQuery.of(context).size.width * 0.12,
+                            color: AppColors.textError),
+                        SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.02),
                         Text(service.errorMessage,
                             style: AppTextStyles.error(context),
                             textAlign: TextAlign.center),
-                        const SizedBox(height: 24),
+                        SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.03),
                         TextButton.icon(
                           onPressed: () => service.fetchNotifications(),
                           icon: const Icon(Icons.refresh),
@@ -162,9 +165,10 @@ class _NotificationListPageState extends State<NotificationListPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.notifications_off_outlined,
-                        size: 48, color: AppColors.iconSecondary),
-                    const SizedBox(height: 16),
+                    Icon(Icons.notifications_off_outlined,
+                        size: MediaQuery.of(context).size.height * 0.06,
+                        color: AppColors.iconSecondary),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                     Text(context.tr('noNotificationsYet'),
                         style: AppTextStyles.bodyMedium(context)
                             .copyWith(color: AppColors.textSecondary)),
@@ -197,8 +201,9 @@ class _NotificationListPageState extends State<NotificationListPage> {
                       ),
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.only(right: 16),
-                      child: const Icon(Icons.delete_outline,
-                          color: AppColors.textError, size: 28),
+                      child: Icon(Icons.delete_outline,
+                          color: AppColors.textError,
+                          size: MediaQuery.of(context).size.width * 0.07),
                     ),
                     onDismissed: (_) {
                       service.deleteNotification(notification.id);
@@ -214,7 +219,9 @@ class _NotificationListPageState extends State<NotificationListPage> {
                               : (notification.isRead
                                   ? AppColors.cardBorder
                                   : Colors.transparent),
-                          width: isHighlighted ? 2 : 1,
+                          width: isHighlighted
+                              ? MediaQuery.of(context).size.width * 0.005
+                              : MediaQuery.of(context).size.width * 0.0025,
                         ),
                       ),
                       color: isHighlighted
@@ -245,7 +252,9 @@ class _NotificationListPageState extends State<NotificationListPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _getNotificationIcon(notification.type),
-                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                      width: MediaQuery.of(context).size.width *
+                                          0.03),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -265,7 +274,11 @@ class _NotificationListPageState extends State<NotificationListPage> {
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
+                                            SizedBox(
+                                                width: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.02),
                                             Text(
                                               timeago.format(notification.date,
                                                   locale: context
@@ -279,7 +292,11 @@ class _NotificationListPageState extends State<NotificationListPage> {
                                         ),
                                         if (notification
                                             .message.isNotEmpty) ...[
-                                          const SizedBox(height: 8),
+                                          SizedBox(
+                                              height: MediaQuery.of(context)
+                                                      .size
+                                                      .height *
+                                                  0.01),
                                           MarkdownWidget(
                                             data: notification.message,
                                             shrinkWrap: true,
@@ -309,7 +326,11 @@ class _NotificationListPageState extends State<NotificationListPage> {
                                         if (notification
                                                 .actionUrl?.isNotEmpty ==
                                             true) ...[
-                                          const SizedBox(height: 12),
+                                          SizedBox(
+                                              height: MediaQuery.of(context)
+                                                      .size
+                                                      .height *
+                                                  0.015),
                                           TextButton.icon(
                                             style: TextButton.styleFrom(
                                               padding:
@@ -330,8 +351,11 @@ class _NotificationListPageState extends State<NotificationListPage> {
                                                     .externalApplication,
                                               );
                                             },
-                                            icon: const Icon(Icons.open_in_new,
-                                                size: 16,
+                                            icon: Icon(Icons.open_in_new,
+                                                size: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.04,
                                                 color: AppColors.brightBlue),
                                             label: Text(context.tr('view'),
                                                 style:
@@ -392,7 +416,7 @@ class _NotificationListPageState extends State<NotificationListPage> {
       child: Icon(
         iconData,
         color: color,
-        size: 24,
+        size: MediaQuery.of(context).size.width * 0.06,
       ),
     );
   }

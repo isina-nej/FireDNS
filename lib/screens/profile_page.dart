@@ -28,17 +28,19 @@ class ProfilePage extends StatelessWidget {
         ),
         body: ListView(
           padding: const EdgeInsets.all(16),
-          children: const [
+          children: [
             Center(
               child: CircleAvatar(
-                radius: 50,
+                radius: MediaQuery.of(context).size.width * 0.12,
                 backgroundColor: Colors.grey,
-                child: Icon(Icons.person, size: 50, color: Colors.white),
+                child: Icon(Icons.person,
+                    size: MediaQuery.of(context).size.width * 0.12,
+                    color: Colors.white),
               ),
             ),
-            SizedBox(height: 24),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.03),
             // اطلاعات کاربر و تنظیمات مرتبط با حساب کاربری اینجا اضافه خواهد شد
-            Center(
+            const Center(
               child: Text(
                 'بخش پروفایل در حال توسعه است',
                 style: TextStyle(fontSize: 16, color: Colors.grey),

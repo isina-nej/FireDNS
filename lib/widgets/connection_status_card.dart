@@ -172,6 +172,8 @@ class ConnectionStatusCard extends StatelessWidget {
                             ),
                             child: Stack(
                               alignment: Alignment.center,
+                              clipBehavior:
+                                  Clip.none, // اجازه بیرون زدن از محدوده
                               children: [
                                 // دایره پس‌زمینه
                                 Container(
@@ -221,24 +223,19 @@ class ConnectionStatusCard extends StatelessWidget {
                                   child: (() {
                                     print(
                                         '🎯 AnimatedSwitcher - vpnLoading: $vpnLoading, vpnActive: $vpnActive');
+
                                     if (vpnLoading) {
                                       print('🎯 Showing loading icon');
                                       return SizedBox(
                                         key: const ValueKey('loading'),
-                                        width: responsiveSize(
-                                          70,
-                                          context,
-                                          min: 40,
-                                          max: 90,
-                                          scaleByHeight: true,
-                                        ),
-                                        height: responsiveSize(
-                                          70,
-                                          context,
-                                          min: 40,
-                                          max: 90,
-                                          scaleByHeight: true,
-                                        ),
+                                        width: responsiveSize(85, context,
+                                            min: 60,
+                                            max: 110,
+                                            scaleByHeight: true),
+                                        height: responsiveSize(85, context,
+                                            min: 60,
+                                            max: 110,
+                                            scaleByHeight: true),
                                         child: Lottie.asset(
                                           'assets/icone/process.json',
                                           fit: BoxFit.contain,
@@ -250,45 +247,33 @@ class ConnectionStatusCard extends StatelessWidget {
                                       print('🎯 Showing WiFiConnecting icon');
                                       return SizedBox(
                                         key: const ValueKey('connected'),
-                                        width: responsiveSize(
-                                          70,
-                                          context,
-                                          min: 40,
-                                          max: 90,
-                                          scaleByHeight: true,
-                                        ),
-                                        height: responsiveSize(
-                                          70,
-                                          context,
-                                          min: 40,
-                                          max: 90,
-                                          scaleByHeight: true,
-                                        ),
-                                          child: Lottie.asset(
-                                            'assets/icone/WiFiConnecting.json',
-                                            fit: BoxFit.contain,
-                                            repeat: true,
-                                            animate: true,
+                                        width: responsiveSize(85, context,
+                                            min: 60,
+                                            max: 110,
+                                            scaleByHeight: true),
+                                        height: responsiveSize(85, context,
+                                            min: 60,
+                                            max: 110,
+                                            scaleByHeight: true),
+                                        child: Lottie.asset(
+                                          'assets/icone/WiFiConnecting.json',
+                                          fit: BoxFit.contain,
+                                          repeat: true,
+                                          animate: true,
                                         ),
                                       );
                                     } else {
                                       print('🎯 Showing power icon');
                                       return SizedBox(
                                         key: const ValueKey('power'),
-                                        width: responsiveSize(
-                                          70,
-                                          context,
-                                          min: 40,
-                                          max: 90,
-                                          scaleByHeight: true,
-                                        ),
-                                        height: responsiveSize(
-                                          70,
-                                          context,
-                                          min: 40,
-                                          max: 90,
-                                          scaleByHeight: true,
-                                        ),
+                                        width: responsiveSize(85, context,
+                                            min: 60,
+                                            max: 110,
+                                            scaleByHeight: true),
+                                        height: responsiveSize(85, context,
+                                            min: 60,
+                                            max: 110,
+                                            scaleByHeight: true),
                                         child: Lottie.asset(
                                           'assets/icone/power.json',
                                           fit: BoxFit.contain,
@@ -444,7 +429,9 @@ class ConnectionStatusCard extends StatelessWidget {
                               opacity: 0.1,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.005),
                             // نمایش آدرس‌های IP در یک ردیف برای صرفه‌جویی در فضا
                             SemiTransparentText(
                               text:

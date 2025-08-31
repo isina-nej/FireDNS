@@ -3,9 +3,9 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 import '../path/path.dart';
+import '../services/navigation_service.dart';
 import '../utils/update_checker.dart';
 import 'force_update_page.dart';
-import '../services/navigation_service.dart';
 
 class CheckUpdatePage extends StatefulWidget {
   const CheckUpdatePage({super.key});
@@ -129,14 +129,16 @@ class _CheckUpdatePageState extends State<CheckUpdatePage>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SizedBox(
-                            height: 120,
-                            width: 120,
+                            height: MediaQuery.of(context).size.width * 0.3,
+                            width: MediaQuery.of(context).size.width * 0.3,
                             child: Lottie.asset(
                               'assets/icone/Fire.json', // مسیر صحیح انیمیشن موجود
                               repeat: true,
                             ),
                           ),
-                          const SizedBox(height: 32),
+                          SizedBox(
+                              height:
+                                  MediaQuery.of(context).size.height * 0.04),
                           Text(
                             context.tr('checkingForUpdates'),
                             style: TextStyle(
@@ -154,12 +156,14 @@ class _CheckUpdatePageState extends State<CheckUpdatePage>
                         ? Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.error_outline,
-                                size: 90,
+                                size: MediaQuery.of(context).size.width * 0.225,
                                 color: Colors.redAccent,
                               ),
-                              const SizedBox(height: 24),
+                              SizedBox(
+                                  height: MediaQuery.of(context).size.height *
+                                      0.03),
                               Text(
                                 _errorMessage,
                                 style: const TextStyle(
@@ -169,9 +173,13 @@ class _CheckUpdatePageState extends State<CheckUpdatePage>
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 32),
+                              SizedBox(
+                                  height: MediaQuery.of(context).size.height *
+                                      0.04),
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.refresh, size: 26),
+                                icon: Icon(Icons.refresh,
+                                    size: MediaQuery.of(context).size.width *
+                                        0.065),
                                 label: Padding(
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 8.0),
@@ -213,17 +221,24 @@ class _CheckUpdatePageState extends State<CheckUpdatePage>
                                         ),
                                       ],
                                     ),
-                                    child: const CircleAvatar(
-                                      radius: 60,
+                                    child: CircleAvatar(
+                                      radius:
+                                          MediaQuery.of(context).size.width *
+                                              0.15,
                                       backgroundColor: Colors.white,
                                       child: Icon(
                                         Icons.verified_rounded,
                                         color: Colors.green,
-                                        size: 70,
+                                        size:
+                                            MediaQuery.of(context).size.width *
+                                                0.175,
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 24),
+                                  SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.03),
                                   Text(
                                     context.tr('usingLatestVersion'),
                                     style: TextStyle(
@@ -235,7 +250,10 @@ class _CheckUpdatePageState extends State<CheckUpdatePage>
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
-                                  const SizedBox(height: 16),
+                                  SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.02),
                                   Card(
                                     elevation: 6,
                                     shape: RoundedRectangleBorder(
@@ -257,7 +275,11 @@ class _CheckUpdatePageState extends State<CheckUpdatePage>
                                                   color: isDark
                                                       ? AppColors.brightBlue
                                                       : AppColors.brightBlue),
-                                              const SizedBox(width: 8),
+                                              SizedBox(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.02),
                                               Text(
                                                 '${context.tr('currentVersion')}: ',
                                                 style: TextStyle(
@@ -285,9 +307,15 @@ class _CheckUpdatePageState extends State<CheckUpdatePage>
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 32),
+                                  SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.04),
                                   ElevatedButton.icon(
-                                    icon: const Icon(Icons.home, size: 26),
+                                    icon: Icon(Icons.home,
+                                        size:
+                                            MediaQuery.of(context).size.width *
+                                                0.065),
                                     label: Padding(
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 8.0),

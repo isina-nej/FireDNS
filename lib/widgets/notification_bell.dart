@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/notification_service.dart';
+
 import '../path/path.dart';
+import '../services/notification_service.dart';
 import 'notification_popup.dart';
 
 /// ویجت زنگوله اعلانات با انیمیشن
 class NotificationBell extends StatefulWidget {
-  const NotificationBell({Key? key}) : super(key: key);
+  const NotificationBell({super.key});
 
   @override
   State<NotificationBell> createState() => _NotificationBellState();
 }
 
-class _NotificationBellState extends State<NotificationBell> with SingleTickerProviderStateMixin {
+class _NotificationBellState extends State<NotificationBell>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _rotationAnimation;
   bool _hasUnreadNotifications = false;
@@ -42,7 +44,7 @@ class _NotificationBellState extends State<NotificationBell> with SingleTickerPr
         weight: 25.0,
       ),
     ]).animate(_animationController);
-    
+
     // تنظیم تکرار انیمیشن
     _animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -54,7 +56,7 @@ class _NotificationBellState extends State<NotificationBell> with SingleTickerPr
         });
       }
     });
-    
+
     // بررسی وضعیت اعلانات خوانده نشده در اولین رندر
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -71,14 +73,15 @@ class _NotificationBellState extends State<NotificationBell> with SingleTickerPr
 
   void _checkUnreadNotifications() {
     try {
-      final notificationService = Provider.of<NotificationService>(context, listen: false);
+      final notificationService =
+          Provider.of<NotificationService>(context, listen: false);
       final hasUnread = notificationService.unreadCount > 0;
-      
+
       if (mounted) {
         setState(() {
           _hasUnreadNotifications = hasUnread;
         });
-        
+
         if (hasUnread && !_animationController.isAnimating) {
           _animationController.reset();
           _animationController.forward();
@@ -101,7 +104,7 @@ class _NotificationBellState extends State<NotificationBell> with SingleTickerPr
   Widget build(BuildContext context) {
     final themeManager = Provider.of<ThemeManager>(context);
     final isDark = themeManager.isDarkModeActive(context);
-    
+
     // استفاده از Builder برای دسترسی به context جدید
     return Builder(
       builder: (builderContext) {
@@ -109,12 +112,13 @@ class _NotificationBellState extends State<NotificationBell> with SingleTickerPr
         NotificationService? notificationService;
         int unreadCount = 0;
         bool hasUnread = false;
-        
+
         try {
-          notificationService = Provider.of<NotificationService>(builderContext, listen: true);
+          notificationService =
+              Provider.of<NotificationService>(builderContext, listen: true);
           unreadCount = notificationService.unreadCount;
           hasUnread = unreadCount > 0;
-          
+
           // اگر وضعیت اعلانات خوانده نشده تغییر کرده باشد
           if (hasUnread != _hasUnreadNotifications) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -122,7 +126,7 @@ class _NotificationBellState extends State<NotificationBell> with SingleTickerPr
                 setState(() {
                   _hasUnreadNotifications = hasUnread;
                 });
-                
+
                 if (hasUnread && !_animationController.isAnimating) {
                   _animationController.reset();
                   _animationController.forward();
@@ -134,12 +138,12 @@ class _NotificationBellState extends State<NotificationBell> with SingleTickerPr
           // در صورت عدم دسترسی به Provider، خطا را نادیده بگیر
           print('Error accessing NotificationService in build: $e');
         }
-        
+
         return GestureDetector(
           onTap: _showNotificationPopup,
           child: Container(
-            width: 40,
-            height: 40,
+            width: MediaQuery.of(context).size.width * 0.1,
+            height: MediaQuery.of(context).size.width * 0.1,
             alignment: Alignment.center,
             child: Stack(
               clipBehavior: Clip.none,
@@ -155,11 +159,13 @@ class _NotificationBellState extends State<NotificationBell> with SingleTickerPr
                   },
                   child: Icon(
                     Icons.notifications_outlined,
-                    color: isDark ? AppColors.darkIconPrimary : AppColors.textPrimary,
-                    size: 24,
+                    color: isDark
+                        ? AppColors.darkIconPrimary
+                        : AppColors.textPrimary,
+                    size: MediaQuery.of(context).size.width * 0.06,
                   ),
                 ),
-                
+
                 // نشانگر اعلانات خوانده نشده
                 if (hasUnread && notificationService != null)
                   Positioned(
@@ -171,7 +177,9 @@ class _NotificationBellState extends State<NotificationBell> with SingleTickerPr
                         color: AppColors.fireRed,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isDark ? AppColors.darkBackground : AppColors.backgroundWhite,
+                          color: isDark
+                              ? AppColors.darkBackground
+                              : AppColors.backgroundWhite,
                           width: 1.5,
                         ),
                         boxShadow: [
@@ -182,9 +190,9 @@ class _NotificationBellState extends State<NotificationBell> with SingleTickerPr
                           ),
                         ],
                       ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
+                      constraints: BoxConstraints(
+                        minWidth: MediaQuery.of(context).size.width * 0.04,
+                        minHeight: MediaQuery.of(context).size.width * 0.04,
                       ),
                       child: Center(
                         child: Text(

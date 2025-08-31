@@ -248,8 +248,8 @@ class _TicketPageState extends State<TicketPage>
                 ],
               ),
               child: SizedBox(
-                height: 180,
-                width: 180,
+                height: MediaQuery.of(context).size.height * 0.2,
+                width: MediaQuery.of(context).size.width * 0.4,
                 child: Lottie.asset(
                   'assets/icone/success_animation.json',
                   controller: _animationController,
@@ -261,7 +261,7 @@ class _TicketPageState extends State<TicketPage>
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.03),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -296,7 +296,7 @@ class _TicketPageState extends State<TicketPage>
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.012),
                   Text(
                     context.tr('ticketSentDescription'),
                     style: TextStyle(
@@ -310,7 +310,7 @@ class _TicketPageState extends State<TicketPage>
                 ],
               ),
             ),
-            const SizedBox(height: 28),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.035),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -332,7 +332,7 @@ class _TicketPageState extends State<TicketPage>
                     elevation: 2,
                   ),
                 ),
-                const SizedBox(width: 18),
+                SizedBox(width: MediaQuery.of(context).size.width * 0.04),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.home),
                   label: Text(context.tr('returnToHome')),
@@ -401,7 +401,7 @@ class _TicketPageState extends State<TicketPage>
                     color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.012),
                 Row(
                   children: [
                     Expanded(
@@ -411,9 +411,11 @@ class _TicketPageState extends State<TicketPage>
                             Icon(
                               Icons.bug_report,
                               color: isDark ? AppColors.brightBlue : Colors.red,
-                              size: 22,
+                              size: MediaQuery.of(context).size.width * 0.055,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(
+                                width:
+                                    MediaQuery.of(context).size.width * 0.02),
                             Text(
                               context.tr('bugReport'),
                               style: TextStyle(
@@ -445,9 +447,11 @@ class _TicketPageState extends State<TicketPage>
                               Icons.lightbulb,
                               color:
                                   isDark ? AppColors.brightBlue : Colors.amber,
-                              size: 22,
+                              size: MediaQuery.of(context).size.width * 0.055,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(
+                                width:
+                                    MediaQuery.of(context).size.width * 0.02),
                             Text(
                               context.tr('suggestion'),
                               style: TextStyle(
@@ -510,7 +514,7 @@ class _TicketPageState extends State<TicketPage>
                     color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.012),
                 TextFormField(
                   controller: _subjectController,
                   decoration: InputDecoration(
@@ -580,7 +584,7 @@ class _TicketPageState extends State<TicketPage>
                     color: isDark ? AppColors.brightBlue : AppColors.brightBlue,
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.012),
                 TextFormField(
                   controller: _messageController,
                   decoration: InputDecoration(
@@ -637,7 +641,7 @@ class _TicketPageState extends State<TicketPage>
                     Icons.error_outline,
                     color: Colors.red,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: MediaQuery.of(context).size.width * 0.02),
                   Expanded(
                     child: Text(
                       _errorMessage,
@@ -655,12 +659,12 @@ class _TicketPageState extends State<TicketPage>
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
             width: double.infinity,
-            height: 54,
+            height: MediaQuery.of(context).size.height * 0.065,
             child: ElevatedButton.icon(
               icon: _isLoading
                   ? Container(
-                      width: 26,
-                      height: 26,
+                      width: MediaQuery.of(context).size.width * 0.06,
+                      height: MediaQuery.of(context).size.width * 0.06,
                       padding: const EdgeInsets.all(2.0),
                       child: const CircularProgressIndicator(
                         color: Colors.white,
