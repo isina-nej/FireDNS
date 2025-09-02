@@ -1,10 +1,11 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
-import 'package:provider/provider.dart';
 
 import '../api/services/ticket_service.dart';
+import '../controllers/theme_controller.dart';
 import '../path/path.dart';
 import '../utils/ticket_logger.dart';
 
@@ -141,8 +142,8 @@ class _TicketPageState extends State<TicketPage>
 
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
 
     return PopScope(
       canPop: true,

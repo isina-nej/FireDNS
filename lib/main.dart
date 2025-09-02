@@ -15,6 +15,7 @@ import 'api/models/update_info.dart';
 import 'api/services/api_client.dart';
 import 'api/services/dns_api_service.dart';
 import 'blocs/dns/dns_bloc.dart';
+import 'controllers/theme_controller.dart';
 import 'l10n/app_localizations.dart';
 import 'routes/app_routes.dart';
 import 'screens/force_update_page.dart';
@@ -30,7 +31,6 @@ import 'services/logger_service.dart';
 import 'services/notification_service.dart';
 import 'services/notification_service_provider.dart';
 import 'styles/language_manager.dart';
-import 'styles/theme_manager.dart';
 import 'utils/update_checker.dart';
 
 // Background message handler برای FCM
@@ -56,11 +56,11 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 /// نتیجه بوت اولیه برنامه (Dependencies container ساده)
 class _BootResult {
-  final ThemeManager themeManager;
+  final ThemeController themeController;
   final LanguageManager languageManager;
   final DnsTestSettingsService dnsTestSettingsService;
   const _BootResult({
-    required this.themeManager,
+    required this.themeController,
     required this.languageManager,
     required this.dnsTestSettingsService,
   });
@@ -100,7 +100,7 @@ Future<_BootResult> _bootstrap() async {
   ]);
 
   final languageManager = managerFutures[0] as LanguageManager;
-  final themeManager = managerFutures[1] as ThemeManager;
+  final themeController = managerFutures[1] as ThemeController;
   final dnsTestSettingsService = managerFutures[2] as DnsTestSettingsService;
 
   // FCM services (can be loaded in background after app starts)
@@ -113,7 +113,7 @@ Future<_BootResult> _bootstrap() async {
   _reportStartupSuccessInBackground(crashReportingService);
 
   return _BootResult(
-    themeManager: themeManager,
+    themeController: themeController,
     languageManager: languageManager,
     dnsTestSettingsService: dnsTestSettingsService,
   );
@@ -126,11 +126,11 @@ Future<LanguageManager> _initializeLanguageManager() async {
   return languageManager;
 }
 
-Future<ThemeManager> _initializeThemeManager() async {
-  final themeManager = ThemeManager();
-  await themeManager.loadThemeMode();
-  debugPrint('[BOOT] Theme mode: ${themeManager.themeMode}');
-  return themeManager;
+Future<ThemeController> _initializeThemeManager() async {
+  final themeController = ThemeController();
+  await themeController.loadThemeMode();
+  debugPrint('[BOOT] Theme mode: ${themeController.themeMode}');
+  return themeController;
 }
 
 Future<DnsTestSettingsService> _initializeDnsSettings() async {
@@ -213,7 +213,7 @@ Future<void> main() async {
 
       // تغییر به برنامه اصلی
       runApp(FireDNSApp(
-        themeManager: boot.themeManager,
+        themeController: boot.themeController,
         languageManager: boot.languageManager,
         dnsTestSettingsService: boot.dnsTestSettingsService,
       ));
@@ -308,13 +308,13 @@ Future<void> _loadExistingJwtIfAvailable() async {
 }
 
 class FireDNSApp extends StatefulWidget {
-  final ThemeManager themeManager;
+  final ThemeController themeController;
   final LanguageManager languageManager;
   final DnsTestSettingsService dnsTestSettingsService;
 
   const FireDNSApp({
     super.key,
-    required this.themeManager,
+    required this.themeController,
     required this.languageManager,
     required this.dnsTestSettingsService,
   });
@@ -329,6 +329,7 @@ class _FireDNSAppState extends State<FireDNSApp> {
   @override
   void initState() {
     super.initState();
+    Get.put(widget.themeController);
     _initializeApp();
   }
 
@@ -347,7 +348,6 @@ class _FireDNSAppState extends State<FireDNSApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<ThemeManager>.value(value: widget.themeManager),
         ChangeNotifierProvider<LanguageManager>.value(
             value: widget.languageManager),
         ChangeNotifierProvider<NotificationService>(
@@ -366,18 +366,20 @@ class _FireDNSAppState extends State<FireDNSApp> {
       child: Builder(
         builder: (context) {
           NotificationServiceProvider.init(context);
-          return Consumer2<ThemeManager, LanguageManager>(
-            builder: (context, themeManager, languageManager, _) {
-              final light =
-                  _buildTheme(themeManager.lightTheme, languageManager);
-              final dark = _buildTheme(themeManager.darkTheme, languageManager);
+          final themeController = Get.find<ThemeController>();
+          return Obx(
+            () {
+              final light = _buildTheme(
+                  themeController.lightTheme, widget.languageManager);
+              final dark = _buildTheme(
+                  themeController.darkTheme, widget.languageManager);
 
               return GetMaterialApp(
                 title: 'Fire DNS',
                 theme: light,
                 darkTheme: dark,
-                themeMode: themeManager.themeMode,
-                locale: languageManager.locale,
+                themeMode: themeController.themeMode,
+                locale: widget.languageManager.locale,
                 localizationsDelegates: const [
                   GlobalMaterialLocalizations.delegate,
                   GlobalWidgetsLocalizations.delegate,
@@ -387,7 +389,7 @@ class _FireDNSAppState extends State<FireDNSApp> {
                 home: _showLoadingScreen
                     ? const LoadingScreen()
                     : _UpdateGate(
-                        languageManager: languageManager,
+                        languageManager: widget.languageManager,
                         child: Builder(
                           builder: (context) => Navigator(
                             initialRoute: AppRoutes.home,

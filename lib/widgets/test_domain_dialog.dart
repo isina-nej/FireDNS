@@ -1,7 +1,9 @@
 // lib/widgets/test_domain_dialog.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
+
+import '../controllers/theme_controller.dart';
 import '../path/path.dart'; // Assuming AppColors, context.tr are defined here
 import 'dns_test_tile.dart';
 
@@ -9,6 +11,7 @@ class TestDomainWithAllDnsDialog extends StatefulWidget {
   final String domain;
   final List<DnsRecord> dnsRecords;
   const TestDomainWithAllDnsDialog({
+    super.key,
     required this.domain,
     required this.dnsRecords,
   });
@@ -22,8 +25,8 @@ class _TestDomainWithAllDnsDialogState
     extends State<TestDomainWithAllDnsDialog> {
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
 
     return AlertDialog(
       backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,

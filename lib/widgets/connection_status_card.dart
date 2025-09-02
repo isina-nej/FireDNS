@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+import '../controllers/theme_controller.dart';
 import '../path/path.dart';
 import '../utils/responsive_size.dart';
 import '../widgets/semi_transparent_text.dart';
 
 class ConnectionStatusCard extends StatelessWidget {
   final double height;
-  final ThemeManager themeManager;
+  final ThemeController themeController;
   final bool vpnActive;
   final bool vpnLoading;
   final AnimationController lottieController;
@@ -20,7 +21,7 @@ class ConnectionStatusCard extends StatelessWidget {
   const ConnectionStatusCard({
     super.key,
     required this.height,
-    required this.themeManager,
+    required this.themeController,
     required this.vpnActive,
     required this.vpnLoading,
     required this.lottieController,
@@ -33,7 +34,7 @@ class ConnectionStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = themeManager.isDarkModeActive(context);
+    final isDark = themeController.isDarkModeActive(context);
 
     // Simple debug print
     print(

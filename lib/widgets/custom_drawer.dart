@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:lottie/lottie.dart' show Lottie, LottieDelegates, ValueDelegate;
-import 'package:provider/provider.dart';
 
+import '../controllers/theme_controller.dart';
 import '../path/path.dart';
 import '../screens/check_update_page.dart';
 import '../services/navigation_service.dart';
@@ -17,8 +18,8 @@ class CustomDrawer extends StatefulWidget {
 class _CustomDrawerState extends State<CustomDrawer> {
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context, listen: true);
-    final isDark = themeManager.isDarkModeActive(context);
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
     return Drawer(
       backgroundColor:
           isDark ? AppColors.darkBackground : AppColors.backgroundLight,

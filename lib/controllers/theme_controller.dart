@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../path/path.dart';
 
-/// کلاس مدیریت تم اپلیکیشن
-class ThemeManager extends ChangeNotifier {
+/// کنترلر مدیریت تم اپلیکیشن با GetX
+class ThemeController extends GetxController {
   static const String _themeKey = 'theme_mode';
 
-  ThemeMode _themeMode = ThemeMode.system;
+  final Rx<ThemeMode> _themeMode = ThemeMode.system.obs;
 
-  ThemeMode get themeMode => _themeMode;
+  ThemeMode get themeMode => _themeMode.value;
 
-  bool get isDarkMode => _themeMode == ThemeMode.dark;
-  bool get isLightMode => _themeMode == ThemeMode.light;
-  bool get isSystemMode => _themeMode == ThemeMode.system;
+  bool get isDarkMode => _themeMode.value == ThemeMode.dark;
+  bool get isLightMode => _themeMode.value == ThemeMode.light;
+  bool get isSystemMode => _themeMode.value == ThemeMode.system;
 
   /// دریافت تم روشن
   ThemeData get lightTheme => AppThemes.lightTheme;
@@ -28,21 +30,22 @@ class ThemeManager extends ChangeNotifier {
 
       switch (savedThemeIndex) {
         case 0:
-          _themeMode = ThemeMode.system;
+          _themeMode.value = ThemeMode.system;
           break;
         case 1:
-          _themeMode = ThemeMode.light;
+          _themeMode.value = ThemeMode.light;
           break;
         case 2:
-          _themeMode = ThemeMode.dark;
+          _themeMode.value = ThemeMode.dark;
           break;
         default:
-          _themeMode = ThemeMode.system;
+          _themeMode.value = ThemeMode.system;
       }
-      notifyListeners();
+      update();
     } catch (e) {
       // در صورت بروز خطا، از تم سیستم استفاده کن
-      _themeMode = ThemeMode.system;
+      _themeMode.value = ThemeMode.system;
+      update();
     }
   }
 
@@ -52,7 +55,7 @@ class ThemeManager extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       int themeIndex;
 
-      switch (_themeMode) {
+      switch (_themeMode.value) {
         case ThemeMode.system:
           themeIndex = 0;
           break;
@@ -72,30 +75,30 @@ class ThemeManager extends ChangeNotifier {
 
   /// تغییر به تم سیستم
   Future<void> setSystemTheme() async {
-    _themeMode = ThemeMode.system;
-    notifyListeners();
+    _themeMode.value = ThemeMode.system;
+    update();
     await saveThemeMode();
   }
 
   /// تغییر به تم روشن
   Future<void> setLightTheme() async {
-    _themeMode = ThemeMode.light;
-    notifyListeners();
+    _themeMode.value = ThemeMode.light;
+    update();
     await saveThemeMode();
   }
 
   /// تغییر به تم تاریک
   Future<void> setDarkTheme() async {
-    _themeMode = ThemeMode.dark;
-    notifyListeners();
+    _themeMode.value = ThemeMode.dark;
+    update();
     await saveThemeMode();
   }
 
   /// تغییر بین روشن و تاریک
   Future<void> toggleTheme() async {
-    if (_themeMode == ThemeMode.light) {
+    if (_themeMode.value == ThemeMode.light) {
       await setDarkTheme();
-    } else if (_themeMode == ThemeMode.dark) {
+    } else if (_themeMode.value == ThemeMode.dark) {
       await setLightTheme();
     } else {
       // اگر سیستم است، به تاریک تغییر بده
@@ -105,7 +108,7 @@ class ThemeManager extends ChangeNotifier {
 
   /// بررسی اینکه آیا تم فعلی تاریک است یا نه (بر اساس brightness سیستم)
   bool isDarkModeActive(BuildContext context) {
-    switch (_themeMode) {
+    switch (_themeMode.value) {
       case ThemeMode.system:
         return MediaQuery.of(context).platformBrightness == Brightness.dark;
       case ThemeMode.light:
@@ -117,7 +120,7 @@ class ThemeManager extends ChangeNotifier {
 
   /// دریافت تم فعلی
   String getCurrentTheme() {
-    switch (_themeMode) {
+    switch (_themeMode.value) {
       case ThemeMode.system:
         return 'system';
       case ThemeMode.light:
@@ -129,7 +132,7 @@ class ThemeManager extends ChangeNotifier {
 
   /// دریافت نام تم فعلی
   String getThemeName(BuildContext context) {
-    switch (_themeMode) {
+    switch (_themeMode.value) {
       case ThemeMode.system:
         return context.tr('systemDefault');
       case ThemeMode.light:
@@ -159,7 +162,7 @@ class ThemeManager extends ChangeNotifier {
 
   /// دریافت آیکون تم فعلی
   IconData get themeIcon {
-    switch (_themeMode) {
+    switch (_themeMode.value) {
       case ThemeMode.system:
         return Icons.brightness_auto;
       case ThemeMode.light:

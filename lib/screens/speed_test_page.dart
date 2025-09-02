@@ -1,12 +1,14 @@
 // import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_test_plus/flutter_speed_test_plus.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 // import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:sleek_circular_slider/sleek_circular_slider.dart';
 
 import '../path/path.dart';
+import '../controllers/theme_controller.dart';
 
 class SpeedTestPage extends StatefulWidget {
   const SpeedTestPage({super.key});
@@ -231,8 +233,8 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
 
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
 
     return PopScope(
       canPop: true,
@@ -692,8 +694,8 @@ class InfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -733,8 +735,8 @@ class ResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
 
     return Column(
       mainAxisSize: MainAxisSize.min,

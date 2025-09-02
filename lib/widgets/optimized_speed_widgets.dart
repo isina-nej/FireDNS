@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 
+import '../controllers/theme_controller.dart';
 import '../path/path.dart';
 
 /// ویجت بهینه‌سازی شده برای نمایش نتایج تست سرعت
@@ -20,8 +21,8 @@ class OptimizedSpeedResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -86,8 +87,8 @@ class OptimizedInfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),

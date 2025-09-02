@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../api/models/notification_model.dart';
+import '../controllers/theme_controller.dart';
 import '../path/path.dart';
 import '../services/navigation_service.dart';
 import '../services/notification_service.dart';
@@ -237,11 +239,12 @@ class _NotificationPopupState extends State<NotificationPopup>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<ThemeManager, NotificationService>(
-      builder: (context, themeManager, notificationService, child) {
-        final isDark = themeManager.isDarkModeActive(context);
-        final notifications = notificationService.notifications;
-        final hasUnread = notificationService.unreadCount > 0;
+    return Obx(() {
+      final themeController = Get.find<ThemeController>();
+      final notificationService = Get.find<NotificationService>();
+      final isDark = themeController.isDarkMode;
+      final notifications = notificationService.notifications;
+      final hasUnread = notificationService.unreadCount > 0;
 
         return FadeTransition(
           opacity: _fadeAnimation,

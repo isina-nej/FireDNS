@@ -1,8 +1,9 @@
 // lib/widgets/dns_test_tile.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 
+import '../controllers/theme_controller.dart';
 import '../path/path.dart'; // Assuming AppColors, context.tr are imported
 // import '../utils/dns_service.dart'; // Assuming DnsService is here
 
@@ -19,13 +20,13 @@ class _DnsTestTileState extends State<DnsTestTile> {
   dynamic status;
   bool _loading = true;
 
-  late final ThemeManager themeManager;
+  late final ThemeController themeController;
   late final bool isDark;
 
   @override
   void initState() {
-    themeManager = Provider.of<ThemeManager>(context, listen: false);
-    isDark = themeManager.isDarkModeActive(context);
+    themeController = Get.find<ThemeController>();
+    isDark = themeController.isDarkMode;
     super.initState();
     _runTest();
   }

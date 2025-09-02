@@ -234,12 +234,11 @@ class _SettingsPageState extends State<SettingsPage> {
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkSurface : Colors.white,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x0F000000),
-                  spreadRadius: 1,
+                  color: Colors.black.withOpacity(0.05),
                   blurRadius: 10,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -334,9 +333,6 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 _buildLanguageOption(context, 'en', languageManager),
                 _buildLanguageOption(context, 'fa', languageManager),
-                _buildLanguageOption(context, 'ar', languageManager),
-                _buildLanguageOption(context, 'ru', languageManager),
-                _buildLanguageOption(context, 'zh', languageManager),
               ],
             ),
           ),
@@ -379,16 +375,7 @@ class _SettingsPageState extends State<SettingsPage> {
             : null,
         onTap: () async {
           Navigator.pop(context);
-          switch (language) {
-            case 'en':
-              await languageManager.setEnglish();
-              break;
-            case 'fa':
-              await languageManager.setFarsi();
-              break;
-            default:
-              await languageManager.setEnglish();
-          }
+          await _setLanguage(languageManager, language);
         },
       ),
     );
@@ -614,6 +601,29 @@ class _SettingsPageState extends State<SettingsPage> {
         return context.tr('lightMode');
       default:
         return theme;
+    }
+  }
+
+  Future<void> _setLanguage(
+      LanguageManager languageManager, String language) async {
+    switch (language) {
+      case 'fa':
+        await languageManager.setFarsi();
+        break;
+      case 'en':
+        await languageManager.setEnglish();
+        break;
+      case 'ar':
+        await languageManager.setArabic();
+        break;
+      case 'ru':
+        await languageManager.setRussian();
+        break;
+      case 'zh':
+        await languageManager.setChinese();
+        break;
+      default:
+        await languageManager.setEnglish();
     }
   }
 }

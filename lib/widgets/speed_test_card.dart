@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+import '../controllers/theme_controller.dart';
 import '../path/path.dart';
 import '../services/navigation_service.dart';
 import '../utils/responsive_size.dart';
@@ -11,17 +12,17 @@ import '../widgets/semi_transparent_text.dart';
 
 class SpeedTestCard extends StatelessWidget {
   final double height;
-  final ThemeManager themeManager;
+  final ThemeController themeController;
 
   const SpeedTestCard({
     super.key,
     required this.height,
-    required this.themeManager,
+    required this.themeController,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = themeManager.isDarkModeActive(context);
+    final isDark = themeController.isDarkModeActive(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(

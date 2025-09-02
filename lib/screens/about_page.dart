@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'package:get/get.dart';
+import '../controllers/theme_controller.dart';
 import '../path/path.dart';
 
 class AboutPage extends StatelessWidget {
@@ -9,8 +9,8 @@ class AboutPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
 
     return PopScope(
       canPop: true,
@@ -250,7 +250,7 @@ class AboutPage extends StatelessWidget {
     required String url,
     required Color color,
   }) {
-    final isDark = Provider.of<ThemeManager>(context).isDarkModeActive(context);
+    final isDark = Get.find<ThemeController>().isDarkMode;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () async {

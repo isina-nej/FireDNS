@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
-import '../screens/settings_page.dart';
-import '../screens/notification_list_page.dart';
-import '../screens/speed_test_page.dart';
-import '../screens/profile_page.dart';
+import 'package:flutter/material.dart';
+
 import '../screens/about_page.dart';
+import '../screens/notification_list_page.dart';
+import '../screens/profile_page.dart';
+import '../screens/settings_page.dart';
+import '../screens/speed_test_page.dart';
 import '../screens/ticket_page.dart';
 
 /// Professional Navigation Service with Material Design 3 Transitions

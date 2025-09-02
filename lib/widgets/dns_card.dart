@@ -2,9 +2,10 @@
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
-import 'package:provider/provider.dart';
 
+import '../controllers/theme_controller.dart';
 import '../path/path.dart'; // Assuming AppColors, context.tr are defined here or in imports
 import '../widgets/animated_overflow_label.dart';
 
@@ -40,8 +41,8 @@ class DnsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
     final ping1 = pingCache['${record.id}_1'] ?? pingCache[record.id];
     final ping2 = pingCache['${record.id}_2'] ?? pingCache[record.id];
 

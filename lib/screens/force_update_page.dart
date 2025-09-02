@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../api/models/update_type.dart';
+import '../controllers/theme_controller.dart';
 import '../path/path.dart';
 
 /// صفحه نمایش و مدیریت آپدیت برنامه
@@ -352,9 +353,10 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeManager>(
-      builder: (context, themeManager, child) {
-        final isDark = themeManager.isDarkModeActive(context);
+    return Obx(
+      () {
+        final themeController = Get.find<ThemeController>();
+        final isDark = themeController.isDarkMode;
 
         return PopScope(
           canPop: _updateInfo?.updateType != UpdateType.mandatory,

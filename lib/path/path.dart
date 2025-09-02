@@ -45,7 +45,6 @@ export '../styles/app_sizes.dart';
 export '../styles/app_text_styles.dart';
 export '../styles/app_themes.dart';
 export '../styles/language_manager.dart';
-export '../styles/theme_manager.dart';
 export '../widgets/notification_bell.dart';
 export '../widgets/custom_drawer.dart';
 // utils

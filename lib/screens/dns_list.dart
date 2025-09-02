@@ -6,10 +6,11 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../path/path.dart';
+import '../controllers/theme_controller.dart';
 import '../utils/dns_ping_helper.dart';
 import '../utils/dns_test_manager.dart';
 import '../widgets/dns_card.dart'; // Import the extracted DNS card widget
@@ -847,8 +848,8 @@ class _DnsListPageState extends State<DnsListPage>
 
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
+    final themeController = Get.find<ThemeController>();
+    final isDark = themeController.isDarkMode;
 
     return PopScope(
       canPop: true,

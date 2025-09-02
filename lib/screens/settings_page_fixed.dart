@@ -234,12 +234,11 @@ class _SettingsPageState extends State<SettingsPage> {
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkSurface : Colors.white,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x0F000000),
-                  spreadRadius: 1,
+                  color: Colors.black.withOpacity(0.05),
                   blurRadius: 10,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -334,9 +333,6 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 _buildLanguageOption(context, 'en', languageManager),
                 _buildLanguageOption(context, 'fa', languageManager),
-                _buildLanguageOption(context, 'ar', languageManager),
-                _buildLanguageOption(context, 'ru', languageManager),
-                _buildLanguageOption(context, 'zh', languageManager),
               ],
             ),
           ),
@@ -386,8 +382,6 @@ class _SettingsPageState extends State<SettingsPage> {
             case 'fa':
               await languageManager.setFarsi();
               break;
-            default:
-              await languageManager.setEnglish();
           }
         },
       ),

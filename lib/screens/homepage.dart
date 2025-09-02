@@ -9,12 +9,13 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../blocs/dns/dns_bloc.dart';
 import '../blocs/dns/dns_state.dart';
+import '../controllers/theme_controller.dart';
 import '../path/path.dart';
 
 class FireDNSHomePage extends StatefulWidget {
@@ -28,7 +29,7 @@ class FireDNSHomePage extends StatefulWidget {
 
 class _FireDNSHomePageState extends State<FireDNSHomePage>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
-  late ThemeManager _themeManager;
+  late final ThemeController _themeController;
   late final AnimationController _lottieController;
 
   DateTime? _lastBackPressTime; // زمان آخرین فشردن دکمه برگشت
@@ -57,7 +58,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
   @override
   void initState() {
     super.initState();
-    _themeManager = Provider.of<ThemeManager>(context, listen: false);
+    _themeController = Get.find<ThemeController>();
     _lottieController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3000),
@@ -67,7 +68,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     _initializeControllers();
     _initializeObserver();
     _initializeServices();
-    _themeManager.loadThemeMode();
+    _themeController.loadThemeMode();
     setState(() {
       _vpnLoading = false;
       _vpnActive = false;
@@ -126,7 +127,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     _disposeControllers();
     _disposeObserver();
     _disposeServices();
-    _themeManager.dispose();
     _lottieController.dispose();
     super.dispose();
   }
@@ -436,7 +436,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           lastSnackBarMessage: _lastSnackBarMessage,
           setLastSnackBarTime: (time) => _lastSnackBarTime = time,
           setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
-          isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+          isDarkModeActive: () => _themeController.isDarkModeActive(context),
         );
 
         setState(() {
@@ -453,7 +453,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           lastSnackBarMessage: _lastSnackBarMessage,
           setLastSnackBarTime: (time) => _lastSnackBarTime = time,
           setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
-          isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+          isDarkModeActive: () => _themeController.isDarkModeActive(context),
         );
         setState(() {
           _vpnLoading = false;
@@ -472,7 +472,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         lastSnackBarMessage: _lastSnackBarMessage,
         setLastSnackBarTime: (time) => _lastSnackBarTime = time,
         setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
-        isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+        isDarkModeActive: () => _themeController.isDarkModeActive(context),
       );
       setState(() {
         _vpnLoading = false;
@@ -501,7 +501,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           lastSnackBarMessage: _lastSnackBarMessage,
           setLastSnackBarTime: (time) => _lastSnackBarTime = time,
           setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
-          isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+          isDarkModeActive: () => _themeController.isDarkModeActive(context),
         );
 
         setState(() {
@@ -521,7 +521,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
           lastSnackBarMessage: _lastSnackBarMessage,
           setLastSnackBarTime: (time) => _lastSnackBarTime = time,
           setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
-          isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+          isDarkModeActive: () => _themeController.isDarkModeActive(context),
         );
 
         try {
@@ -569,19 +569,18 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       lastSnackBarMessage: _lastSnackBarMessage,
       setLastSnackBarTime: (time) => _lastSnackBarTime = time,
       setLastSnackBarMessage: (msg) => _lastSnackBarMessage = msg,
-      isDarkModeActive: () => _themeManager.isDarkModeActive(context),
+      isDarkModeActive: () => _themeController.isDarkModeActive(context),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeManager = Provider.of<ThemeManager>(context);
-    final isDark = themeManager.isDarkModeActive(context);
+    final isDark = _themeController.isDarkModeActive(context);
 
     return BlocBuilder<DnsBloc, DnsState>(
       builder: (context, dnsState) {
         return ListenableBuilder(
-          listenable: themeManager,
+          listenable: _themeController,
           builder: (context, _) => PopScope(
               canPop: false, // Prevent automatic pop on homepage
               onPopInvokedWithResult: (didPop, result) {
@@ -680,7 +679,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                                     '🏠 HomePage build - vpnActive: $_vpnActive, vpnLoading: $_vpnLoading');
                                 return ConnectionStatusCard(
                                   height: cardHeight,
-                                  themeManager: _themeManager,
+                                  themeController: _themeController,
                                   vpnActive: _vpnActive,
                                   vpnLoading: _vpnLoading,
                                   lottieController: _lottieController,
@@ -699,7 +698,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                               flex: 10,
                               child: SpeedTestCard(
                                 height: cardHeight,
-                                themeManager: _themeManager,
+                                themeController: _themeController,
                               ),
                             ),
                             SizedBox(
@@ -709,7 +708,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                               flex: 10,
                               child: ConfigurationCard(
                                 height: cardHeight,
-                                themeManager: _themeManager,
+                                themeController: _themeController,
                                 onDnsSelected: _handleDnsSelected,
                                 vpnActive: _vpnActive,
                                 deactivateVpn: _deactivateVpn,
