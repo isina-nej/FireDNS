@@ -362,10 +362,10 @@ class _FireDNSAppState extends State<FireDNSApp> {
             final themeController = Get.find<ThemeController>();
             return Consumer<LanguageManager>(
               builder: (context, languageManager, child) {
-                final light = _buildTheme(
-                    themeController.lightTheme, languageManager);
-                final dark = _buildTheme(
-                    themeController.darkTheme, languageManager);
+                final light =
+                    _buildTheme(themeController.lightTheme, languageManager);
+                final dark =
+                    _buildTheme(themeController.darkTheme, languageManager);
 
                 return AnimatedTheme(
                   data:

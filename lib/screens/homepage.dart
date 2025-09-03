@@ -580,7 +580,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         return Obx(() {
           final isDark = _themeController.isDarkModeActive(context);
           return AnimatedTheme(
-            data: isDark ? _themeController.darkTheme : _themeController.lightTheme,
+            data: isDark
+                ? _themeController.darkTheme
+                : _themeController.lightTheme,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             child: PopScope(
