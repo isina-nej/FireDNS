@@ -575,13 +575,15 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = _themeController.isDarkModeActive(context);
-
     return BlocBuilder<DnsBloc, DnsState>(
       builder: (context, dnsState) {
-        return ListenableBuilder(
-          listenable: _themeController,
-          builder: (context, _) => PopScope(
+        return Obx(() {
+          final isDark = _themeController.isDarkModeActive(context);
+          return AnimatedTheme(
+            data: isDark ? _themeController.darkTheme : _themeController.lightTheme,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: PopScope(
               canPop: false, // Prevent automatic pop on homepage
               onPopInvokedWithResult: (didPop, result) {
                 if (!didPop) {
@@ -723,8 +725,10 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                     },
                   ),
                 ),
-              )),
-        );
+              ),
+            ),
+          );
+        });
       },
     );
   }

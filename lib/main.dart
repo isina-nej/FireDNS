@@ -11,27 +11,17 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'api/models/update_info.dart';
-import 'api/services/api_client.dart';
-import 'api/services/dns_api_service.dart';
 import 'blocs/dns/dns_bloc.dart';
 import 'controllers/theme_controller.dart';
-import 'l10n/app_localizations.dart';
+import 'path/path.dart';
 import 'routes/app_routes.dart';
 import 'screens/force_update_page.dart';
 import 'screens/loading_screen.dart';
 import 'screens/splash_screen.dart';
-import 'services/crash_reporting_service.dart';
-import 'services/dns_test_settings_service.dart';
 import 'services/fcm_token_manager.dart';
 import 'services/firebase_messaging_service.dart';
-import 'services/flutter_error_handler.dart';
 import 'services/local_notification_service.dart';
-import 'services/logger_service.dart';
-import 'services/notification_service.dart';
-import 'services/notification_service_provider.dart';
-import 'styles/language_manager.dart';
-import 'utils/update_checker.dart';
+import 'widgets/theme_widgets.dart';
 
 // Background message handler برای FCM
 @pragma('vm:entry-point')
@@ -330,6 +320,7 @@ class _FireDNSAppState extends State<FireDNSApp> {
   void initState() {
     super.initState();
     Get.put(widget.themeController);
+    Get.put(NotificationService());
     _initializeApp();
   }
 
@@ -363,58 +354,70 @@ class _FireDNSAppState extends State<FireDNSApp> {
           ),
         ),
       ],
-      child: Builder(
-        builder: (context) {
-          NotificationServiceProvider.init(context);
-          final themeController = Get.find<ThemeController>();
-          return Obx(
-            () {
-              final light = _buildTheme(
-                  themeController.lightTheme, widget.languageManager);
-              final dark = _buildTheme(
-                  themeController.darkTheme, widget.languageManager);
+      child: ThemeProvider(
+        themeController: Get.find<ThemeController>(),
+        child: Builder(
+          builder: (context) {
+            NotificationServiceProvider.init(context);
+            final themeController = Get.find<ThemeController>();
+            return Consumer<LanguageManager>(
+              builder: (context, languageManager, child) {
+                final light = _buildTheme(
+                    themeController.lightTheme, languageManager);
+                final dark = _buildTheme(
+                    themeController.darkTheme, languageManager);
 
-              return GetMaterialApp(
-                title: 'Fire DNS',
-                theme: light,
-                darkTheme: dark,
-                themeMode: themeController.themeMode,
-                locale: widget.languageManager.locale,
-                localizationsDelegates: const [
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-                supportedLocales: LanguageManager.supportedLocales,
-                home: _showLoadingScreen
-                    ? const LoadingScreen()
-                    : _UpdateGate(
-                        languageManager: widget.languageManager,
-                        child: Builder(
-                          builder: (context) => Navigator(
-                            initialRoute: AppRoutes.home,
-                            onGenerateRoute: (settings) {
-                              final route = AppRoutes.onGenerateRoute(settings);
-                              if (route != null) return route;
+                return AnimatedTheme(
+                  data:
+                      themeController.isDarkModeActive(context) ? dark : light,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: Builder(
+                    builder: (context) => GetMaterialApp(
+                      title: 'Fire DNS',
+                      theme: Theme.of(context),
+                      darkTheme: Theme.of(context),
+                      themeMode: themeController.themeMode,
+                      locale: languageManager.locale,
+                      localizationsDelegates: const [
+                        GlobalMaterialLocalizations.delegate,
+                        GlobalWidgetsLocalizations.delegate,
+                        GlobalCupertinoLocalizations.delegate,
+                      ],
+                      supportedLocales: LanguageManager.supportedLocales,
+                      home: _showLoadingScreen
+                          ? const LoadingScreen()
+                          : _UpdateGate(
+                              languageManager: languageManager,
+                              child: Builder(
+                                builder: (context) => Navigator(
+                                  initialRoute: AppRoutes.home,
+                                  onGenerateRoute: (settings) {
+                                    final route =
+                                        AppRoutes.onGenerateRoute(settings);
+                                    if (route != null) return route;
 
-                              final routeBuilder =
-                                  AppRoutes.routes[settings.name];
-                              if (routeBuilder != null) {
-                                return MaterialPageRoute(
-                                  builder: routeBuilder,
-                                  settings: settings,
-                                );
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ),
-                debugShowCheckedModeBanner: false,
-              );
-            },
-          );
-        },
+                                    final routeBuilder =
+                                        AppRoutes.routes[settings.name];
+                                    if (routeBuilder != null) {
+                                      return MaterialPageRoute(
+                                        builder: routeBuilder,
+                                        settings: settings,
+                                      );
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ),
+                      debugShowCheckedModeBanner: false,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

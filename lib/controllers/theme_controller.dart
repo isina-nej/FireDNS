@@ -118,6 +118,35 @@ class ThemeController extends GetxController {
     }
   }
 
+  /// دریافت تم فعلی بر اساس context
+  ThemeData getCurrentThemeData(BuildContext context) {
+    if (isDarkModeActive(context)) {
+      return darkTheme;
+    } else {
+      return lightTheme;
+    }
+  }
+
+  /// تغییر تم با انیمیشن smooth
+  Future<void> toggleThemeWithAnimation(BuildContext context) async {
+    final currentBrightness = MediaQuery.of(context).platformBrightness;
+    if (_themeMode.value == ThemeMode.system) {
+      // اگر سیستم است، بر اساس brightness فعلی تصمیم بگیر
+      if (currentBrightness == Brightness.dark) {
+        await setLightTheme();
+      } else {
+        await setDarkTheme();
+      }
+    } else {
+      // تغییر بین روشن و تاریک
+      if (_themeMode.value == ThemeMode.light) {
+        await setDarkTheme();
+      } else {
+        await setLightTheme();
+      }
+    }
+  }
+
   /// دریافت تم فعلی
   String getCurrentTheme() {
     switch (_themeMode.value) {
