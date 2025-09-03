@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../path/path.dart';
 import '../controllers/theme_controller.dart';
+import '../path/path.dart';
 import '../utils/dns_ping_helper.dart';
 import '../utils/dns_test_manager.dart';
 import '../widgets/dns_card.dart'; // Import the extracted DNS card widget
@@ -55,6 +55,32 @@ class _DnsListPageState extends State<DnsListPage>
     setState(() {
       _likedDnsIds = liked.toSet();
     });
+  }
+
+  Future<void> _loadPersistentPingCache() async {
+    // بارگذاری پینگ‌های ذخیره شده از SharedPreferences
+    _pingCache = await DnsPingHelper.loadPingCache();
+
+    // اگر پینگ‌ها خالی بودند، مقادیر پیش‌فرض تنظیم کنیم
+    if (_pingCache.isEmpty) {
+      // برای هر DNS رکورد، پینگ‌های پیش‌فرض تنظیم کنیم
+      for (var record in _dnsRecords) {
+        _pingCache['${record.id}_1'] = -1; // مقدار پیش‌فرض برای پینگ اول
+        _pingCache['${record.id}_2'] = -1; // مقدار پیش‌فرض برای پینگ دوم
+      }
+      // ذخیره پینگ‌های پیش‌فرض
+      await _savePingCache();
+    }
+
+    // بروزرسانی UI
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _savePingCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('cached_ping_cache', jsonEncode(_pingCache));
   }
 
   Future<void> _toggleLikeDns(String dnsId) async {
@@ -129,7 +155,8 @@ class _DnsListPageState extends State<DnsListPage>
       await _loadCachedDnsList();
       await _loadUserDnsIds();
       await fetchDnsListWithTimer();
-      _pingCache = await DnsPingHelper.loadPingCache();
+      // بارگذاری پینگ‌های ذخیره شده از حافظه
+      await _loadPersistentPingCache();
       if (_sortType == 'ping') {
         _sortDnsRecords();
       }
@@ -294,6 +321,8 @@ class _DnsListPageState extends State<DnsListPage>
 
   @override
   void dispose() {
+    // ذخیره پینگ‌های فعلی قبل از بسته شدن برنامه
+    _savePingCache();
     _dnsApiService.dispose();
     _searchController.dispose();
     _animationController.dispose();

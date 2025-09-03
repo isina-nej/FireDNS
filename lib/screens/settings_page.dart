@@ -8,7 +8,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/theme_controller.dart';
 import '../path/path.dart';
-import '../services/notification_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -33,46 +32,48 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
-    final languageManager =
-        Provider.of<LanguageManager>(context, listen: false);
 
     return PopScope(
       canPop: true,
-      child: Obx(() {
-        final isDark = themeController.isDarkModeActive(context);
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          color: isDark ? AppColors.darkBackground : const Color(0xFFF5F5F5),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-              elevation: 0,
-              title: Text(
-                context.tr('settings'),
-                style: TextStyle(
-                  fontFamily: languageManager.fontFamily,
-                  color: isDark ? AppColors.darkTextPrimary : Colors.black,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
+      child: Consumer<LanguageManager>(
+        builder: (context, languageManager, child) {
+          return Obx(() {
+            final isDark = themeController.isDarkModeActive(context);
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              color:
+                  isDark ? AppColors.darkBackground : const Color(0xFFF5F5F5),
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                appBar: AppBar(
+                  backgroundColor:
+                      isDark ? AppColors.darkSurface : Colors.white,
+                  elevation: 0,
+                  title: Text(
+                    context.tr('settings'),
+                    style: TextStyle(
+                      fontFamily: languageManager.fontFamily,
+                      color: isDark ? AppColors.darkTextPrimary : Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  centerTitle: true,
+                  leading: IconButton(
+                    icon: Icon(Icons.arrow_back,
+                        color: isDark
+                            ? AppColors.darkIconPrimary
+                            : Colors.black54),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ),
-              ),
-              centerTitle: true,
-              leading: IconButton(
-                icon: Icon(Icons.arrow_back,
-                    color: isDark ? AppColors.darkIconPrimary : Colors.black54),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-            body: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildSettingSection(
-                  title: context.tr('general'),
-                  items: [
-                    Consumer<LanguageManager>(
-                      builder: (context, languageManager, child) {
-                        return _buildSettingItem(
+                body: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _buildSettingSection(
+                      title: context.tr('general'),
+                      items: [
+                        _buildSettingItem(
                           icon: 'assets/icone/language.json',
                           title: context.tr('language'),
                           subtitle: languageManager.languageName,
@@ -80,134 +81,136 @@ class _SettingsPageState extends State<SettingsPage> {
                             _showLanguageSelectionDialog(
                                 context, languageManager);
                           },
-                        );
-                      },
+                        ),
+                        Obx(() => _buildSettingItem(
+                              icon: 'assets/icone/theme.json',
+                              title: context.tr('appTheme'),
+                              subtitle: themeController.getThemeName(context),
+                              onTap: () {
+                                _showThemeSelectionDialog(
+                                    context, themeController);
+                              },
+                            )),
+                      ],
                     ),
-                    Obx(() => _buildSettingItem(
-                          icon: 'assets/icone/theme.json',
-                          title: context.tr('appTheme'),
-                          subtitle: themeController.getThemeName(context),
-                          onTap: () {
-                            _showThemeSelectionDialog(context, themeController);
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                    _buildSettingSection(
+                      title: context.tr('notifications'),
+                      items: [
+                        Consumer<NotificationService>(
+                          builder: (context, notificationService, child) {
+                            return _buildSettingItem(
+                              icon: 'assets/icone/notifications.json',
+                              title: context.tr('notificationsEnabled'),
+                              isSwitch: true,
+                              switchValue:
+                                  notificationService.notificationsEnabled,
+                              onChanged: (value) {
+                                notificationService.toggleNotifications();
+                              },
+                            );
                           },
-                        )),
-                  ],
-                ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                _buildSettingSection(
-                  title: context.tr('notifications'),
-                  items: [
-                    Consumer<NotificationService>(
-                      builder: (context, notificationService, child) {
-                        return _buildSettingItem(
-                          icon: 'assets/icone/notifications.json',
-                          title: context.tr('notificationsEnabled'),
-                          isSwitch: true,
-                          switchValue: notificationService.notificationsEnabled,
-                          onChanged: (value) {
-                            notificationService.toggleNotifications();
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                    _buildSettingSection(
+                      title: context.tr('dnsTest'),
+                      items: [
+                        Consumer<DnsTestSettingsService>(
+                          builder: (context, dnsTestSettingsService, child) {
+                            return _buildSettingItem(
+                              icon: 'assets/icone/dns.json',
+                              title: context.tr('testType'),
+                              subtitle: dnsTestSettingsService.getTestTypeName(
+                                dnsTestSettingsService.testType,
+                                context,
+                              ),
+                              onTap: () {
+                                _showTestTypeSelectionDialog(
+                                    context, dnsTestSettingsService);
+                              },
+                            );
                           },
-                        );
-                      },
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                _buildSettingSection(
-                  title: context.tr('dnsTest'),
-                  items: [
-                    Consumer<DnsTestSettingsService>(
-                      builder: (context, dnsTestSettingsService, child) {
-                        return _buildSettingItem(
-                          icon: 'assets/icone/dns.json',
-                          title: context.tr('testType'),
-                          subtitle: dnsTestSettingsService.getTestTypeName(
-                            dnsTestSettingsService.testType,
-                            context,
-                          ),
-                          onTap: () {
-                            _showTestTypeSelectionDialog(
-                                context, dnsTestSettingsService);
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                    _buildSettingSection(
+                      title: 'شبکه‌های اجتماعی',
+                      items: [
+                        _buildSettingItem(
+                          icon: 'assets/icone/twitter.json',
+                          title: 'Twitter',
+                          onTap: () async {
+                            final url = Uri.parse('https://x.com/isina_nej');
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url);
+                            }
                           },
-                        );
-                      },
+                        ),
+                        _buildSettingItem(
+                          icon: 'assets/icone/linkedin.json',
+                          title: 'LinkedIn',
+                          onTap: () async {
+                            final url = Uri.parse(
+                                'https://www.linkedin.com/in/isina-nej/');
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url);
+                            }
+                          },
+                        ),
+                        _buildSettingItem(
+                          icon: 'assets/icone/telegram.json',
+                          title: 'Telegram',
+                          onTap: () async {
+                            final url = Uri.parse('https://t.me/Fire_DNS');
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url);
+                            }
+                          },
+                        ),
+                        _buildSettingItem(
+                          icon: 'assets/icone/github_alt.json',
+                          title: 'GitHub',
+                          onTap: () async {
+                            final url = Uri.parse(
+                                'https://github.com/isina-nej/FireDNS');
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url);
+                            }
+                          },
+                        ),
+                        _buildSettingItem(
+                          icon: 'assets/icone/website_new.json',
+                          title: 'Website',
+                          onTap: () async {
+                            final url = Uri.parse('https://Fire-DNS.ir');
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                    _buildSettingSection(
+                      title: context.tr('aboutUs'),
+                      items: [
+                        _buildSettingItem(
+                          icon: 'assets/icone/info.json',
+                          title: context.tr('appVersion'),
+                          subtitle: '2.0.0',
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                _buildSettingSection(
-                  title: 'شبکه‌های اجتماعی',
-                  items: [
-                    _buildSettingItem(
-                      icon: 'assets/icone/twitter.json',
-                      title: 'Twitter',
-                      onTap: () async {
-                        final url = Uri.parse('https://x.com/isina_nej');
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(url);
-                        }
-                      },
-                    ),
-                    _buildSettingItem(
-                      icon: 'assets/icone/linkedin.json',
-                      title: 'LinkedIn',
-                      onTap: () async {
-                        final url =
-                            Uri.parse('https://www.linkedin.com/in/isina-nej/');
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(url);
-                        }
-                      },
-                    ),
-                    _buildSettingItem(
-                      icon: 'assets/icone/telegram.json',
-                      title: 'Telegram',
-                      onTap: () async {
-                        final url = Uri.parse('https://t.me/Fire_DNS');
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(url);
-                        }
-                      },
-                    ),
-                    _buildSettingItem(
-                      icon: 'assets/icone/github_alt.json',
-                      title: 'GitHub',
-                      onTap: () async {
-                        final url =
-                            Uri.parse('https://github.com/isina-nej/FireDNS');
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(url);
-                        }
-                      },
-                    ),
-                    _buildSettingItem(
-                      icon: 'assets/icone/website_new.json',
-                      title: 'Website',
-                      onTap: () async {
-                        final url = Uri.parse('https://Fire-DNS.ir');
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(url);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                _buildSettingSection(
-                  title: context.tr('aboutUs'),
-                  items: [
-                    _buildSettingItem(
-                      icon: 'assets/icone/info.json',
-                      title: context.tr('appVersion'),
-                      subtitle: '2.0.0',
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      }),
+              ),
+            );
+          });
+        },
+      ),
     );
   }
 
@@ -386,6 +389,15 @@ class _SettingsPageState extends State<SettingsPage> {
             case 'fa':
               await languageManager.setFarsi();
               break;
+            case 'ar':
+              await languageManager.setArabic();
+              break;
+            case 'ru':
+              await languageManager.setRussian();
+              break;
+            case 'zh':
+              await languageManager.setChinese();
+              break;
             default:
               await languageManager.setEnglish();
           }
@@ -399,7 +411,13 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'en':
         return context.tr('english');
       case 'fa':
-        return context.tr('persian');
+        return context.tr('farsi');
+      case 'ar':
+        return context.tr('arabic');
+      case 'ru':
+        return context.tr('russian');
+      case 'zh':
+        return context.tr('chinese');
       default:
         return language;
     }

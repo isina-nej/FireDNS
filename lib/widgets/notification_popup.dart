@@ -8,7 +8,6 @@ import '../api/models/notification_model.dart';
 import '../controllers/theme_controller.dart';
 import '../path/path.dart';
 import '../services/navigation_service.dart';
-import '../services/notification_service.dart';
 
 /// ویجت پاپ‌آپ اعلانات با طراحی بهبود یافته
 class NotificationPopup extends StatefulWidget {
@@ -239,63 +238,68 @@ class _NotificationPopupState extends State<NotificationPopup>
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final themeController = Get.find<ThemeController>();
-      final notificationService = Get.find<NotificationService>();
-      final isDark = themeController.isDarkMode;
-      final notifications = notificationService.notifications;
-      final hasUnread = notificationService.unreadCount > 0;
+    return Consumer<LanguageManager>(
+      builder: (context, languageManager, child) {
+        return Obx(
+          () {
+            final themeController = Get.find<ThemeController>();
+            final notificationService = Get.find<NotificationService>();
+            final isDark = themeController.isDarkMode;
+            final notifications = notificationService.notifications;
+            final hasUnread = notificationService.unreadCount > 0;
 
-        return FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Dialog(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              insetPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-              child: Container(
-                width: double.infinity,
-                constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.9,
-                    maxHeight: MediaQuery.of(context).size.height * 0.8),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.darkSurface
-                      : AppColors.backgroundWhite,
-                  borderRadius: BorderRadius.circular(
-                      MediaQuery.of(context).size.width * 0.06),
-                  boxShadow: [
-                    BoxShadow(
+            return FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Dialog(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  insetPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+                  child: Container(
+                    width: double.infinity,
+                    constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.9,
+                        maxHeight: MediaQuery.of(context).size.height * 0.8),
+                    decoration: BoxDecoration(
                       color: isDark
-                          ? Colors.black.withValues(alpha: 0.6)
-                          : Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 32,
-                      offset: const Offset(0, 16),
-                      spreadRadius: 0,
+                          ? AppColors.darkSurface
+                          : AppColors.backgroundWhite,
+                      borderRadius: BorderRadius.circular(
+                          MediaQuery.of(context).size.width * 0.06),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withValues(alpha: 0.6)
+                              : Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 32,
+                          offset: const Offset(0, 16),
+                          spreadRadius: 0,
+                        ),
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withValues(alpha: 0.4)
+                              : Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                          spreadRadius: 0,
+                        ),
+                      ],
                     ),
-                    BoxShadow(
-                      color: isDark
-                          ? Colors.black.withValues(alpha: 0.4)
-                          : Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                      spreadRadius: 0,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildModernHeader(context, isDark, hasUnread,
+                            notificationService.unreadCount),
+                        _buildModernBody(context, isDark, notifications),
+                      ],
                     ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildModernHeader(context, isDark, hasUnread,
-                        notificationService.unreadCount),
-                    _buildModernBody(context, isDark, notifications),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

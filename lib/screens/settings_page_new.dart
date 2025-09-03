@@ -8,7 +8,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/theme_controller.dart';
 import '../path/path.dart';
-import '../services/notification_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -116,8 +115,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 _buildSettingSection(
                   title: context.tr('dnsTest'),
                   items: [
-                    Consumer<DnsTestSettingsService>(
-                      builder: (context, dnsTestSettingsService, child) {
+                    Consumer2<LanguageManager, DnsTestSettingsService>(
+                      builder: (context, languageManager,
+                          dnsTestSettingsService, child) {
                         return _buildSettingItem(
                           icon: 'assets/icone/dns.json',
                           title: context.tr('testType'),
@@ -399,39 +399,42 @@ class _SettingsPageState extends State<SettingsPage> {
 
     showDialog(
       context: context,
-      builder: (context) => Theme(
-        data: Theme.of(context).copyWith(
-          textTheme: Theme.of(context).textTheme.apply(
-                bodyColor: isDark ? AppColors.darkTextPrimary : Colors.black,
-                displayColor: isDark ? AppColors.darkTextPrimary : Colors.black,
-              ),
-        ),
-        child: AlertDialog(
-          backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-          title: Text(
-            context.tr('testType'),
+      builder: (context) => Consumer<LanguageManager>(
+        builder: (context, languageManager, child) => Theme(
+          data: Theme.of(context).copyWith(
+            textTheme: Theme.of(context).textTheme.apply(
+                  bodyColor: isDark ? AppColors.darkTextPrimary : Colors.black,
+                  displayColor:
+                      isDark ? AppColors.darkTextPrimary : Colors.black,
+                ),
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildTestTypeOption(context, 'ping', dnsTestSettingsService),
-                _buildTestTypeOption(context, 'dns', dnsTestSettingsService),
-                _buildAdvancedTestTypeOption(context, dnsTestSettingsService),
-              ],
+          child: AlertDialog(
+            backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+            title: Text(
+              context.tr('testType'),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                context.tr('cancel'),
-                style: TextStyle(
-                  color: isDark ? AppColors.brightBlue : Colors.blue,
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildTestTypeOption(context, 'ping', dnsTestSettingsService),
+                  _buildTestTypeOption(context, 'dns', dnsTestSettingsService),
+                  _buildAdvancedTestTypeOption(context, dnsTestSettingsService),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  context.tr('cancel'),
+                  style: TextStyle(
+                    color: isDark ? AppColors.brightBlue : Colors.blue,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -443,25 +446,27 @@ class _SettingsPageState extends State<SettingsPage> {
     final isDark = themeController.isDarkModeActive(context);
     final isSelected = dnsTestSettingsService.testType == testType;
 
-    return Material(
-      color: Colors.transparent,
-      child: ListTile(
-        title: DefaultTextStyle(
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-          child: Text(_getTestTypeDisplayName(context, testType)),
+    return Consumer<LanguageManager>(
+      builder: (context, languageManager, child) => Material(
+        color: Colors.transparent,
+        child: ListTile(
+          title: DefaultTextStyle(
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+            child: Text(_getTestTypeDisplayName(context, testType)),
+          ),
+          trailing: isSelected
+              ? Icon(
+                  Icons.check_circle,
+                  color: isDark ? AppColors.brightBlue : Colors.blue,
+                )
+              : null,
+          onTap: () async {
+            Navigator.pop(context);
+            await dnsTestSettingsService.setTestType(testType);
+          },
         ),
-        trailing: isSelected
-            ? Icon(
-                Icons.check_circle,
-                color: isDark ? AppColors.brightBlue : Colors.blue,
-              )
-            : null,
-        onTap: () async {
-          Navigator.pop(context);
-          await dnsTestSettingsService.setTestType(testType);
-        },
       ),
     );
   }
@@ -472,36 +477,38 @@ class _SettingsPageState extends State<SettingsPage> {
     final isDark = themeController.isDarkModeActive(context);
     final isSelected = dnsTestSettingsService.testType == 'advanced';
 
-    return Material(
-      color: Colors.transparent,
-      child: ListTile(
-        title: DefaultTextStyle(
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-          child: Text(context.tr('advancedTest')),
-        ),
-        subtitle: Text(
-          context.tr('comingSoon'),
-          style: TextStyle(
-            fontSize: 12,
-            color: isDark ? AppColors.darkTextSecondary : Colors.grey,
+    return Consumer<LanguageManager>(
+      builder: (context, languageManager, child) => Material(
+        color: Colors.transparent,
+        child: ListTile(
+          title: DefaultTextStyle(
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+            child: Text(context.tr('advancedTest')),
           ),
-        ),
-        trailing: isSelected
-            ? Icon(
-                Icons.check_circle,
-                color: isDark ? AppColors.brightBlue : Colors.blue,
-              )
-            : null,
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.tr('comingSoon')),
-              duration: const Duration(seconds: 2),
+          subtitle: Text(
+            context.tr('comingSoon'),
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? AppColors.darkTextSecondary : Colors.grey,
             ),
-          );
-        },
+          ),
+          trailing: isSelected
+              ? Icon(
+                  Icons.check_circle,
+                  color: isDark ? AppColors.brightBlue : Colors.blue,
+                )
+              : null,
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(context.tr('comingSoon')),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

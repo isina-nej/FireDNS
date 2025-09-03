@@ -379,7 +379,9 @@ class ConnectionStatusCard extends StatelessWidget {
                     scaleByHeight: true,
                   ),
                 ),
-                if (selectedDnsLabel != null)
+                if (selectedDnsLabel != null ||
+                    (dns1Controller.text.isNotEmpty &&
+                        dns2Controller.text.isNotEmpty))
                   Row(
                     children: [
                       Icon(
@@ -410,7 +412,7 @@ class ConnectionStatusCard extends StatelessWidget {
                           children: [
                             // نمایش نام DNS
                             SemiTransparentText(
-                              text: selectedDnsLabel ?? 'DNS',
+                              text: selectedDnsLabel ?? 'Google DNS',
                               style: TextStyle(
                                 fontSize: responsiveSize(
                                   16,
@@ -436,7 +438,7 @@ class ConnectionStatusCard extends StatelessWidget {
                             // نمایش آدرس‌های IP در یک ردیف برای صرفه‌جویی در فضا
                             SemiTransparentText(
                               text:
-                                  "${dns1Controller.text} / ${dns2Controller.text}",
+                                  "${dns1Controller.text.isNotEmpty ? dns1Controller.text : '8.8.8.8'} / ${dns2Controller.text.isNotEmpty ? dns2Controller.text : '8.8.4.4'}",
                               style: TextStyle(
                                 fontSize: responsiveSize(
                                   12, // کاهش اندازه فونت

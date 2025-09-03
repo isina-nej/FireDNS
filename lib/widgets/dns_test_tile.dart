@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 
 import '../controllers/theme_controller.dart';
 import '../path/path.dart'; // Assuming AppColors, context.tr are imported
@@ -45,32 +46,37 @@ class _DnsTestTileState extends State<DnsTestTile> {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(
-        widget.record.label,
-        style: TextStyle(
-          color: isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45),
-        ),
-      ),
-      subtitle: Text(
-        widget.record.ip1,
-        style: TextStyle(
-          color: isDark ? AppColors.darkTextSecondary : Colors.grey[600],
-        ),
-      ),
-      trailing: _loading
-          ? SizedBox(
-              width: MediaQuery.of(context).size.width * 0.06,
-              height: MediaQuery.of(context).size.width * 0.06,
-              child: const CircularProgressIndicator(strokeWidth: 2),
-            )
-          : status != null
-              ? Text(
-                  status.toString(),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+    return Consumer<LanguageManager>(
+      builder: (context, languageManager, child) {
+        return ListTile(
+          title: Text(
+            widget.record.label,
+            style: TextStyle(
+              color:
+                  isDark ? AppColors.darkTextPrimary : const Color(0xFF222B45),
+            ),
+          ),
+          subtitle: Text(
+            widget.record.ip1,
+            style: TextStyle(
+              color: isDark ? AppColors.darkTextSecondary : Colors.grey[600],
+            ),
+          ),
+          trailing: _loading
+              ? SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.06,
+                  height: MediaQuery.of(context).size.width * 0.06,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(context.tr('error'),
-                  style: const TextStyle(color: Colors.red)),
+              : status != null
+                  ? Text(
+                      status.toString(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    )
+                  : Text(context.tr('error'),
+                      style: const TextStyle(color: Colors.red)),
+        );
+      },
     );
   }
 }

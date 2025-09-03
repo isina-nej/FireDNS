@@ -63,6 +63,7 @@ class DnsCard extends StatelessWidget {
       bestPing = ping2;
       bestPing2 = null;
     } else {
+      // اگر پینگ در کش وجود ندارد، مقدار پیش‌فرض نمایش دهیم
       bestPing = null;
       bestPing2 = null;
     }
@@ -265,100 +266,101 @@ class DnsCard extends StatelessWidget {
                               SizedBox(
                                   width:
                                       MediaQuery.of(context).size.width * 0.03),
-                              if (bestPing != null)
-                                Listener(
-                                  behavior: HitTestBehavior.opaque,
-                                  onPointerDown: (event) {
-                                    if (Theme.of(context).platform ==
-                                        TargetPlatform.windows) {
-                                      if (event.kind ==
-                                          PointerDeviceKind.mouse) {
-                                        onRePing(record);
-                                      }
+                              // همیشه پینگ را نمایش دهیم
+                              Listener(
+                                behavior: HitTestBehavior.opaque,
+                                onPointerDown: (event) {
+                                  if (Theme.of(context).platform ==
+                                      TargetPlatform.windows) {
+                                    if (event.kind == PointerDeviceKind.mouse) {
+                                      onRePing(record);
                                     }
-                                  },
-                                  child: GestureDetector(
-                                    onTap: () => onRePing(record),
-                                    behavior: HitTestBehavior.opaque,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.speed,
-                                          size: MediaQuery.of(context)
+                                  }
+                                },
+                                child: GestureDetector(
+                                  onTap: () => onRePing(record),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.speed,
+                                        size:
+                                            MediaQuery.of(context).size.width *
+                                                0.045,
+                                        color: pingColor,
+                                      ),
+                                      SizedBox(
+                                          width: MediaQuery.of(context)
                                                   .size
                                                   .width *
-                                              0.045,
-                                          color: pingColor,
-                                        ),
-                                        SizedBox(
-                                            width: MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.005),
-                                        bestPing == -2
-                                            ? SizedBox(
-                                                width: MediaQuery.of(context)
-                                                        .size
-                                                        .width *
-                                                    0.045,
-                                                height: MediaQuery.of(context)
-                                                        .size
-                                                        .width *
-                                                    0.045,
-                                                child:
-                                                    const CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                ),
-                                              )
-                                            : (bestPing == -1 ||
-                                                    bestPing < 0 ||
-                                                    bestPing >= 1000)
-                                                ? Text(
-                                                    '---',
-                                                    style: TextStyle(
-                                                      color: pingColor,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 13,
-                                                      decoration: TextDecoration
-                                                          .underline,
-                                                    ),
-                                                  )
-                                                : Text(
-                                                    '$bestPing ms',
-                                                    style: TextStyle(
-                                                      color: pingColor,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 13,
-                                                      decoration: TextDecoration
-                                                          .underline,
-                                                    ),
+                                              0.005),
+                                      bestPing == -2
+                                          ? SizedBox(
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.045,
+                                              height: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.045,
+                                              child:
+                                                  const CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : (bestPing == null ||
+                                                  bestPing == -1 ||
+                                                  bestPing < 0 ||
+                                                  bestPing >= 1000)
+                                              ? Text(
+                                                  bestPing == null
+                                                      ? 'N/A'
+                                                      : '---',
+                                                  style: TextStyle(
+                                                    color: pingColor,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 13,
+                                                    decoration: TextDecoration
+                                                        .underline,
                                                   ),
-                                        if (bestPing > 0 && bestPing < 80)
-                                          Container(
-                                            margin: const EdgeInsets.only(
-                                              left: 2,
-                                            ),
-                                            width: MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.055,
-                                            height: MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.055,
-                                            child: Lottie.asset(
-                                              'assets/icone/Fire.json',
-                                              repeat: true,
-                                              animate: true,
-                                            ),
+                                                )
+                                              : Text(
+                                                  '$bestPing ms',
+                                                  style: TextStyle(
+                                                    color: pingColor,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 13,
+                                                    decoration: TextDecoration
+                                                        .underline,
+                                                  ),
+                                                ),
+                                      if (bestPing != null &&
+                                          bestPing > 0 &&
+                                          bestPing < 80)
+                                        Container(
+                                          margin: const EdgeInsets.only(
+                                            left: 2,
                                           ),
-                                      ],
-                                    ),
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.055,
+                                          height: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.055,
+                                          child: Lottie.asset(
+                                            'assets/icone/Fire.json',
+                                            repeat: true,
+                                            animate: true,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
+                              ),
                             ],
                           ),
                           SizedBox(
@@ -409,100 +411,101 @@ class DnsCard extends StatelessWidget {
                               SizedBox(
                                   width:
                                       MediaQuery.of(context).size.width * 0.03),
-                              if (bestPing2 != null)
-                                Listener(
-                                  behavior: HitTestBehavior.opaque,
-                                  onPointerDown: (event) {
-                                    if (Theme.of(context).platform ==
-                                        TargetPlatform.windows) {
-                                      if (event.kind ==
-                                          PointerDeviceKind.mouse) {
-                                        onRePing(record);
-                                      }
+                              // همیشه پینگ دوم را نمایش دهیم
+                              Listener(
+                                behavior: HitTestBehavior.opaque,
+                                onPointerDown: (event) {
+                                  if (Theme.of(context).platform ==
+                                      TargetPlatform.windows) {
+                                    if (event.kind == PointerDeviceKind.mouse) {
+                                      onRePing(record);
                                     }
-                                  },
-                                  child: GestureDetector(
-                                    onTap: () => onRePing(record),
-                                    behavior: HitTestBehavior.opaque,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.speed,
-                                          size: MediaQuery.of(context)
+                                  }
+                                },
+                                child: GestureDetector(
+                                  onTap: () => onRePing(record),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.speed,
+                                        size:
+                                            MediaQuery.of(context).size.width *
+                                                0.045,
+                                        color: ping2Color,
+                                      ),
+                                      SizedBox(
+                                          width: MediaQuery.of(context)
                                                   .size
                                                   .width *
-                                              0.045,
-                                          color: ping2Color,
-                                        ),
-                                        SizedBox(
-                                            width: MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.005),
-                                        bestPing2 == -2
-                                            ? SizedBox(
-                                                width: MediaQuery.of(context)
-                                                        .size
-                                                        .width *
-                                                    0.045,
-                                                height: MediaQuery.of(context)
-                                                        .size
-                                                        .width *
-                                                    0.045,
-                                                child:
-                                                    const CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                ),
-                                              )
-                                            : (bestPing2 == -1 ||
-                                                    bestPing2 < 0 ||
-                                                    bestPing2 >= 1000)
-                                                ? Text(
-                                                    '---',
-                                                    style: TextStyle(
-                                                      color: ping2Color,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 13,
-                                                      decoration: TextDecoration
-                                                          .underline,
-                                                    ),
-                                                  )
-                                                : Text(
-                                                    '$bestPing2 ms',
-                                                    style: TextStyle(
-                                                      color: ping2Color,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 13,
-                                                      decoration: TextDecoration
-                                                          .underline,
-                                                    ),
+                                              0.005),
+                                      bestPing2 == -2
+                                          ? SizedBox(
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.045,
+                                              height: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.045,
+                                              child:
+                                                  const CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : (bestPing2 == null ||
+                                                  bestPing2 == -1 ||
+                                                  bestPing2 < 0 ||
+                                                  bestPing2 >= 1000)
+                                              ? Text(
+                                                  bestPing2 == null
+                                                      ? 'N/A'
+                                                      : '---',
+                                                  style: TextStyle(
+                                                    color: ping2Color,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 13,
+                                                    decoration: TextDecoration
+                                                        .underline,
                                                   ),
-                                        if (bestPing2 > 0 && bestPing2 < 80)
-                                          Container(
-                                            margin: const EdgeInsets.only(
-                                              left: 2,
-                                            ),
-                                            width: MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.055,
-                                            height: MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.055,
-                                            child: Lottie.asset(
-                                              'assets/icone/Fire.json',
-                                              repeat: true,
-                                              animate: true,
-                                            ),
+                                                )
+                                              : Text(
+                                                  '$bestPing2 ms',
+                                                  style: TextStyle(
+                                                    color: ping2Color,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 13,
+                                                    decoration: TextDecoration
+                                                        .underline,
+                                                  ),
+                                                ),
+                                      if (bestPing2 != null &&
+                                          bestPing2 > 0 &&
+                                          bestPing2 < 80)
+                                        Container(
+                                          margin: const EdgeInsets.only(
+                                            left: 2,
                                           ),
-                                      ],
-                                    ),
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.055,
+                                          height: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.055,
+                                          child: Lottie.asset(
+                                            'assets/icone/Fire.json',
+                                            repeat: true,
+                                            animate: true,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
+                              ),
                             ],
                           ),
                         ],
