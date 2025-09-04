@@ -1,7 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../models/dns_status.dart';
-import '../../../api/models/dns_record.dart';
-import '../../../path/path.dart';
+import 'package:firedns/path/path.dart';
 
 /// Base class for all DNS-related states
 abstract class DnsState extends Equatable {

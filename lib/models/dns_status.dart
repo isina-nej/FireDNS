@@ -1,6 +1,5 @@
+import 'package:firedns/styles/app_colors.dart';
 import 'package:flutter/material.dart';
-
-import '../styles/app_colors.dart';
 
 /// مدل وضعیت DNS که شامل اطلاعات پینگ و وضعیت دسترسی است
 class DnsStatus {

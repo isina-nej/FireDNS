@@ -1,7 +1,6 @@
+import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import '../path/path.dart';
 
 enum GetXTransitionType {
   fade,

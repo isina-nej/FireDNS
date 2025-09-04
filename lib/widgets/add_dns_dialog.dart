@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../path/path.dart';
-import 'ip_input_field.dart';
+import 'package:firedns/path/path.dart';
+import 'package:firedns/widgets/ip_input_field.dart';
 
 class AddDnsDialog extends StatefulWidget {
   final void Function(DnsRecord) onAdd;

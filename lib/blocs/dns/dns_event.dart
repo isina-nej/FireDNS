@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../path/path.dart';
+import 'package:firedns/path/path.dart';
 
 /// Base class for all DNS-related events
 abstract class DnsEvent extends Equatable {

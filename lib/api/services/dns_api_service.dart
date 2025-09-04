@@ -1,6 +1,5 @@
+import 'package:firedns/path/path.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../path/path.dart';
 
 /// سرویس API برای مدیریت DNS
 class DnsApiService {

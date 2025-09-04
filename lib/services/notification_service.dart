@@ -1,7 +1,9 @@
 import 'dart:async';
+
+import 'package:firedns/api/models/notification_model.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../api/models/notification_model.dart';
+
 import './notification_cache_service.dart';
 import './welcome_notification_manager.dart';
 

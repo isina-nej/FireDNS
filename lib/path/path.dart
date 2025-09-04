@@ -19,6 +19,7 @@ export '../models/google_connectivity_result.dart';
 export '../screens/about_page.dart';
 // export '../screens/speed_checker_plugin.dart';
 export '../screens/dns_list.dart';
+export '../screens/enhanced_dns_list_page.dart';
 // screens
 export '../screens/homepage.dart';
 export '../screens/notification_list_page.dart';
@@ -28,6 +29,8 @@ export '../screens/speed_test_page.dart';
 export '../screens/ticket_page.dart';
 export '../services/crash_reporting_service.dart';
 // services
+export '../services/dns_management_service.dart';
+export '../services/dns_selection_service.dart';
 export '../services/dns_service.dart';
 export '../services/dns_test_settings_service.dart';
 export '../services/flutter_error_handler.dart';

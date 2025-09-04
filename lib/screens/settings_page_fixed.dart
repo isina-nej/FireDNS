@@ -1,14 +1,12 @@
 import 'dart:ui';
 
+import 'package:firedns/controllers/theme_controller.dart';
+import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart' show Lottie;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../controllers/theme_controller.dart';
-import '../path/path.dart';
-import '../services/notification_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

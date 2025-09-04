@@ -1,10 +1,9 @@
+import 'package:firedns/controllers/theme_controller.dart';
+import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
-import '../path/path.dart';
-import '../services/notification_service.dart';
-import '../controllers/theme_controller.dart';
 import 'notification_popup.dart';
 
 /// ویجت زنگوله اعلانات با انیمیشن
@@ -105,7 +104,7 @@ class _NotificationBellState extends State<NotificationBell>
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
-    final isDark = themeController.isDarkMode;
+    final isDark = themeController.isDarkModeActive(context);
 
     // استفاده از Builder برای دسترسی به context جدید
     return Builder(

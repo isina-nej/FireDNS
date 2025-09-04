@@ -1,6 +1,6 @@
+import 'package:firedns/api/models/notification_model.dart';
+import 'package:firedns/constants/welcome_messages.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../api/models/notification_model.dart';
-import '../constants/welcome_messages.dart';
 
 /// مدیریت نوتیفیکیشن‌های خوش‌آمدگویی
 class WelcomeNotificationManager {

@@ -1,8 +1,7 @@
+import 'package:firedns/l10n/localization_extension.dart';
+import 'package:firedns/styles/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import '../l10n/localization_extension.dart';
-import '../styles/app_colors.dart';
 
 class IpInputField extends StatefulWidget {
   final String label;

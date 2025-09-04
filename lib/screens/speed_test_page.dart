@@ -1,4 +1,6 @@
 // import 'dart:async';
+import 'package:firedns/controllers/theme_controller.dart';
+import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_test_plus/flutter_speed_test_plus.dart';
 import 'package:get/get.dart';
@@ -6,9 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 // import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:sleek_circular_slider/sleek_circular_slider.dart';
-
-import '../path/path.dart';
-import '../controllers/theme_controller.dart';
 
 class SpeedTestPage extends StatefulWidget {
   const SpeedTestPage({super.key});
@@ -234,7 +233,6 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
-    final isDark = themeController.isDarkMode;
 
     return PopScope(
       canPop: true,
@@ -244,422 +242,288 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
           _cancelSpeedTest();
         }
       },
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
+      child: Obx(() {
+        final isDark = themeController.isDarkModeActive(context);
+        return Scaffold(
+          extendBodyBehindAppBar: true,
           backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: ShaderMask(
-            shaderCallback: (Rect bounds) {
-              return const LinearGradient(
-                colors: [
-                  Colors.blueAccent,
-                  Colors.cyanAccent,
-                  Colors.purpleAccent,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(bounds);
-            },
-            child: Text(
-              context.tr('speedTestTitle'),
-              style: TextStyle(
-                fontFamily: Provider.of<LanguageManager>(context, listen: false)
-                    .fontFamily,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontSize: 24,
-                letterSpacing: 1.2,
-              ),
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
             ),
-          ),
-          iconTheme: const IconThemeData(
-            color: Colors.white,
-          ),
-        ),
-        body: Stack(
-          children: [
-            // Gradient background
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 600),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDark
-                      ? [const Color(0xFF232526), const Color(0xFF414345)]
-                      : [const Color(0xFF74ebd5), const Color(0xFFACB6E5)],
+            title: ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return const LinearGradient(
+                  colors: [
+                    Colors.blueAccent,
+                    Colors.cyanAccent,
+                    Colors.purpleAccent,
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
+                ).createShader(bounds);
+              },
+              child: Text(
+                context.tr('speedTestTitle'),
+                style: TextStyle(
+                  fontFamily:
+                      Provider.of<LanguageManager>(context, listen: false)
+                          .fontFamily,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 24,
+                  letterSpacing: 1.2,
                 ),
               ),
             ),
-            Center(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Glassmorphism Card
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.easeInOut,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withOpacity(0.08)
-                              : Colors.white.withOpacity(0.45),
-                          borderRadius: BorderRadius.circular(36),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 24,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: isDark ? Colors.white24 : Colors.white54,
-                            width: 1.2,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 36, horizontal: 18),
-                          child: Column(
-                            children: [
-                              AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 400),
-                                child: showDownloadGauge
-                                    ? SleekCircularSlider(
-                                        min: 0,
-                                        max: 200,
-                                        initialValue: downloadSpeed,
-                                        appearance: CircularSliderAppearance(
-                                          customWidths: CustomSliderWidths(
-                                            progressBarWidth:
-                                                MediaQuery.of(context)
-                                                        .size
-                                                        .width *
-                                                    0.05,
-                                            trackWidth: MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.045,
-                                          ),
-                                          customColors: CustomSliderColors(
-                                            progressBarColor: isTesting
-                                                ? Colors.blueAccent
-                                                : Colors.greenAccent,
-                                            trackColor: isDark
-                                                ? Colors.grey.shade900
-                                                : Colors.grey.shade200,
-                                            dotColor: Colors.white,
-                                          ),
-                                          infoProperties: InfoProperties(
-                                            mainLabelStyle: TextStyle(
-                                              fontSize: 44,
-                                              fontWeight: FontWeight.bold,
-                                              color: isDark
-                                                  ? Colors.white
-                                                  : Colors.black,
-                                              shadows: const [
-                                                Shadow(
-                                                  color: Colors.black12,
-                                                  blurRadius: 8,
-                                                ),
-                                              ],
-                                            ),
-                                            modifier: (double value) {
-                                              return '${value.toStringAsFixed(1)} ${context.tr('speedUnit')}';
-                                            },
-                                            bottomLabelText:
-                                                context.tr('downloadSpeed'),
-                                            bottomLabelStyle: TextStyle(
-                                              fontSize: 20,
-                                              color: isDark
-                                                  ? Colors.white70
-                                                  : Colors.grey.shade700,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          startAngle: 150,
-                                          angleRange: 240,
-                                          size: MediaQuery.of(context)
-                                                  .size
-                                                  .width *
-                                              0.6,
-                                        ),
-                                      )
-                                    : SleekCircularSlider(
-                                        min: 0,
-                                        max: 200,
-                                        initialValue: uploadSpeed,
-                                        appearance: CircularSliderAppearance(
-                                          customWidths: CustomSliderWidths(
-                                            progressBarWidth:
-                                                MediaQuery.of(context)
-                                                        .size
-                                                        .width *
-                                                    0.05,
-                                            trackWidth: MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.045,
-                                          ),
-                                          customColors: CustomSliderColors(
-                                            progressBarColor: isTesting
-                                                ? Colors.orangeAccent
-                                                : Colors.greenAccent,
-                                            trackColor: isDark
-                                                ? Colors.grey.shade900
-                                                : Colors.grey.shade200,
-                                            dotColor: Colors.white,
-                                          ),
-                                          infoProperties: InfoProperties(
-                                            mainLabelStyle: TextStyle(
-                                              fontSize: 44,
-                                              fontWeight: FontWeight.bold,
-                                              color: isDark
-                                                  ? Colors.white
-                                                  : Colors.black,
-                                              shadows: const [
-                                                Shadow(
-                                                  color: Colors.black12,
-                                                  blurRadius: 8,
-                                                ),
-                                              ],
-                                            ),
-                                            modifier: (double value) {
-                                              return '${value.toStringAsFixed(1)} ${context.tr('speedUnit')}';
-                                            },
-                                            bottomLabelText:
-                                                context.tr('uploadSpeed'),
-                                            bottomLabelStyle: TextStyle(
-                                              fontSize: 20,
-                                              color: isDark
-                                                  ? Colors.white70
-                                                  : Colors.grey.shade700,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          startAngle: 150,
-                                          angleRange: 240,
-                                          size: MediaQuery.of(context)
-                                                  .size
-                                                  .width *
-                                              0.6,
-                                        ),
-                                      ),
-                              ),
-                              SizedBox(
-                                  height: MediaQuery.of(context).size.height *
-                                      0.035),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  InfoTile(
-                                    icon: Icons.speed,
-                                    label: context.tr('ping'),
-                                    value: lastPingStatus == null
-                                        ? '...'
-                                        : lastPingStatus!.isReachable &&
-                                                lastPingStatus!.ping >= 0
-                                            ? '${lastPingStatus!.ping} ms'
-                                            : context.tr('unknown'),
-                                  ),
-                                  InfoTile(
-                                    icon: Icons.cloud,
-                                    label: context.tr('server'),
-                                    value: server,
-                                  ),
-                                  InfoTile(
-                                    icon: Icons.person,
-                                    label: context.tr('yourIp'),
-                                    value: userIp,
-                                  ),
-                                ],
-                              ),
-                              SizedBox(
-                                  height: MediaQuery.of(context).size.height *
-                                      0.022),
-                              AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 400),
-                                child: isTesting
-                                    ? Padding(
-                                        padding:
-                                            const EdgeInsets.only(top: 8.0),
-                                        child: Text(
-                                          status,
-                                          key: ValueKey(status),
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            color: isDark
-                                                ? Colors.white70
-                                                : Colors.blueGrey,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      )
-                                    : const SizedBox.shrink(),
-                              ),
-                              SizedBox(
-                                  height: MediaQuery.of(context).size.height *
-                                      0.012),
-                              AnimatedOpacity(
-                                duration: const Duration(milliseconds: 400),
-                                opacity: isTesting ? 1 : 0.0,
-                                child: Text(
-                                  '${context.tr('uploadSpeed')}: ${uploadSpeed.toStringAsFixed(2)} ${context.tr('speedUnit')}',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                    color:
-                                        isDark ? Colors.white : Colors.black87,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.045),
-                      if (!isTesting) ...[
+            iconTheme: const IconThemeData(
+              color: Colors.white,
+            ),
+          ),
+          body: Stack(
+            children: [
+              // Gradient background
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 600),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [const Color(0xFF232526), const Color(0xFF414345)]
+                        : [const Color(0xFF74ebd5), const Color(0xFFACB6E5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+              Center(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Glassmorphism Card
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 500),
                           curve: Curves.easeInOut,
                           decoration: BoxDecoration(
                             color: isDark
-                                ? Colors.white.withOpacity(0.10)
-                                : Colors.white.withOpacity(0.60),
-                            borderRadius: BorderRadius.circular(28),
+                                ? Colors.white.withOpacity(0.08)
+                                : Colors.white.withOpacity(0.45),
+                            borderRadius: BorderRadius.circular(36),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.10),
-                                blurRadius: 18,
-                                offset: const Offset(0, 6),
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
                               ),
                             ],
                             border: Border.all(
                               color: isDark ? Colors.white24 : Colors.white54,
-                              width: 1.0,
+                              width: 1.2,
                             ),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                                vertical: 24, horizontal: 12),
+                                vertical: 36, horizontal: 18),
                             child: Column(
                               children: [
-                                Text(
-                                  context.tr('finalResults'),
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        isDark ? Colors.white : Colors.black87,
-                                  ),
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 400),
+                                  child: showDownloadGauge
+                                      ? SleekCircularSlider(
+                                          min: 0,
+                                          max: 200,
+                                          initialValue: downloadSpeed,
+                                          appearance: CircularSliderAppearance(
+                                            customWidths: CustomSliderWidths(
+                                              progressBarWidth:
+                                                  MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.05,
+                                              trackWidth: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.045,
+                                            ),
+                                            customColors: CustomSliderColors(
+                                              progressBarColor: isTesting
+                                                  ? Colors.blueAccent
+                                                  : Colors.greenAccent,
+                                              trackColor: isDark
+                                                  ? Colors.grey.shade900
+                                                  : Colors.grey.shade200,
+                                              dotColor: Colors.white,
+                                            ),
+                                            infoProperties: InfoProperties(
+                                              mainLabelStyle: TextStyle(
+                                                fontSize: 44,
+                                                fontWeight: FontWeight.bold,
+                                                color: isDark
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                                shadows: const [
+                                                  Shadow(
+                                                    color: Colors.black12,
+                                                    blurRadius: 8,
+                                                  ),
+                                                ],
+                                              ),
+                                              modifier: (double value) {
+                                                return '${value.toStringAsFixed(1)} ${context.tr('speedUnit')}';
+                                              },
+                                              bottomLabelText:
+                                                  context.tr('downloadSpeed'),
+                                              bottomLabelStyle: TextStyle(
+                                                fontSize: 20,
+                                                color: isDark
+                                                    ? Colors.white70
+                                                    : Colors.grey.shade700,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            startAngle: 150,
+                                            angleRange: 240,
+                                            size: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.6,
+                                          ),
+                                        )
+                                      : SleekCircularSlider(
+                                          min: 0,
+                                          max: 200,
+                                          initialValue: uploadSpeed,
+                                          appearance: CircularSliderAppearance(
+                                            customWidths: CustomSliderWidths(
+                                              progressBarWidth:
+                                                  MediaQuery.of(context)
+                                                          .size
+                                                          .width *
+                                                      0.05,
+                                              trackWidth: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.045,
+                                            ),
+                                            customColors: CustomSliderColors(
+                                              progressBarColor: isTesting
+                                                  ? Colors.orangeAccent
+                                                  : Colors.greenAccent,
+                                              trackColor: isDark
+                                                  ? Colors.grey.shade900
+                                                  : Colors.grey.shade200,
+                                              dotColor: Colors.white,
+                                            ),
+                                            infoProperties: InfoProperties(
+                                              mainLabelStyle: TextStyle(
+                                                fontSize: 44,
+                                                fontWeight: FontWeight.bold,
+                                                color: isDark
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                                shadows: const [
+                                                  Shadow(
+                                                    color: Colors.black12,
+                                                    blurRadius: 8,
+                                                  ),
+                                                ],
+                                              ),
+                                              modifier: (double value) {
+                                                return '${value.toStringAsFixed(1)} ${context.tr('speedUnit')}';
+                                              },
+                                              bottomLabelText:
+                                                  context.tr('uploadSpeed'),
+                                              bottomLabelStyle: TextStyle(
+                                                fontSize: 20,
+                                                color: isDark
+                                                    ? Colors.white70
+                                                    : Colors.grey.shade700,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            startAngle: 150,
+                                            angleRange: 240,
+                                            size: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.6,
+                                          ),
+                                        ),
                                 ),
                                 SizedBox(
                                     height: MediaQuery.of(context).size.height *
-                                        0.017),
+                                        0.035),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
                                   children: [
-                                    ResultTile(
-                                      label: context.tr('averageDownload'),
-                                      value:
-                                          '${avgDownload.toStringAsFixed(2)} ${context.tr('speedUnit')}',
+                                    InfoTile(
+                                      icon: Icons.speed,
+                                      label: context.tr('ping'),
+                                      value: lastPingStatus == null
+                                          ? '...'
+                                          : lastPingStatus!.isReachable &&
+                                                  lastPingStatus!.ping >= 0
+                                              ? '${lastPingStatus!.ping} ms'
+                                              : context.tr('unknown'),
                                     ),
-                                    ResultTile(
-                                      label: context.tr('maxDownload'),
-                                      value:
-                                          '${maxDownload.toStringAsFixed(2)} ${context.tr('speedUnit')}',
+                                    InfoTile(
+                                      icon: Icons.cloud,
+                                      label: context.tr('server'),
+                                      value: server,
                                     ),
-                                  ],
-                                ),
-                                SizedBox(
-                                    height: MediaQuery.of(context).size.height *
-                                        0.012),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    ResultTile(
-                                      label: context.tr('averageUpload'),
-                                      value:
-                                          '${avgUpload.toStringAsFixed(2)} ${context.tr('speedUnit')}',
-                                    ),
-                                    ResultTile(
-                                      label: context.tr('maxUpload'),
-                                      value:
-                                          '${maxUpload.toStringAsFixed(2)} ${context.tr('speedUnit')}',
+                                    InfoTile(
+                                      icon: Icons.person,
+                                      label: context.tr('yourIp'),
+                                      value: userIp,
                                     ),
                                   ],
                                 ),
                                 SizedBox(
                                     height: MediaQuery.of(context).size.height *
                                         0.022),
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 400),
+                                  child: isTesting
+                                      ? Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 8.0),
+                                          child: Text(
+                                            status,
+                                            key: ValueKey(status),
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              color: isDark
+                                                  ? Colors.white70
+                                                  : Colors.blueGrey,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        )
+                                      : const SizedBox.shrink(),
+                                ),
                                 SizedBox(
-                                  width: double.infinity,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Colors.blueAccent,
-                                          Colors.purpleAccent,
-                                        ],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.08),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ElevatedButton.icon(
-                                      onPressed: () async {
-                                        if (_isDisposed || !mounted) return;
-                                        setState(() {
-                                          lastPingStatus = null;
-                                          ping = 0;
-                                          userIp = _unknownText;
-                                          server = 'fast.com';
-                                        });
-                                        await _fetchNetworkInfo();
-                                        await _fetchPing();
-                                        _startSpeedTest();
-                                      },
-                                      icon: const Icon(Icons.refresh),
-                                      label: Text(context.tr('retryTest')),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.transparent,
-                                        shadowColor: Colors.transparent,
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(16),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 16,
-                                        ),
-                                        textStyle: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        elevation: 0,
-                                      ),
+                                    height: MediaQuery.of(context).size.height *
+                                        0.012),
+                                AnimatedOpacity(
+                                  duration: const Duration(milliseconds: 400),
+                                  opacity: isTesting ? 1 : 0.0,
+                                  child: Text(
+                                    '${context.tr('uploadSpeed')}: ${uploadSpeed.toStringAsFixed(2)} ${context.tr('speedUnit')}',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black87,
                                     ),
                                   ),
                                 ),
@@ -667,15 +531,159 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                             ),
                           ),
                         ),
+                        SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.045),
+                        if (!isTesting) ...[
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeInOut,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.10)
+                                  : Colors.white.withOpacity(0.60),
+                              borderRadius: BorderRadius.circular(28),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.10),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: isDark ? Colors.white24 : Colors.white54,
+                                width: 1.0,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 24, horizontal: 12),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    context.tr('finalResults'),
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.017),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      ResultTile(
+                                        label: context.tr('averageDownload'),
+                                        value:
+                                            '${avgDownload.toStringAsFixed(2)} ${context.tr('speedUnit')}',
+                                      ),
+                                      ResultTile(
+                                        label: context.tr('maxDownload'),
+                                        value:
+                                            '${maxDownload.toStringAsFixed(2)} ${context.tr('speedUnit')}',
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.012),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      ResultTile(
+                                        label: context.tr('averageUpload'),
+                                        value:
+                                            '${avgUpload.toStringAsFixed(2)} ${context.tr('speedUnit')}',
+                                      ),
+                                      ResultTile(
+                                        label: context.tr('maxUpload'),
+                                        value:
+                                            '${maxUpload.toStringAsFixed(2)} ${context.tr('speedUnit')}',
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.022),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Colors.blueAccent,
+                                            Colors.purpleAccent,
+                                          ],
+                                          begin: Alignment.centerLeft,
+                                          end: Alignment.centerRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color:
+                                                Colors.black.withOpacity(0.08),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ElevatedButton.icon(
+                                        onPressed: () async {
+                                          if (_isDisposed || !mounted) return;
+                                          setState(() {
+                                            lastPingStatus = null;
+                                            ping = 0;
+                                            userIp = _unknownText;
+                                            server = 'fast.com';
+                                          });
+                                          await _fetchNetworkInfo();
+                                          await _fetchPing();
+                                          _startSpeedTest();
+                                        },
+                                        icon: const Icon(Icons.refresh),
+                                        label: Text(context.tr('retryTest')),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          shadowColor: Colors.transparent,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                          textStyle: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          elevation: 0,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      }),
     );
   }
 }
@@ -695,35 +703,38 @@ class InfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
-    final isDark = themeController.isDarkMode;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: MediaQuery.of(context).size.width * 0.07,
-          color: isDark ? AppColors.brightBlue : Colors.blueAccent,
-        ),
-        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade700,
+    return Obx(() {
+      final isDark = themeController.isDarkModeActive(context);
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: MediaQuery.of(context).size.width * 0.07,
+            color: isDark ? AppColors.brightBlue : Colors.blueAccent,
           ),
-        ),
-        SizedBox(height: MediaQuery.of(context).size.height * 0.005),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: isDark ? AppColors.darkTextPrimary : Colors.black87,
+          SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              color:
+                  isDark ? AppColors.darkTextSecondary : Colors.grey.shade700,
+            ),
           ),
-        ),
-      ],
-    );
+          SizedBox(height: MediaQuery.of(context).size.height * 0.005),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.darkTextPrimary : Colors.black87,
+            ),
+          ),
+        ],
+      );
+    });
   }
 }
 
@@ -736,28 +747,31 @@ class ResultTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
-    final isDark = themeController.isDarkMode;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade700,
+    return Obx(() {
+      final isDark = themeController.isDarkModeActive(context);
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              color:
+                  isDark ? AppColors.darkTextSecondary : Colors.grey.shade700,
+            ),
           ),
-        ),
-        SizedBox(height: MediaQuery.of(context).size.height * 0.005),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: isDark ? AppColors.darkTextPrimary : Colors.black87,
+          SizedBox(height: MediaQuery.of(context).size.height * 0.005),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.darkTextPrimary : Colors.black87,
+            ),
           ),
-        ),
-      ],
-    );
+        ],
+      );
+    });
   }
 }

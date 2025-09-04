@@ -1,7 +1,7 @@
-import '../services/api_client.dart';
-import '../../models/ticket.dart';
-import '../../api/models/api_response.dart';
-import '../services/session_api_service.dart';
+import 'package:firedns/api/models/api_response.dart';
+import 'package:firedns/models/ticket.dart';
+import 'package:firedns/api/services/api_client.dart';
+import 'package:firedns/api/services/session_api_service.dart';
 
 class TicketService {
   static final TicketService _instance = TicketService._internal();

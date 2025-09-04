@@ -1,6 +1,6 @@
+import 'package:firedns/services/crash_reporting_service.dart';
+import 'package:firedns/services/flutter_error_handler.dart';
 import 'package:flutter/foundation.dart';
-import '../services/crash_reporting_service.dart';
-import '../services/flutter_error_handler.dart';
 
 /// Helper class برای گزارش آسان خطاها در سراسر برنامه
 class ErrorReporter {

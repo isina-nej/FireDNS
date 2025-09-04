@@ -1,9 +1,8 @@
 import 'dart:async';
 
+import 'package:firedns/constants/dns_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-
-import '../constants/dns_constants.dart';
 
 /// سرویس مدیریت وضعیت VPN
 class VpnStatusService {

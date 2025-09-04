@@ -1,8 +1,7 @@
+import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../path/path.dart';
 
 /// کنترلر مدیریت تم اپلیکیشن با GetX
 class ThemeController extends GetxController {

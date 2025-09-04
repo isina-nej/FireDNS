@@ -1,12 +1,11 @@
 import 'package:animations/animations.dart';
+import 'package:firedns/screens/about_page.dart';
+import 'package:firedns/screens/notification_list_page.dart';
+import 'package:firedns/screens/profile_page.dart';
+import 'package:firedns/screens/settings_page.dart';
+import 'package:firedns/screens/speed_test_page.dart';
+import 'package:firedns/screens/ticket_page.dart';
 import 'package:flutter/material.dart';
-
-import '../screens/about_page.dart';
-import '../screens/notification_list_page.dart';
-import '../screens/profile_page.dart';
-import '../screens/settings_page.dart';
-import '../screens/speed_test_page.dart';
-import '../screens/ticket_page.dart';
 
 /// Professional Navigation Service with Material Design 3 Transitions
 /// Uses Flutter's official animations package for ultra-smooth transitions

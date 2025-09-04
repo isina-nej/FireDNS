@@ -1,7 +1,6 @@
+import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../path/path.dart';
-import 'app_base_styles.dart';
 
 /// کلاس مدیریت تمام استایل‌های متن و Typography
 class AppTextStyles {

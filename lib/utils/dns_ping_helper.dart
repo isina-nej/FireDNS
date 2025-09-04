@@ -1,11 +1,10 @@
+import 'dart:convert';
+import 'dart:isolate';
+
+import 'package:firedns/path/path.dart'; // Assuming DnsService and DnsStatus are defined here
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'dart:isolate';
-import '../path/path.dart'; // Assuming DnsService and DnsStatus are defined here
-import '../constants/dns_constants.dart'; // برای DnsConstants.methodChannel
-import '../l10n/localization_extension.dart';
 
 class DnsPingHelper {
   static const platform =

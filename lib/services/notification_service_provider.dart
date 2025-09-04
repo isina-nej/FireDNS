@@ -1,6 +1,6 @@
+import 'package:firedns/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/notification_service.dart';
 
 class NotificationServiceProvider {
   static NotificationService? _notificationService;

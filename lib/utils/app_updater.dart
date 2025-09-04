@@ -1,10 +1,8 @@
+import 'package:firedns/controllers/theme_controller.dart';
+import 'package:firedns/path/path.dart';
+import 'package:firedns/screens/force_update_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import '../screens/force_update_page.dart';
-import '../controllers/theme_controller.dart';
-import 'update_checker.dart';
-import '../path/path.dart';
 
 class AppUpdater {
   static Future<bool> checkAndShowUpdateIfNeeded({
@@ -22,9 +20,9 @@ class AppUpdater {
 
       // نمایش صفحه آپدیت با GetX
       Get.to(() => ForceUpdatePage(
-        updateUrl: updateInfo.updateUrl,
-        currentAppVersion: UpdateChecker.currentVersion,
-      ));
+            updateUrl: updateInfo.updateUrl,
+            currentAppVersion: UpdateChecker.currentVersion,
+          ));
 
       print('⏳ منتظر اقدام کاربر برای آپدیت...');
       return false;

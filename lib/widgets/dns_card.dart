@@ -1,13 +1,12 @@
 // lib/widgets/dns_card.dart
 
+import 'package:firedns/controllers/theme_controller.dart';
+import 'package:firedns/path/path.dart'; // Assuming AppColors, context.tr are defined here or in imports
+import 'package:firedns/widgets/animated_overflow_label.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
-
-import '../controllers/theme_controller.dart';
-import '../path/path.dart'; // Assuming AppColors, context.tr are defined here or in imports
-import '../widgets/animated_overflow_label.dart';
 
 class DnsCard extends StatelessWidget {
   final DnsRecord record;
@@ -23,6 +22,12 @@ class DnsCard extends StatelessWidget {
   final bool isLoading;
   final List<String> likedDnsIds;
 
+  // Selection mode parameters
+  final bool isSelectionMode;
+  final bool isSelectedForBulk;
+  final Function(String)? onToggleSelection;
+  final Function(String)? onLongPress;
+
   const DnsCard({
     super.key,
     required this.record,
@@ -37,12 +42,16 @@ class DnsCard extends StatelessWidget {
     required this.onDelete,
     required this.isLoading,
     required this.likedDnsIds,
+    this.isSelectionMode = false,
+    this.isSelectedForBulk = false,
+    this.onToggleSelection,
+    this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
-    final isDark = themeController.isDarkMode;
+    final isDark = themeController.isDarkModeActive(context);
     final ping1 = pingCache['${record.id}_1'] ?? pingCache[record.id];
     final ping2 = pingCache['${record.id}_2'] ?? pingCache[record.id];
 
@@ -111,417 +120,493 @@ class DnsCard extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: isLoading ? null : () => onConnect(record),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.09,
-                    height: MediaQuery.of(context).size.width * 0.09,
-                    decoration: BoxDecoration(
-                      color:
-                          AppColors.primaryBlue.withAlpha((0.08 * 255).round()),
-                      borderRadius: BorderRadius.circular(
-                          MediaQuery.of(context).size.width * 0.03),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${index + 1}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : const Color(0xFF5A9CFF),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: MediaQuery.of(context).size.width * 0.03),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const ClampingScrollPhysics(),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final text = record.label;
-                                    final textStyle = TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
-                                      color: isDark
-                                          ? AppColors.darkTextPrimary
-                                          : const Color(0xFF222B45),
-                                    );
-                                    final textPainter = TextPainter(
-                                      text: TextSpan(
-                                        text: text,
-                                        style: textStyle,
+          child: GestureDetector(
+            onTap: () {
+              if (isSelectionMode) {
+                onToggleSelection?.call(record.id);
+              } else if (!isLoading) {
+                onConnect(record);
+              }
+            },
+            onLongPress: () {
+              if (!isSelectionMode) {
+                onLongPress?.call(record.id);
+              }
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: isSelectedForBulk
+                    ? Border.all(color: AppColors.brightBlue, width: 2)
+                    : null,
+                color: isDark
+                    ? (isSelected
+                        ? AppColors.darkCardBackground
+                            .withAlpha((0.8 * 255).round())
+                        : AppColors.darkCardBackground)
+                    : (isSelected ? AppColors.selectedLight : Colors.white),
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Stack(
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.max,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.09,
+                          height: MediaQuery.of(context).size.width * 0.09,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryBlue
+                                .withAlpha((0.08 * 255).round()),
+                            borderRadius: BorderRadius.circular(
+                                MediaQuery.of(context).size.width * 0.03),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : const Color(0xFF5A9CFF),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.03),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            physics: const ClampingScrollPhysics(),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          final text = record.label;
+                                          final textStyle = TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                            color: isDark
+                                                ? AppColors.darkTextPrimary
+                                                : const Color(0xFF222B45),
+                                          );
+                                          final textPainter = TextPainter(
+                                            text: TextSpan(
+                                              text: text,
+                                              style: textStyle,
+                                            ),
+                                            maxLines: 1,
+                                            textDirection: TextDirection.ltr,
+                                          )..layout(
+                                              maxWidth: constraints.maxWidth);
+                                          final isOverflow = textPainter.width >
+                                              constraints.maxWidth;
+                                          if (isOverflow) {
+                                            return AnimatedOverflowLabel(
+                                              label: text,
+                                              width: constraints.maxWidth,
+                                              style: textStyle,
+                                            );
+                                          } else {
+                                            return Text(text, style: textStyle);
+                                          }
+                                        },
                                       ),
-                                      maxLines: 1,
-                                      textDirection: TextDirection.ltr,
-                                    )..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow = textPainter.width >
-                                        constraints.maxWidth;
-                                    if (isOverflow) {
-                                      return AnimatedOverflowLabel(
-                                        label: text,
-                                        width: constraints.maxWidth,
-                                        style: textStyle,
-                                      );
-                                    } else {
-                                      return Text(text, style: textStyle);
-                                    }
-                                  },
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        likedDnsIds.contains(record.id)
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        color: likedDnsIds.contains(record.id)
+                                            ? Colors.red
+                                            : Colors.grey.shade400,
+                                      ),
+                                      tooltip: likedDnsIds.contains(record.id)
+                                          ? context.tr('removeFromFavorites')
+                                          : context.tr('addToFavorites'),
+                                      onPressed: () => onToggleLike(record.id),
+                                    ),
+                                    if (isUserDns) ...[
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.edit,
+                                          color: Colors.blue,
+                                        ),
+                                        tooltip: context.tr('edit'),
+                                        onPressed: () => onEdit(record),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ),
+                                        tooltip: context.tr('delete'),
+                                        onPressed: () => onDelete(record),
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  likedDnsIds.contains(record.id)
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  color: likedDnsIds.contains(record.id)
-                                      ? Colors.red
-                                      : Colors.grey.shade400,
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.005),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.dns,
+                                      size: MediaQuery.of(context).size.width *
+                                          0.045,
+                                      color: isDark
+                                          ? AppColors.darkIconPrimary
+                                          : const Color(0xFF5A9CFF),
+                                    ),
+                                    SizedBox(
+                                        width:
+                                            MediaQuery.of(context).size.width *
+                                                0.01),
+                                    Expanded(
+                                      child: LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          final text = record.ip1;
+                                          const textStyle = TextStyle(
+                                            fontSize: 14,
+                                            color: Color(0xFF607D8B),
+                                          );
+                                          final textPainter = TextPainter(
+                                            text: TextSpan(
+                                              text: text,
+                                              style: textStyle,
+                                            ),
+                                            maxLines: 1,
+                                            textDirection: TextDirection.ltr,
+                                          )..layout(
+                                              maxWidth: constraints.maxWidth);
+                                          final isOverflow = textPainter.width >
+                                              constraints.maxWidth;
+                                          if (isOverflow) {
+                                            return AnimatedOverflowLabel(
+                                              label: text,
+                                              width: constraints.maxWidth,
+                                              style: textStyle,
+                                            );
+                                          } else {
+                                            return Text(text, style: textStyle);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    SizedBox(
+                                        width:
+                                            MediaQuery.of(context).size.width *
+                                                0.03),
+                                    // همیشه پینگ را نمایش دهیم
+                                    Listener(
+                                      behavior: HitTestBehavior.opaque,
+                                      onPointerDown: (event) {
+                                        if (Theme.of(context).platform ==
+                                            TargetPlatform.windows) {
+                                          if (event.kind ==
+                                              PointerDeviceKind.mouse) {
+                                            onRePing(record);
+                                          }
+                                        }
+                                      },
+                                      child: GestureDetector(
+                                        onTap: () => onRePing(record),
+                                        behavior: HitTestBehavior.opaque,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.speed,
+                                              size: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.045,
+                                              color: pingColor,
+                                            ),
+                                            SizedBox(
+                                                width: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.005),
+                                            bestPing == -2
+                                                ? SizedBox(
+                                                    width:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .width *
+                                                            0.045,
+                                                    height:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .width *
+                                                            0.045,
+                                                    child:
+                                                        const CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                                  )
+                                                : (bestPing == null ||
+                                                        bestPing == -1 ||
+                                                        bestPing < 0 ||
+                                                        bestPing >= 1000)
+                                                    ? Text(
+                                                        bestPing == null
+                                                            ? 'N/A'
+                                                            : '---',
+                                                        style: TextStyle(
+                                                          color: pingColor,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 13,
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .underline,
+                                                        ),
+                                                      )
+                                                    : Text(
+                                                        '$bestPing ms',
+                                                        style: TextStyle(
+                                                          color: pingColor,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 13,
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .underline,
+                                                        ),
+                                                      ),
+                                            if (bestPing != null &&
+                                                bestPing > 0 &&
+                                                bestPing < 80)
+                                              Container(
+                                                margin: const EdgeInsets.only(
+                                                  left: 2,
+                                                ),
+                                                width: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.055,
+                                                height: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.055,
+                                                child: Lottie.asset(
+                                                  'assets/icone/Fire.json',
+                                                  repeat: true,
+                                                  animate: true,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                tooltip: likedDnsIds.contains(record.id)
-                                    ? context.tr('removeFromFavorites')
-                                    : context.tr('addToFavorites'),
-                                onPressed: () => onToggleLike(record.id),
-                              ),
-                              if (isUserDns) ...[
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    color: Colors.blue,
-                                  ),
-                                  tooltip: context.tr('edit'),
-                                  onPressed: () => onEdit(record),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
-                                  tooltip: context.tr('delete'),
-                                  onPressed: () => onDelete(record),
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.0025),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.dns_outlined,
+                                      size: MediaQuery.of(context).size.width *
+                                          0.045,
+                                      color: isDark
+                                          ? AppColors.darkIconSecondary
+                                          : const Color(0xFFB0BEC5),
+                                    ),
+                                    SizedBox(
+                                        width:
+                                            MediaQuery.of(context).size.width *
+                                                0.01),
+                                    Expanded(
+                                      child: LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          final text = record.ip2 ?? '';
+                                          const textStyle = TextStyle(
+                                            fontSize: 14,
+                                            color: Color(0xFF90A4AE),
+                                          );
+                                          final textPainter = TextPainter(
+                                            text: TextSpan(
+                                              text: text,
+                                              style: textStyle,
+                                            ),
+                                            maxLines: 1,
+                                            textDirection: TextDirection.ltr,
+                                          )..layout(
+                                              maxWidth: constraints.maxWidth);
+                                          final isOverflow = textPainter.width >
+                                              constraints.maxWidth;
+                                          if (isOverflow) {
+                                            return AnimatedOverflowLabel(
+                                              label: text,
+                                              width: constraints.maxWidth,
+                                              style: textStyle,
+                                            );
+                                          } else {
+                                            return Text(text, style: textStyle);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    SizedBox(
+                                        width:
+                                            MediaQuery.of(context).size.width *
+                                                0.03),
+                                    // همیشه پینگ دوم را نمایش دهیم
+                                    Listener(
+                                      behavior: HitTestBehavior.opaque,
+                                      onPointerDown: (event) {
+                                        if (Theme.of(context).platform ==
+                                            TargetPlatform.windows) {
+                                          if (event.kind ==
+                                              PointerDeviceKind.mouse) {
+                                            onRePing(record);
+                                          }
+                                        }
+                                      },
+                                      child: GestureDetector(
+                                        onTap: () => onRePing(record),
+                                        behavior: HitTestBehavior.opaque,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.speed,
+                                              size: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.045,
+                                              color: ping2Color,
+                                            ),
+                                            SizedBox(
+                                                width: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.005),
+                                            bestPing2 == -2
+                                                ? SizedBox(
+                                                    width:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .width *
+                                                            0.045,
+                                                    height:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .width *
+                                                            0.045,
+                                                    child:
+                                                        const CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                                  )
+                                                : (bestPing2 == null ||
+                                                        bestPing2 == -1 ||
+                                                        bestPing2 < 0 ||
+                                                        bestPing2 >= 1000)
+                                                    ? Text(
+                                                        bestPing2 == null
+                                                            ? 'N/A'
+                                                            : '---',
+                                                        style: TextStyle(
+                                                          color: ping2Color,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 13,
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .underline,
+                                                        ),
+                                                      )
+                                                    : Text(
+                                                        '$bestPing2 ms',
+                                                        style: TextStyle(
+                                                          color: ping2Color,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 13,
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .underline,
+                                                        ),
+                                                      ),
+                                            if (bestPing2 != null &&
+                                                bestPing2 > 0 &&
+                                                bestPing2 < 80)
+                                              Container(
+                                                margin: const EdgeInsets.only(
+                                                  left: 2,
+                                                ),
+                                                width: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.055,
+                                                height: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.055,
+                                                child: Lottie.asset(
+                                                  'assets/icone/Fire.json',
+                                                  repeat: true,
+                                                  animate: true,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
-                            ],
+                            ),
                           ),
-                          SizedBox(
-                              height:
-                                  MediaQuery.of(context).size.height * 0.005),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.dns,
-                                size: MediaQuery.of(context).size.width * 0.045,
-                                color: isDark
-                                    ? AppColors.darkIconPrimary
-                                    : const Color(0xFF5A9CFF),
-                              ),
-                              SizedBox(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.01),
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final text = record.ip1;
-                                    const textStyle = TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF607D8B),
-                                    );
-                                    final textPainter = TextPainter(
-                                      text: TextSpan(
-                                        text: text,
-                                        style: textStyle,
-                                      ),
-                                      maxLines: 1,
-                                      textDirection: TextDirection.ltr,
-                                    )..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow = textPainter.width >
-                                        constraints.maxWidth;
-                                    if (isOverflow) {
-                                      return AnimatedOverflowLabel(
-                                        label: text,
-                                        width: constraints.maxWidth,
-                                        style: textStyle,
-                                      );
-                                    } else {
-                                      return Text(text, style: textStyle);
-                                    }
-                                  },
-                                ),
-                              ),
-                              SizedBox(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.03),
-                              // همیشه پینگ را نمایش دهیم
-                              Listener(
-                                behavior: HitTestBehavior.opaque,
-                                onPointerDown: (event) {
-                                  if (Theme.of(context).platform ==
-                                      TargetPlatform.windows) {
-                                    if (event.kind == PointerDeviceKind.mouse) {
-                                      onRePing(record);
-                                    }
-                                  }
-                                },
-                                child: GestureDetector(
-                                  onTap: () => onRePing(record),
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.speed,
-                                        size:
-                                            MediaQuery.of(context).size.width *
-                                                0.045,
-                                        color: pingColor,
-                                      ),
-                                      SizedBox(
-                                          width: MediaQuery.of(context)
-                                                  .size
-                                                  .width *
-                                              0.005),
-                                      bestPing == -2
-                                          ? SizedBox(
-                                              width: MediaQuery.of(context)
-                                                      .size
-                                                      .width *
-                                                  0.045,
-                                              height: MediaQuery.of(context)
-                                                      .size
-                                                      .width *
-                                                  0.045,
-                                              child:
-                                                  const CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                          : (bestPing == null ||
-                                                  bestPing == -1 ||
-                                                  bestPing < 0 ||
-                                                  bestPing >= 1000)
-                                              ? Text(
-                                                  bestPing == null
-                                                      ? 'N/A'
-                                                      : '---',
-                                                  style: TextStyle(
-                                                    color: pingColor,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 13,
-                                                    decoration: TextDecoration
-                                                        .underline,
-                                                  ),
-                                                )
-                                              : Text(
-                                                  '$bestPing ms',
-                                                  style: TextStyle(
-                                                    color: pingColor,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 13,
-                                                    decoration: TextDecoration
-                                                        .underline,
-                                                  ),
-                                                ),
-                                      if (bestPing != null &&
-                                          bestPing > 0 &&
-                                          bestPing < 80)
-                                        Container(
-                                          margin: const EdgeInsets.only(
-                                            left: 2,
-                                          ),
-                                          width: MediaQuery.of(context)
-                                                  .size
-                                                  .width *
-                                              0.055,
-                                          height: MediaQuery.of(context)
-                                                  .size
-                                                  .width *
-                                              0.055,
-                                          child: Lottie.asset(
-                                            'assets/icone/Fire.json',
-                                            repeat: true,
-                                            animate: true,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(
-                              height:
-                                  MediaQuery.of(context).size.height * 0.0025),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.dns_outlined,
-                                size: MediaQuery.of(context).size.width * 0.045,
-                                color: isDark
-                                    ? AppColors.darkIconSecondary
-                                    : const Color(0xFFB0BEC5),
-                              ),
-                              SizedBox(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.01),
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final text = record.ip2 ?? '';
-                                    const textStyle = TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF90A4AE),
-                                    );
-                                    final textPainter = TextPainter(
-                                      text: TextSpan(
-                                        text: text,
-                                        style: textStyle,
-                                      ),
-                                      maxLines: 1,
-                                      textDirection: TextDirection.ltr,
-                                    )..layout(maxWidth: constraints.maxWidth);
-                                    final isOverflow = textPainter.width >
-                                        constraints.maxWidth;
-                                    if (isOverflow) {
-                                      return AnimatedOverflowLabel(
-                                        label: text,
-                                        width: constraints.maxWidth,
-                                        style: textStyle,
-                                      );
-                                    } else {
-                                      return Text(text, style: textStyle);
-                                    }
-                                  },
-                                ),
-                              ),
-                              SizedBox(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.03),
-                              // همیشه پینگ دوم را نمایش دهیم
-                              Listener(
-                                behavior: HitTestBehavior.opaque,
-                                onPointerDown: (event) {
-                                  if (Theme.of(context).platform ==
-                                      TargetPlatform.windows) {
-                                    if (event.kind == PointerDeviceKind.mouse) {
-                                      onRePing(record);
-                                    }
-                                  }
-                                },
-                                child: GestureDetector(
-                                  onTap: () => onRePing(record),
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.speed,
-                                        size:
-                                            MediaQuery.of(context).size.width *
-                                                0.045,
-                                        color: ping2Color,
-                                      ),
-                                      SizedBox(
-                                          width: MediaQuery.of(context)
-                                                  .size
-                                                  .width *
-                                              0.005),
-                                      bestPing2 == -2
-                                          ? SizedBox(
-                                              width: MediaQuery.of(context)
-                                                      .size
-                                                      .width *
-                                                  0.045,
-                                              height: MediaQuery.of(context)
-                                                      .size
-                                                      .width *
-                                                  0.045,
-                                              child:
-                                                  const CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                          : (bestPing2 == null ||
-                                                  bestPing2 == -1 ||
-                                                  bestPing2 < 0 ||
-                                                  bestPing2 >= 1000)
-                                              ? Text(
-                                                  bestPing2 == null
-                                                      ? 'N/A'
-                                                      : '---',
-                                                  style: TextStyle(
-                                                    color: ping2Color,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 13,
-                                                    decoration: TextDecoration
-                                                        .underline,
-                                                  ),
-                                                )
-                                              : Text(
-                                                  '$bestPing2 ms',
-                                                  style: TextStyle(
-                                                    color: ping2Color,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 13,
-                                                    decoration: TextDecoration
-                                                        .underline,
-                                                  ),
-                                                ),
-                                      if (bestPing2 != null &&
-                                          bestPing2 > 0 &&
-                                          bestPing2 < 80)
-                                        Container(
-                                          margin: const EdgeInsets.only(
-                                            left: 2,
-                                          ),
-                                          width: MediaQuery.of(context)
-                                                  .size
-                                                  .width *
-                                              0.055,
-                                          height: MediaQuery.of(context)
-                                                  .size
-                                                  .width *
-                                              0.055,
-                                          child: Lottie.asset(
-                                            'assets/icone/Fire.json',
-                                            repeat: true,
-                                            animate: true,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ),
-                  if (isSelected && isLoading)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8, top: 8),
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.06,
-                        height: MediaQuery.of(context).size.width * 0.06,
-                        child: const CircularProgressIndicator(strokeWidth: 2),
+                    if (isSelected && isLoading)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.06,
+                          height: MediaQuery.of(context).size.width * 0.06,
+                          child:
+                              const CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       ),
-                    ),
-                ],
+                    if (isSelectedForBulk)
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: AppColors.brightBlue,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

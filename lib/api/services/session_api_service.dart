@@ -1,7 +1,7 @@
+import 'package:firedns/api/models/session_data.dart';
+import 'package:firedns/path/path.dart';
 import 'package:flutter/foundation.dart';
-import '../../path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/session_data.dart';
 
 /// سرویس مدیریت سشن و احراز هویت
 class SessionApiService {

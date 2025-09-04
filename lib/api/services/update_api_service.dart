@@ -1,8 +1,9 @@
+import 'package:firedns/api/models/api_response.dart';
+import 'package:firedns/api/models/update_info.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+
 import 'api_client.dart';
-import '../models/api_response.dart';
-import '../models/update_info.dart';
 
 /// سرویس API برای دریافت اطلاعات آپدیت
 class UpdateApiService {

@@ -1,5 +1,5 @@
+import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
-import '../path/path.dart';
 
 /// کلاس پایه برای استایل‌های متن در تم‌ها
 class AppBaseStyles {

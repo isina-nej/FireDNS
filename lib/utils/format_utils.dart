@@ -51,9 +51,9 @@ class FormatUtils {
   /// قالب‌بندی عدد با جداکننده هزارگان
   static String formatNumber(int number) {
     return number.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]},',
+        );
   }
 
   /// قالب‌بندی وضعیت boolean به متن فارسی

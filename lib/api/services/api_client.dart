@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+
+import 'package:firedns/path/path.dart';
 import 'package:flutter/foundation.dart';
-import '../../path/path.dart';
+import 'package:http/http.dart' as http;
 
 const String baseApiUrl = 'https://api.fire-dns.ir';
 

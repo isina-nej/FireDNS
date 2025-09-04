@@ -1,6 +1,6 @@
+import 'package:firedns/api/models/dns_tag.dart';
+import 'package:firedns/path/path.dart';
 import 'package:flutter/foundation.dart';
-import '../../path/path.dart';
-import '../models/dns_tag.dart';
 
 /// سرویس مدیریت تگ‌های DNS
 class DnsTagApiService {

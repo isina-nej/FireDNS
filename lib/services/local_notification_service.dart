@@ -1,6 +1,7 @@
+import 'package:firedns/routes/app_routes.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 import 'navigation_service.dart';
-import '../routes/app_routes.dart';
 
 class NotificationSettings {
   static const androidChannel = AndroidNotificationChannel(

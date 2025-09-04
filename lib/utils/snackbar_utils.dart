@@ -158,3 +158,113 @@ void showEnhancedSnackBar({
     ),
   );
 }
+
+class SnackbarUtils {
+  static void showSuccessSnackBar(
+    BuildContext context,
+    String message, {
+    Duration duration = const Duration(seconds: 3),
+    bool dismissible = true,
+    VoidCallback? onTap,
+    required DateTime? lastSnackBarTime,
+    required String? lastSnackBarMessage,
+    required Function(DateTime?) setLastSnackBarTime,
+    required Function(String?) setLastSnackBarMessage,
+    required bool Function() isDarkModeActive,
+  }) {
+    showEnhancedSnackBar(
+      context: context,
+      message: message,
+      type: SnackBarType.success,
+      duration: duration,
+      dismissible: dismissible,
+      onTap: onTap,
+      lastSnackBarTime: lastSnackBarTime,
+      lastSnackBarMessage: lastSnackBarMessage,
+      setLastSnackBarTime: setLastSnackBarTime,
+      setLastSnackBarMessage: setLastSnackBarMessage,
+      isDarkModeActive: isDarkModeActive,
+    );
+  }
+
+  static void showErrorSnackBar(
+    BuildContext context,
+    String message, {
+    Duration duration = const Duration(seconds: 3),
+    bool dismissible = true,
+    VoidCallback? onTap,
+    required DateTime? lastSnackBarTime,
+    required String? lastSnackBarMessage,
+    required Function(DateTime?) setLastSnackBarTime,
+    required Function(String?) setLastSnackBarMessage,
+    required bool Function() isDarkModeActive,
+  }) {
+    showEnhancedSnackBar(
+      context: context,
+      message: message,
+      type: SnackBarType.error,
+      duration: duration,
+      dismissible: dismissible,
+      onTap: onTap,
+      lastSnackBarTime: lastSnackBarTime,
+      lastSnackBarMessage: lastSnackBarMessage,
+      setLastSnackBarTime: setLastSnackBarTime,
+      setLastSnackBarMessage: setLastSnackBarMessage,
+      isDarkModeActive: isDarkModeActive,
+    );
+  }
+
+  static void showWarningSnackBar(
+    BuildContext context,
+    String message, {
+    Duration duration = const Duration(seconds: 3),
+    bool dismissible = true,
+    VoidCallback? onTap,
+    required DateTime? lastSnackBarTime,
+    required String? lastSnackBarMessage,
+    required Function(DateTime?) setLastSnackBarTime,
+    required Function(String?) setLastSnackBarMessage,
+    required bool Function() isDarkModeActive,
+  }) {
+    showEnhancedSnackBar(
+      context: context,
+      message: message,
+      type: SnackBarType.warning,
+      duration: duration,
+      dismissible: dismissible,
+      onTap: onTap,
+      lastSnackBarTime: lastSnackBarTime,
+      lastSnackBarMessage: lastSnackBarMessage,
+      setLastSnackBarTime: setLastSnackBarTime,
+      setLastSnackBarMessage: setLastSnackBarMessage,
+      isDarkModeActive: isDarkModeActive,
+    );
+  }
+
+  static void showInfoSnackBar(
+    BuildContext context,
+    String message, {
+    Duration duration = const Duration(seconds: 3),
+    bool dismissible = true,
+    VoidCallback? onTap,
+    required DateTime? lastSnackBarTime,
+    required String? lastSnackBarMessage,
+    required Function(DateTime?) setLastSnackBarTime,
+    required Function(String?) setLastSnackBarMessage,
+    required bool Function() isDarkModeActive,
+  }) {
+    showEnhancedSnackBar(
+      context: context,
+      message: message,
+      type: SnackBarType.info,
+      duration: duration,
+      dismissible: dismissible,
+      onTap: onTap,
+      lastSnackBarTime: lastSnackBarTime,
+      lastSnackBarMessage: lastSnackBarMessage,
+      setLastSnackBarTime: setLastSnackBarTime,
+      setLastSnackBarMessage: setLastSnackBarMessage,
+      isDarkModeActive: isDarkModeActive,
+    );
+  }
+}

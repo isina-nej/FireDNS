@@ -1,10 +1,9 @@
+import 'package:firedns/controllers/theme_controller.dart';
+import 'package:firedns/path/path.dart';
+import 'package:firedns/utils/responsive_size.dart';
+import 'package:firedns/widgets/semi_transparent_text.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-
-import '../controllers/theme_controller.dart';
-import '../path/path.dart';
-import '../utils/responsive_size.dart';
-import '../widgets/semi_transparent_text.dart';
 
 class ConnectionStatusCard extends StatelessWidget {
   final double height;
@@ -379,9 +378,7 @@ class ConnectionStatusCard extends StatelessWidget {
                     scaleByHeight: true,
                   ),
                 ),
-                if (selectedDnsLabel != null ||
-                    (dns1Controller.text.isNotEmpty &&
-                        dns2Controller.text.isNotEmpty))
+                if (selectedDnsLabel != null)
                   Row(
                     children: [
                       Icon(
@@ -412,7 +409,7 @@ class ConnectionStatusCard extends StatelessWidget {
                           children: [
                             // نمایش نام DNS
                             SemiTransparentText(
-                              text: selectedDnsLabel ?? 'Google DNS',
+                              text: selectedDnsLabel ?? 'DNS',
                               style: TextStyle(
                                 fontSize: responsiveSize(
                                   16,
@@ -438,7 +435,7 @@ class ConnectionStatusCard extends StatelessWidget {
                             // نمایش آدرس‌های IP در یک ردیف برای صرفه‌جویی در فضا
                             SemiTransparentText(
                               text:
-                                  "${dns1Controller.text.isNotEmpty ? dns1Controller.text : '8.8.8.8'} / ${dns2Controller.text.isNotEmpty ? dns2Controller.text : '8.8.4.4'}",
+                                  "${dns1Controller.text} / ${dns2Controller.text}",
                               style: TextStyle(
                                 fontSize: responsiveSize(
                                   12, // کاهش اندازه فونت

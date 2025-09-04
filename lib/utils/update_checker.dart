@@ -1,5 +1,5 @@
-import '../api/services/update_api_service.dart';
-import '../api/models/update_info.dart';
+import 'package:firedns/api/models/update_info.dart';
+import 'package:firedns/api/services/update_api_service.dart';
 
 /// کلاس مدیریت بررسی آپدیت برنامه
 class UpdateChecker {

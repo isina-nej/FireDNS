@@ -1,8 +1,9 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firedns/api/models/notification_model.dart';
+import 'package:firedns/routes/app_routes.dart';
+
 import 'local_notification_service.dart';
 import 'navigation_service.dart';
-import '../routes/app_routes.dart';
-import '../api/models/notification_model.dart';
 import 'notification_cache_service.dart';
 
 class FirebaseMessagingService {

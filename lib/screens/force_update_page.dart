@@ -1,11 +1,10 @@
+import 'package:firedns/api/models/update_type.dart';
+import 'package:firedns/controllers/theme_controller.dart';
+import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../api/models/update_type.dart';
-import '../controllers/theme_controller.dart';
-import '../path/path.dart';
 
 /// صفحه نمایش و مدیریت آپدیت برنامه
 class ForceUpdatePage extends StatefulWidget {
@@ -356,7 +355,7 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
     return Obx(
       () {
         final themeController = Get.find<ThemeController>();
-        final isDark = themeController.isDarkMode;
+        final isDark = themeController.isDarkModeActive(context);
 
         return PopScope(
           canPop: _updateInfo?.updateType != UpdateType.mandatory,

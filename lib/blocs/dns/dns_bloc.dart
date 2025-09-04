@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:firedns/path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../path/path.dart';
 import 'dns_event.dart';
 import 'dns_state.dart';
 

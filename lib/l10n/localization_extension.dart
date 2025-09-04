@@ -1,7 +1,6 @@
+import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../path/path.dart';
-
 
 /// Extension برای دسترسی آسان به ترجمه‌ها
 extension LocalizationExtension on BuildContext {
@@ -25,13 +24,16 @@ extension LocalizationExtension on BuildContext {
   /// بررسی زبان انگلیسی
   bool get isEnglish =>
       Provider.of<LanguageManager>(this, listen: false).isEnglish;
-      
+
   /// بررسی زبان عربی
-  bool get isArabic => Provider.of<LanguageManager>(this, listen: false).isArabic;
-  
+  bool get isArabic =>
+      Provider.of<LanguageManager>(this, listen: false).isArabic;
+
   /// بررسی زبان روسی
-  bool get isRussian => Provider.of<LanguageManager>(this, listen: false).isRussian;
-  
+  bool get isRussian =>
+      Provider.of<LanguageManager>(this, listen: false).isRussian;
+
   /// بررسی زبان چینی
-  bool get isChinese => Provider.of<LanguageManager>(this, listen: false).isChinese;
+  bool get isChinese =>
+      Provider.of<LanguageManager>(this, listen: false).isChinese;
 }

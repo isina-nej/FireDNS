@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../screens/about_page.dart';
-import '../screens/settings_page.dart';
-import '../services/navigation_service.dart';
+import 'package:firedns/screens/about_page.dart';
+import 'package:firedns/screens/settings_page.dart';
+import 'package:firedns/services/navigation_service.dart';
 
 /// Animated Drawer Menu Widget for AppBar
 class AnimatedDrawerMenu extends StatefulWidget {

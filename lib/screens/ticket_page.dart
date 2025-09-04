@@ -1,13 +1,12 @@
 import 'dart:ui';
 
+import 'package:firedns/api/services/ticket_service.dart';
+import 'package:firedns/controllers/theme_controller.dart';
+import 'package:firedns/path/path.dart';
+import 'package:firedns/utils/ticket_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
-
-import '../api/services/ticket_service.dart';
-import '../controllers/theme_controller.dart';
-import '../path/path.dart';
-import '../utils/ticket_logger.dart';
 
 class TicketPage extends StatefulWidget {
   const TicketPage({super.key});
@@ -143,89 +142,93 @@ class _TicketPageState extends State<TicketPage>
   @override
   Widget build(BuildContext context) {
     final themeController = Get.find<ThemeController>();
-    final isDark = themeController.isDarkMode;
 
     return PopScope(
       canPop: true,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back,
-              color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
+      child: Obx(() {
+        final isDark = themeController.isDarkModeActive(context);
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color:
+                    isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
+              ),
+              onPressed: () => Navigator.pop(context),
             ),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Text(
-            context.tr('sendTicket'),
-            style: TextStyle(
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-              fontSize: 22,
-              letterSpacing: 0.5,
-            ),
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: IconThemeData(
-            color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
-          ),
-          centerTitle: true,
-        ),
-        body: Stack(
-          children: [
-            // Gradient background
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          const Color(0xFF232526),
-                          const Color(0xFF414345),
-                        ]
-                      : [
-                          const Color(0xFFe0eafc),
-                          const Color(0xFFcfdef3),
-                        ],
-                ),
+            title: Text(
+              context.tr('sendTicket'),
+              style: TextStyle(
+                color:
+                    isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                letterSpacing: 0.5,
               ),
             ),
-            // Glassmorphism effect
-            Align(
-              alignment: Alignment.topCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 90.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                    child: Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.symmetric(horizontal: 0),
-                      padding: const EdgeInsets.all(0),
-                      color: (isDark
-                          ? Colors.black.withOpacity(0.25)
-                          : Colors.white.withOpacity(0.25)),
-                      child: Padding(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: IconThemeData(
+              color: isDark ? AppColors.darkIconPrimary : AppColors.iconPrimary,
+            ),
+            centerTitle: true,
+          ),
+          body: Stack(
+            children: [
+              // Gradient background
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            const Color(0xFF232526),
+                            const Color(0xFF414345),
+                          ]
+                        : [
+                            const Color(0xFFe0eafc),
+                            const Color(0xFFcfdef3),
+                          ],
+                  ),
+                ),
+              ),
+              // Glassmorphism effect
+              Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 90.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                      child: Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.symmetric(horizontal: 0),
                         padding: const EdgeInsets.all(0),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 400),
-                          child: _isSuccess
-                              ? _buildSuccessView(isDark)
-                              : _buildTicketForm(isDark),
+                        color: (isDark
+                            ? Colors.black.withOpacity(0.25)
+                            : Colors.white.withOpacity(0.25)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(0),
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 400),
+                            child: _isSuccess
+                                ? _buildSuccessView(isDark)
+                                : _buildTicketForm(isDark),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      }),
     );
   }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../controllers/theme_controller.dart';
+import 'package:firedns/controllers/theme_controller.dart';
 
 /// Provider برای دسترسی سریع به ThemeController در سراسر اپ
 class ThemeProvider extends InheritedWidget {

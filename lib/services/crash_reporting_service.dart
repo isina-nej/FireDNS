@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+
 import 'package:device_info_plus/device_info_plus.dart';
-import '../api/services/api_client.dart';
+import 'package:firedns/api/services/api_client.dart';
+import 'package:flutter/foundation.dart';
 
 /// مدل لاگ برای ارسال به سرور
 class AppLogModel {

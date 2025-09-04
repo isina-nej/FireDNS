@@ -1,6 +1,5 @@
+import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
-
-import '../path/path.dart';
 
 /// کلاس مدیریت تم‌های اپلیکیشن
 class AppThemes {

@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firedns/api/models/dns_record.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../api/models/dns_record.dart';
 import 'dns_ping_helper.dart';
 
 class DnsTestManager {

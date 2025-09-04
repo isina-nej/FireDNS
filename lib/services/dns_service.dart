@@ -1,7 +1,8 @@
-import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:io';
-import '../path/path.dart';
+
+import 'package:firedns/path/path.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 /// نتیجه تغییر DNS
 class DnsChangeResult {
@@ -225,7 +226,6 @@ class DnsService {
       );
     }
   }
-
 
   /// بررسی آماده بودن سرویس
   static Future<bool> isServiceReady() async {

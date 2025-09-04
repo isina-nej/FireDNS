@@ -44,14 +44,17 @@ class WindowsDnsSetter {
         final netshCmd =
             'netsh interface ip set dns name="$interfaceName" source=dhcp';
         log('دستور netsh اجرا شده: $netshCmd');
-        final result = await Process.run('netsh', [
-          'interface',
-          'ip',
-          'set',
-          'dns',
-          'name="$interfaceName"',
-          'source=dhcp',
-        ], runInShell: true);
+        final result = await Process.run(
+            'netsh',
+            [
+              'interface',
+              'ip',
+              'set',
+              'dns',
+              'name="$interfaceName"',
+              'source=dhcp',
+            ],
+            runInShell: true);
         log('netsh (unset) exitCode: ${result.exitCode}');
         log('netsh (unset) stdout: ${result.stdout}');
         log('netsh (unset) stderr: ${result.stderr}');
@@ -107,16 +110,19 @@ class WindowsDnsSetter {
       bool allSuccess = true;
       for (final interfaceName in interfaces) {
         log('در حال ست کردن DNS برای کارت شبکه: $interfaceName');
-        final setPrimary = await Process.run('netsh', [
-          'interface',
-          'ip',
-          'set',
-          'dns',
-          'name="$interfaceName"',
-          'source=static',
-          'addr=$dns1',
-          'register=primary',
-        ], runInShell: true);
+        final setPrimary = await Process.run(
+            'netsh',
+            [
+              'interface',
+              'ip',
+              'set',
+              'dns',
+              'name="$interfaceName"',
+              'source=static',
+              'addr=$dns1',
+              'register=primary',
+            ],
+            runInShell: true);
         log('netsh (primary) exitCode: ${setPrimary.exitCode}');
         log('netsh (primary) stdout: ${setPrimary.stdout}');
         log('netsh (primary) stderr: ${setPrimary.stderr}');
@@ -128,15 +134,18 @@ class WindowsDnsSetter {
 
         if (dns2.isNotEmpty) {
           log('در حال ست کردن DNS دوم برای کارت شبکه: $interfaceName');
-          final setSecondary = await Process.run('netsh', [
-            'interface',
-            'ip',
-            'add',
-            'dns',
-            'name="$interfaceName"',
-            'addr=$dns2',
-            'index=2',
-          ], runInShell: true);
+          final setSecondary = await Process.run(
+              'netsh',
+              [
+                'interface',
+                'ip',
+                'add',
+                'dns',
+                'name="$interfaceName"',
+                'addr=$dns2',
+                'index=2',
+              ],
+              runInShell: true);
           log('netsh (secondary) exitCode: ${setSecondary.exitCode}');
           log('netsh (secondary) stdout: ${setSecondary.stdout}');
           log('netsh (secondary) stderr: ${setSecondary.stderr}');

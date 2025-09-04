@@ -1,8 +1,7 @@
 library;
 
+import 'package:firedns/services/modern_navigation_service.dart';
 import 'package:flutter/material.dart';
-
-import '../services/modern_navigation_service.dart';
 
 class NavigationShowcase extends StatelessWidget {
   const NavigationShowcase({super.key});

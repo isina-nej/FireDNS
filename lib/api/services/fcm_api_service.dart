@@ -1,6 +1,6 @@
+import 'package:firedns/path/path.dart';
+import 'package:firedns/services/fcm_service.dart';
 import 'package:flutter/foundation.dart';
-import '../../path/path.dart';
-import '../../services/fcm_service.dart';
 
 /// سرویس مدیریت نوتیفیکیشن‌ها (FCM)
 class FcmApiService {

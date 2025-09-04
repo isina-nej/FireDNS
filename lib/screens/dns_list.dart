@@ -4,16 +4,15 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 import 'dart:math';
 
+import 'package:firedns/controllers/theme_controller.dart';
+import 'package:firedns/path/path.dart';
+import 'package:firedns/utils/dns_ping_helper.dart';
+import 'package:firedns/utils/dns_test_manager.dart';
+import 'package:firedns/widgets/dns_card.dart'; // Import the extracted DNS card widget
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../controllers/theme_controller.dart';
-import '../path/path.dart';
-import '../utils/dns_ping_helper.dart';
-import '../utils/dns_test_manager.dart';
-import '../widgets/dns_card.dart'; // Import the extracted DNS card widget
 
 class DnsListPage extends StatefulWidget {
   const DnsListPage({super.key});
@@ -28,6 +27,10 @@ class _DnsListPageState extends State<DnsListPage>
   late List<Animation<double>> _animations;
 
   Set<String> _userDnsIds = {};
+
+  // Selection mode variables
+  bool _isSelectionMode = false;
+  Set<String> _selectedDnsIds = {};
 
   Future<void> _loadUserDnsIds() async {
     final prefs = await SharedPreferences.getInstance();
@@ -47,6 +50,144 @@ class _DnsListPageState extends State<DnsListPage>
   }
 
   bool _isUserDns(DnsRecord record) => _userDnsIds.contains(record.id);
+
+  // Selection mode methods
+  void _enterSelectionMode() {
+    setState(() {
+      _isSelectionMode = true;
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedDnsIds.clear();
+    });
+  }
+
+  void _toggleDnsSelection(String dnsId) {
+    setState(() {
+      if (_selectedDnsIds.contains(dnsId)) {
+        _selectedDnsIds.remove(dnsId);
+        if (_selectedDnsIds.isEmpty) {
+          _isSelectionMode = false;
+        }
+      } else {
+        _selectedDnsIds.add(dnsId);
+      }
+    });
+  }
+
+  void _selectAllDns() {
+    setState(() {
+      _selectedDnsIds = _filteredDnsRecords.map((record) => record.id).toSet();
+    });
+  }
+
+  void _deselectAllDns() {
+    setState(() {
+      _selectedDnsIds.clear();
+    });
+  }
+
+  bool _isDnsSelected(String dnsId) {
+    return _selectedDnsIds.contains(dnsId);
+  }
+
+  // Bulk action methods
+  Future<void> _deleteSelectedDns() async {
+    final recordsToDelete = _dnsRecords
+        .where((record) =>
+            _selectedDnsIds.contains(record.id) && _isUserDns(record))
+        .toList();
+
+    if (recordsToDelete.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('noUserDnsToDelete')),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('confirmDelete')),
+        content: Text(
+            '${context.tr('deleteSelectedDnsConfirm')} ${recordsToDelete.length}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(context.tr('delete')),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final prefs = await SharedPreferences.getInstance();
+      final userDnsJson = prefs.getString('user_dns_list');
+      List<dynamic> userDnsList = [];
+      if (userDnsJson != null) {
+        try {
+          userDnsList = List.from(jsonDecode(userDnsJson));
+        } catch (_) {}
+      }
+
+      for (final record in recordsToDelete) {
+        userDnsList.removeWhere((e) => e['id'] == record.id);
+        final liked = prefs.getStringList('liked_dns_ids') ?? [];
+        liked.remove(record.id);
+        await prefs.setStringList('liked_dns_ids', liked);
+      }
+
+      await prefs.setString('user_dns_list', jsonEncode(userDnsList));
+      await _loadCachedDnsList();
+      _exitSelectionMode();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '${context.tr('selectedDnsDeleted')} ${recordsToDelete.length}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _likeSelectedDns() async {
+    final prefs = await SharedPreferences.getInstance();
+    final liked = prefs.getStringList('liked_dns_ids') ?? [];
+
+    for (final dnsId in _selectedDnsIds) {
+      if (!liked.contains(dnsId)) {
+        liked.add(dnsId);
+      }
+    }
+
+    await prefs.setStringList('liked_dns_ids', liked);
+    await _loadLikedDns();
+    _sortDnsRecords();
+    _exitSelectionMode();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              '${context.tr('selectedDnsLiked')} ${_selectedDnsIds.length}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
 
   Set<String> _likedDnsIds = {};
   Future<void> _loadLikedDns() async {
@@ -877,728 +1018,901 @@ class _DnsListPageState extends State<DnsListPage>
 
   @override
   Widget build(BuildContext context) {
-    final themeController = Get.find<ThemeController>();
-    final isDark = themeController.isDarkMode;
+    return Obx(() {
+      final themeController = Get.find<ThemeController>();
+      final isDark = themeController.isDarkModeActive(context);
 
-    return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop && _testDialogOpen) {
-          // توقف تست و برگشت به عقب
-          DnsTestManager.stopSequentialTest();
-          DnsPingHelper.cancelPingTest();
-          setState(() => _testDialogOpen = false);
-        }
-      },
-      child: Scaffold(
-        backgroundColor:
-            isDark ? AppColors.darkBackground : const Color(0xFFF7F8FA),
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: isDark ? AppColors.darkCardBackground : Colors.white,
-          leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back,
+      return PopScope(
+        canPop: true,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop && _testDialogOpen) {
+            // توقف تست و برگشت به عقب
+            DnsTestManager.stopSequentialTest();
+            DnsPingHelper.cancelPingTest();
+            setState(() => _testDialogOpen = false);
+          }
+        },
+        child: Scaffold(
+          backgroundColor:
+              isDark ? AppColors.darkBackground : const Color(0xFFF7F8FA),
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor:
+                isDark ? AppColors.darkCardBackground : Colors.white,
+            leading: _isSelectionMode
+                ? IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: _exitSelectionMode,
+                  )
+                : IconButton(
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: isDark
+                          ? AppColors.darkIconPrimary
+                          : const Color(0xFF222B45),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+            title: _isSelectionMode
+                ? Text(
+                    '${_selectedDnsIds.length} ${context.tr('selected')}',
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.primaryText,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                    ),
+                  )
+                : Text(
+                    context.tr('selectDns'),
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.primaryText,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+            iconTheme: IconThemeData(
               color:
                   isDark ? AppColors.darkIconPrimary : const Color(0xFF222B45),
             ),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Text(
-            context.tr('selectDns'),
-            style: TextStyle(
-              color: isDark ? AppColors.darkTextPrimary : AppColors.primaryText,
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-              letterSpacing: 0.5,
-            ),
-          ),
-          iconTheme: IconThemeData(
-            color: isDark ? AppColors.darkIconPrimary : const Color(0xFF222B45),
-          ),
-          actions: [
-            _testDialogOpen
-                ? IconButton(
-                    icon: SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.06,
-                      height: MediaQuery.of(context).size.width * 0.06,
-                      child: const CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Color(0xFF5A9CFF),
+            actions: _isSelectionMode
+                ? [
+                    if (_selectedDnsIds.length == _filteredDnsRecords.length)
+                      IconButton(
+                        icon: const Icon(Icons.deselect),
+                        tooltip: context.tr('deselectAll'),
+                        onPressed: _deselectAllDns,
+                      )
+                    else
+                      IconButton(
+                        icon: const Icon(Icons.select_all),
+                        tooltip: context.tr('selectAll'),
+                        onPressed: _selectAllDns,
                       ),
-                    ),
-                    tooltip: context.tr('cancelAllDnsTest'),
-                    onPressed: () {
-                      DnsPingHelper.cancelPingTest();
-                      setState(() => _testDialogOpen = false);
-                    },
-                  )
-                : (_testType == 'auto'
-                    ? PopupMenuButton<String>(
-                        icon: Icon(
-                          Icons.wifi_tethering,
-                          color: isDark
-                              ? AppColors.brightBlue
-                              : AppColors.primaryBlue,
-                          size: MediaQuery.of(context).size.width * 0.07,
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'like',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.favorite, color: Colors.red),
+                              const SizedBox(width: 8),
+                              Text(context.tr('likeSelected')),
+                            ],
+                          ),
                         ),
-                        tooltip: context.tr('dnsTest'),
-                        color: isDark
-                            ? AppColors.darkCardBackground
-                            : Colors.white,
-                        enabled: !_loadingList && _dnsRecords.isNotEmpty,
-                        itemBuilder: (context) => [
+                        if (_selectedDnsIds
+                            .any((id) => _userDnsIds.contains(id)))
                           PopupMenuItem(
-                            value: 'simultaneous',
-                            child: SizedBox(
-                              width: MediaQuery.of(context).size.width * 0.4,
-                              child: Text(
-                                context.tr('simultaneousTest'),
-                                style: TextStyle(
-                                  color: _testType == 'simultaneous'
-                                      ? (isDark
-                                          ? AppColors.brightBlue
-                                          : AppColors.primaryBlue)
-                                      : (isDark
-                                          ? AppColors.darkTextPrimary
-                                          : const Color(0xFF222B45)),
-                                  fontWeight: _testType == 'simultaneous'
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                              ),
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.delete, color: Colors.red),
+                                const SizedBox(width: 8),
+                                Text(context.tr('deleteSelected')),
+                              ],
                             ),
                           ),
-                          PopupMenuItem(
-                            value: 'sequential',
-                            child: SizedBox(
-                              width: MediaQuery.of(context).size.width * 0.4,
-                              child: Text(
-                                context.tr('sequentialTest'),
-                                style: TextStyle(
-                                  color: _testType == 'sequential'
-                                      ? (isDark
-                                          ? AppColors.brightBlue
-                                          : AppColors.primaryBlue)
-                                      : (isDark
-                                          ? AppColors.darkTextPrimary
-                                          : const Color(0xFF222B45)),
-                                  fontWeight: _testType == 'sequential'
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
+                      ],
+                      onSelected: (value) {
+                        if (value == 'like') {
+                          _likeSelectedDns();
+                        } else if (value == 'delete') {
+                          _deleteSelectedDns();
+                        }
+                      },
+                    ),
+                  ]
+                : [
+                    _testDialogOpen
+                        ? IconButton(
+                            icon: SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.06,
+                              height: MediaQuery.of(context).size.width * 0.06,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF5A9CFF),
                               ),
                             ),
-                          ),
-                          PopupMenuItem(
-                            value: 'advanced',
-                            child: SizedBox(
-                              width: MediaQuery.of(context).size.width * 0.4,
-                              child: Text(
-                                context.tr('advancedTest'),
-                                style: TextStyle(
-                                  color: _testType == 'advanced'
-                                      ? (isDark
-                                          ? AppColors.brightBlue
-                                          : AppColors.primaryBlue)
-                                      : (isDark
-                                          ? AppColors.darkTextPrimary
-                                          : const Color(0xFF222B45)),
-                                  fontWeight: _testType == 'advanced'
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                            tooltip: context.tr('cancelAllDnsTest'),
+                            onPressed: () {
+                              DnsPingHelper.cancelPingTest();
+                              setState(() => _testDialogOpen = false);
+                            },
+                          )
+                        : (_testType == 'auto'
+                            ? PopupMenuButton<String>(
+                                icon: Icon(
+                                  Icons.wifi_tethering,
+                                  color: isDark
+                                      ? AppColors.brightBlue
+                                      : AppColors.primaryBlue,
+                                  size:
+                                      MediaQuery.of(context).size.width * 0.07,
                                 ),
-                              ),
-                            ),
-                          ),
-                        ],
-                        onSelected: (value) async {
-                          if (value == 'simultaneous') {
-                            setState(() => _testType = 'simultaneous');
-                            await _testAllDns();
-                          } else if (value == 'sequential') {
-                            setState(() => _testType = 'sequential');
-                            await _testSequentialDns();
-                          } else if (value == 'advanced') {
-                            setState(() => _testType = 'advanced');
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: Text(context.tr('advancedTest')),
-                                content: Text(context.tr('comingSoon')),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(),
-                                    child: Text(context.tr('close')),
+                                tooltip: context.tr('dnsTest'),
+                                color: isDark
+                                    ? AppColors.darkCardBackground
+                                    : Colors.white,
+                                enabled:
+                                    !_loadingList && _dnsRecords.isNotEmpty,
+                                itemBuilder: (context) => [
+                                  PopupMenuItem(
+                                    value: 'simultaneous',
+                                    child: SizedBox(
+                                      width: MediaQuery.of(context).size.width *
+                                          0.4,
+                                      child: Text(
+                                        context.tr('simultaneousTest'),
+                                        style: TextStyle(
+                                          color: _testType == 'simultaneous'
+                                              ? (isDark
+                                                  ? AppColors.brightBlue
+                                                  : AppColors.primaryBlue)
+                                              : (isDark
+                                                  ? AppColors.darkTextPrimary
+                                                  : const Color(0xFF222B45)),
+                                          fontWeight:
+                                              _testType == 'simultaneous'
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'sequential',
+                                    child: SizedBox(
+                                      width: MediaQuery.of(context).size.width *
+                                          0.4,
+                                      child: Text(
+                                        context.tr('sequentialTest'),
+                                        style: TextStyle(
+                                          color: _testType == 'sequential'
+                                              ? (isDark
+                                                  ? AppColors.brightBlue
+                                                  : AppColors.primaryBlue)
+                                              : (isDark
+                                                  ? AppColors.darkTextPrimary
+                                                  : const Color(0xFF222B45)),
+                                          fontWeight: _testType == 'sequential'
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'advanced',
+                                    child: SizedBox(
+                                      width: MediaQuery.of(context).size.width *
+                                          0.4,
+                                      child: Text(
+                                        context.tr('advancedTest'),
+                                        style: TextStyle(
+                                          color: _testType == 'advanced'
+                                              ? (isDark
+                                                  ? AppColors.brightBlue
+                                                  : AppColors.primaryBlue)
+                                              : (isDark
+                                                  ? AppColors.darkTextPrimary
+                                                  : const Color(0xFF222B45)),
+                                          fontWeight: _testType == 'advanced'
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ],
+                                onSelected: (value) async {
+                                  if (value == 'simultaneous') {
+                                    setState(() => _testType = 'simultaneous');
+                                    await _testAllDns();
+                                  } else if (value == 'sequential') {
+                                    setState(() => _testType = 'sequential');
+                                    await _testSequentialDns();
+                                  } else if (value == 'advanced') {
+                                    setState(() => _testType = 'advanced');
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Text(context.tr('advancedTest')),
+                                        content: Text(context.tr('comingSoon')),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(),
+                                            child: Text(context.tr('close')),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                },
+                              )
+                            : IconButton(
+                                icon: Icon(
+                                  Icons.wifi_tethering,
+                                  color: isDark
+                                      ? AppColors.brightBlue
+                                      : AppColors.primaryBlue,
+                                  size:
+                                      MediaQuery.of(context).size.width * 0.07,
+                                ),
+                                tooltip: context.tr('dnsTest'),
+                                onPressed: !_loadingList &&
+                                        _dnsRecords.isNotEmpty
+                                    ? () async {
+                                        if (_testType == 'simultaneous') {
+                                          await _testAllDns();
+                                        } else if (_testType == 'sequential') {
+                                          await _testSequentialDns();
+                                        } else if (_testType == 'advanced') {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: Text(
+                                                  context.tr('advancedTest')),
+                                              content: Text(
+                                                  context.tr('comingSoon')),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(),
+                                                  child:
+                                                      Text(context.tr('close')),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    : null,
+                              )),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.sort),
+                      tooltip: context.tr('sort'),
+                      color:
+                          isDark ? AppColors.darkCardBackground : Colors.white,
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'default',
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.35,
+                            child: Text(
+                              context.tr('default'),
+                              style: TextStyle(
+                                color: _sortType == 'default'
+                                    ? (isDark
+                                        ? AppColors.brightBlue
+                                        : AppColors.primaryBlue)
+                                    : (isDark
+                                        ? AppColors.darkTextPrimary
+                                        : const Color(0xFF222B45)),
+                                fontWeight: _sortType == 'default'
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'ping',
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.35,
+                            child: Text(
+                              context.tr('lowestPing'),
+                              style: TextStyle(
+                                color: _sortType == 'ping'
+                                    ? (isDark
+                                        ? AppColors.brightBlue
+                                        : AppColors.primaryBlue)
+                                    : (isDark
+                                        ? AppColors.darkTextPrimary
+                                        : const Color(0xFF222B45)),
+                                fontWeight: _sortType == 'ping'
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'name',
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.35,
+                            child: Text(
+                              context.tr('sortByName'),
+                              style: TextStyle(
+                                color: _sortType == 'name'
+                                    ? (isDark
+                                        ? AppColors.brightBlue
+                                        : AppColors.primaryBlue)
+                                    : (isDark
+                                        ? AppColors.darkTextPrimary
+                                        : const Color(0xFF222B45)),
+                                fontWeight: _sortType == 'name'
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      onSelected: (value) {
+                        setState(() {
+                          _sortType = value;
+                          _sortDnsRecords();
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.search),
+                      tooltip: context.tr('search'),
+                      onPressed: () {
+                        setState(() {
+                          _showSearch = !_showSearch;
+                          if (_showSearch) {
+                            _searchController.text = _searchQuery;
+                          }
+                        });
+                      },
+                    ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert),
+                      tooltip: context.tr('more'),
+                      color:
+                          isDark ? AppColors.darkCardBackground : Colors.white,
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'customTest',
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.4,
+                            child: Text(
+                              context.tr('testDomainWithAllDns'),
+                              style: TextStyle(
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : const Color(0xFF222B45),
+                              ),
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'refreshDns',
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.4,
+                            child: Text(
+                              context.tr('getNewListFromServer'),
+                              style: TextStyle(
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : const Color(0xFF222B45),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      onSelected: (value) async {
+                        if (value == 'customTest') {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text(context.tr('testDomainWithAllDns')),
+                              content: Text(context.tr('comingSoon')),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: Text(context.tr('close')),
+                                ),
+                              ],
+                            ),
+                          );
+                        } else if (value == 'refreshDns') {
+                          final ctx = context;
+                          await fetchDnsListWithTimer(force: true);
+                          if (mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                content: Text(ctx.tr('dnsListUpdated')),
+                                duration: const Duration(seconds: 2),
                               ),
                             );
                           }
-                        },
-                      )
-                    : IconButton(
-                        icon: Icon(
-                          Icons.wifi_tethering,
-                          color: isDark
-                              ? AppColors.brightBlue
-                              : AppColors.primaryBlue,
-                          size: MediaQuery.of(context).size.width * 0.07,
-                        ),
-                        tooltip: context.tr('dnsTest'),
-                        onPressed: !_loadingList && _dnsRecords.isNotEmpty
-                            ? () async {
-                                if (_testType == 'simultaneous') {
-                                  await _testAllDns();
-                                } else if (_testType == 'sequential') {
-                                  await _testSequentialDns();
-                                } else if (_testType == 'advanced') {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text(context.tr('advancedTest')),
-                                      content: Text(context.tr('comingSoon')),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(),
-                                          child: Text(context.tr('close')),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }
-                              }
-                            : null,
-                      )),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.sort),
-              tooltip: context.tr('sort'),
-              color: isDark ? AppColors.darkCardBackground : Colors.white,
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'default',
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.35,
-                    child: Text(
-                      context.tr('default'),
-                      style: TextStyle(
-                        color: _sortType == 'default'
-                            ? (isDark
-                                ? AppColors.brightBlue
-                                : AppColors.primaryBlue)
-                            : (isDark
-                                ? AppColors.darkTextPrimary
-                                : const Color(0xFF222B45)),
-                        fontWeight: _sortType == 'default'
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
+                        }
+                      },
                     ),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'ping',
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.35,
-                    child: Text(
-                      context.tr('lowestPing'),
-                      style: TextStyle(
-                        color: _sortType == 'ping'
-                            ? (isDark
-                                ? AppColors.brightBlue
-                                : AppColors.primaryBlue)
-                            : (isDark
-                                ? AppColors.darkTextPrimary
-                                : const Color(0xFF222B45)),
-                        fontWeight: _sortType == 'ping'
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'name',
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.35,
-                    child: Text(
-                      context.tr('sortByName'),
-                      style: TextStyle(
-                        color: _sortType == 'name'
-                            ? (isDark
-                                ? AppColors.brightBlue
-                                : AppColors.primaryBlue)
-                            : (isDark
-                                ? AppColors.darkTextPrimary
-                                : const Color(0xFF222B45)),
-                        fontWeight: _sortType == 'name'
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              onSelected: (value) {
-                setState(() {
-                  _sortType = value;
-                  _sortDnsRecords();
-                });
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.search),
-              tooltip: context.tr('search'),
-              onPressed: () {
-                setState(() {
-                  _showSearch = !_showSearch;
-                  if (_showSearch) {
-                    _searchController.text = _searchQuery;
-                  }
-                });
-              },
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              tooltip: context.tr('more'),
-              color: isDark ? AppColors.darkCardBackground : Colors.white,
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'customTest',
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.4,
-                    child: Text(
-                      context.tr('testDomainWithAllDns'),
-                      style: TextStyle(
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : const Color(0xFF222B45),
-                      ),
-                    ),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'refreshDns',
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.4,
-                    child: Text(
-                      context.tr('getNewListFromServer'),
-                      style: TextStyle(
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : const Color(0xFF222B45),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              onSelected: (value) async {
-                if (value == 'customTest') {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(context.tr('testDomainWithAllDns')),
-                      content: Text(context.tr('comingSoon')),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: Text(context.tr('close')),
-                        ),
-                      ],
-                    ),
-                  );
-                } else if (value == 'refreshDns') {
-                  final ctx = context;
-                  await fetchDnsListWithTimer(force: true);
-                  if (mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(
-                        content: Text(ctx.tr('dnsListUpdated')),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-          ],
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Stack(
-            children: [
-              _loadingList
-                  ? const Center(child: CircularProgressIndicator())
-                  : _loadError != null
-                      ? Center(child: Text(_loadError!))
-                      : RefreshIndicator(
-                          onRefresh: _fetchDnsList,
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final isWide = constraints.maxWidth > 600 &&
-                                        Theme.of(context).platform ==
-                                            TargetPlatform.windows;
-                                    if (isWide) {
-                                      int columns =
-                                          constraints.maxWidth > 1050 ? 3 : 2;
-                                      return GridView.builder(
-                                        physics:
-                                            const AlwaysScrollableScrollPhysics(),
-                                        gridDelegate:
-                                            SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: columns,
-                                          crossAxisSpacing: 8,
-                                          mainAxisSpacing: 8,
-                                          mainAxisExtent: 140,
-                                        ),
-                                        itemCount: _filteredDnsRecords.length,
-                                        itemBuilder: (context, index) {
-                                          if (index >= _animations.length) {
-                                            return DnsCard(
-                                              record:
-                                                  _filteredDnsRecords[index],
-                                              index: index,
-                                              isSelected: _selectedDnsId ==
-                                                  _filteredDnsRecords[index].id,
-                                              pingCache: _pingCache,
-                                              isUserDns: _isUserDns(
-                                                  _filteredDnsRecords[index]),
-                                              onConnect: _connectToDns,
-                                              likedDnsIds:
-                                                  _likedDnsIds.toList(),
-                                              onRePing: (record) async {
-                                                setState(() {
-                                                  _pingCache['${record.id}_1'] =
-                                                      -2; // انتظار (لودینگ)
-                                                  _pingCache['${record.id}_2'] =
-                                                      -2;
-                                                });
-                                                final ping1 =
-                                                    await DnsPingHelper.ping(
-                                                        record.ip1);
-                                                final ping2 =
-                                                    await DnsPingHelper.ping(
-                                                        record.ip2 ?? '');
-                                                setState(() {
-                                                  _pingCache['${record.id}_1'] =
-                                                      (ping1 < 0) ? -1 : ping1;
-                                                  _pingCache['${record.id}_2'] =
-                                                      (ping2 < 0) ? -1 : ping2;
-                                                  _sortDnsRecords();
-                                                });
-                                              },
-                                              onToggleLike: _toggleLikeDns,
-                                              onEdit: _editUserDns,
-                                              onDelete: _deleteUserDns,
-                                              isLoading: _isLoading,
-                                            );
-                                          }
-                                          return AnimatedBuilder(
-                                            animation: _animations[index],
-                                            builder: (context, child) {
-                                              return Opacity(
-                                                opacity:
-                                                    _animations[index].value,
-                                                child: Transform.translate(
-                                                  offset: Offset(
-                                                      0,
-                                                      50 *
-                                                          (1 -
-                                                              _animations[index]
-                                                                  .value)),
-                                                  child: child,
-                                                ),
+                  ],
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Stack(
+              children: [
+                _loadingList
+                    ? const Center(child: CircularProgressIndicator())
+                    : _loadError != null
+                        ? Center(child: Text(_loadError!))
+                        : RefreshIndicator(
+                            onRefresh: _fetchDnsList,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final isWide =
+                                          constraints.maxWidth > 600 &&
+                                              Theme.of(context).platform ==
+                                                  TargetPlatform.windows;
+                                      if (isWide) {
+                                        int columns =
+                                            constraints.maxWidth > 1050 ? 3 : 2;
+                                        return GridView.builder(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          gridDelegate:
+                                              SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: columns,
+                                            crossAxisSpacing: 8,
+                                            mainAxisSpacing: 8,
+                                            mainAxisExtent: 140,
+                                          ),
+                                          itemCount: _filteredDnsRecords.length,
+                                          itemBuilder: (context, index) {
+                                            if (index >= _animations.length) {
+                                              return DnsCard(
+                                                record:
+                                                    _filteredDnsRecords[index],
+                                                index: index,
+                                                isSelected: _selectedDnsId ==
+                                                    _filteredDnsRecords[index]
+                                                        .id,
+                                                pingCache: _pingCache,
+                                                isUserDns: _isUserDns(
+                                                    _filteredDnsRecords[index]),
+                                                onConnect: _connectToDns,
+                                                likedDnsIds:
+                                                    _likedDnsIds.toList(),
+                                                onRePing: (record) async {
+                                                  setState(() {
+                                                    _pingCache[
+                                                            '${record.id}_1'] =
+                                                        -2; // انتظار (لودینگ)
+                                                    _pingCache[
+                                                        '${record.id}_2'] = -2;
+                                                  });
+                                                  final ping1 =
+                                                      await DnsPingHelper.ping(
+                                                          record.ip1);
+                                                  final ping2 =
+                                                      await DnsPingHelper.ping(
+                                                          record.ip2 ?? '');
+                                                  setState(() {
+                                                    _pingCache[
+                                                            '${record.id}_1'] =
+                                                        (ping1 < 0)
+                                                            ? -1
+                                                            : ping1;
+                                                    _pingCache[
+                                                            '${record.id}_2'] =
+                                                        (ping2 < 0)
+                                                            ? -1
+                                                            : ping2;
+                                                    _sortDnsRecords();
+                                                  });
+                                                },
+                                                onToggleLike: _toggleLikeDns,
+                                                onEdit: _editUserDns,
+                                                onDelete: _deleteUserDns,
+                                                isLoading: _isLoading,
+                                                isSelectionMode:
+                                                    _isSelectionMode,
+                                                isSelectedForBulk:
+                                                    _isDnsSelected(
+                                                        _filteredDnsRecords[
+                                                                index]
+                                                            .id),
+                                                onToggleSelection:
+                                                    _toggleDnsSelection,
+                                                onLongPress: (String dnsId) {
+                                                  _enterSelectionMode();
+                                                  _toggleDnsSelection(dnsId);
+                                                },
                                               );
-                                            },
-                                            child: DnsCard(
-                                              record:
-                                                  _filteredDnsRecords[index],
-                                              index: index,
-                                              isSelected: _selectedDnsId ==
-                                                  _filteredDnsRecords[index].id,
-                                              pingCache: _pingCache,
-                                              isUserDns: _isUserDns(
-                                                  _filteredDnsRecords[index]),
-                                              onConnect: _connectToDns,
-                                              likedDnsIds:
-                                                  _likedDnsIds.toList(),
-                                              onRePing: (record) async {
-                                                setState(() {
-                                                  _pingCache['${record.id}_1'] =
-                                                      -2; // انتظار (لودینگ)
-                                                  _pingCache['${record.id}_2'] =
-                                                      -2;
-                                                });
-                                                final ping1 =
-                                                    await DnsPingHelper.ping(
-                                                        record.ip1);
-                                                final ping2 =
-                                                    await DnsPingHelper.ping(
-                                                        record.ip2 ?? '');
-                                                setState(() {
-                                                  _pingCache['${record.id}_1'] =
-                                                      (ping1 < 0) ? -1 : ping1;
-                                                  _pingCache['${record.id}_2'] =
-                                                      (ping2 < 0) ? -1 : ping2;
-                                                  _sortDnsRecords();
-                                                });
+                                            }
+                                            return AnimatedBuilder(
+                                              animation: _animations[index],
+                                              builder: (context, child) {
+                                                return Opacity(
+                                                  opacity:
+                                                      _animations[index].value,
+                                                  child: Transform.translate(
+                                                    offset: Offset(
+                                                        0,
+                                                        50 *
+                                                            (1 -
+                                                                _animations[
+                                                                        index]
+                                                                    .value)),
+                                                    child: child,
+                                                  ),
+                                                );
                                               },
-                                              onToggleLike: _toggleLikeDns,
-                                              onEdit: _editUserDns,
-                                              onDelete: _deleteUserDns,
-                                              isLoading: _isLoading,
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    } else {
-                                      return ListView.separated(
-                                        physics:
-                                            const AlwaysScrollableScrollPhysics(),
-                                        itemCount: _filteredDnsRecords.length,
-                                        separatorBuilder: (_, __) => SizedBox(
-                                            height: MediaQuery.of(context)
-                                                    .size
-                                                    .height *
-                                                0.01),
-                                        itemBuilder: (context, index) {
-                                          if (index >= _animations.length) {
-                                            return DnsCard(
-                                              record:
-                                                  _filteredDnsRecords[index],
-                                              index: index,
-                                              isSelected: _selectedDnsId ==
-                                                  _filteredDnsRecords[index].id,
-                                              pingCache: _pingCache,
-                                              isUserDns: _isUserDns(
-                                                  _filteredDnsRecords[index]),
-                                              onConnect: _connectToDns,
-                                              likedDnsIds:
-                                                  _likedDnsIds.toList(),
-                                              onRePing: (record) async {
-                                                setState(() {
-                                                  _pingCache['${record.id}_1'] =
-                                                      -2; // انتظار (لودینگ)
-                                                  _pingCache['${record.id}_2'] =
-                                                      -2;
-                                                });
-                                                final ping1 =
-                                                    await DnsPingHelper.ping(
-                                                        record.ip1);
-                                                final ping2 =
-                                                    await DnsPingHelper.ping(
-                                                        record.ip2 ?? '');
-                                                setState(() {
-                                                  _pingCache['${record.id}_1'] =
-                                                      (ping1 < 0) ? -1 : ping1;
-                                                  _pingCache['${record.id}_2'] =
-                                                      (ping2 < 0) ? -1 : ping2;
-                                                  _sortDnsRecords();
-                                                });
-                                              },
-                                              onToggleLike: _toggleLikeDns,
-                                              onEdit: _editUserDns,
-                                              onDelete: _deleteUserDns,
-                                              isLoading: _isLoading,
+                                              child: DnsCard(
+                                                record:
+                                                    _filteredDnsRecords[index],
+                                                index: index,
+                                                isSelected: _selectedDnsId ==
+                                                    _filteredDnsRecords[index]
+                                                        .id,
+                                                pingCache: _pingCache,
+                                                isUserDns: _isUserDns(
+                                                    _filteredDnsRecords[index]),
+                                                onConnect: _connectToDns,
+                                                likedDnsIds:
+                                                    _likedDnsIds.toList(),
+                                                onRePing: (record) async {
+                                                  setState(() {
+                                                    _pingCache[
+                                                            '${record.id}_1'] =
+                                                        -2; // انتظار (لودینگ)
+                                                    _pingCache[
+                                                        '${record.id}_2'] = -2;
+                                                  });
+                                                  final ping1 =
+                                                      await DnsPingHelper.ping(
+                                                          record.ip1);
+                                                  final ping2 =
+                                                      await DnsPingHelper.ping(
+                                                          record.ip2 ?? '');
+                                                  setState(() {
+                                                    _pingCache[
+                                                            '${record.id}_1'] =
+                                                        (ping1 < 0)
+                                                            ? -1
+                                                            : ping1;
+                                                    _pingCache[
+                                                            '${record.id}_2'] =
+                                                        (ping2 < 0)
+                                                            ? -1
+                                                            : ping2;
+                                                    _sortDnsRecords();
+                                                  });
+                                                },
+                                                onToggleLike: _toggleLikeDns,
+                                                onEdit: _editUserDns,
+                                                onDelete: _deleteUserDns,
+                                                isLoading: _isLoading,
+                                                isSelectionMode:
+                                                    _isSelectionMode,
+                                                isSelectedForBulk:
+                                                    _isDnsSelected(
+                                                        _filteredDnsRecords[
+                                                                index]
+                                                            .id),
+                                                onToggleSelection:
+                                                    _toggleDnsSelection,
+                                                onLongPress: (String dnsId) {
+                                                  _enterSelectionMode();
+                                                  _toggleDnsSelection(dnsId);
+                                                },
+                                              ),
                                             );
-                                          }
-                                          return AnimatedBuilder(
-                                            animation: _animations[index],
-                                            builder: (context, child) {
-                                              return Opacity(
-                                                opacity:
-                                                    _animations[index].value,
-                                                child: Transform.translate(
-                                                  offset: Offset(
-                                                      0,
-                                                      50 *
-                                                          (1 -
-                                                              _animations[index]
-                                                                  .value)),
-                                                  child: child,
-                                                ),
+                                          },
+                                        );
+                                      } else {
+                                        return ListView.separated(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          itemCount: _filteredDnsRecords.length,
+                                          separatorBuilder: (_, __) => SizedBox(
+                                              height: MediaQuery.of(context)
+                                                      .size
+                                                      .height *
+                                                  0.01),
+                                          itemBuilder: (context, index) {
+                                            if (index >= _animations.length) {
+                                              return DnsCard(
+                                                record:
+                                                    _filteredDnsRecords[index],
+                                                index: index,
+                                                isSelected: _selectedDnsId ==
+                                                    _filteredDnsRecords[index]
+                                                        .id,
+                                                pingCache: _pingCache,
+                                                isUserDns: _isUserDns(
+                                                    _filteredDnsRecords[index]),
+                                                onConnect: _connectToDns,
+                                                likedDnsIds:
+                                                    _likedDnsIds.toList(),
+                                                onRePing: (record) async {
+                                                  setState(() {
+                                                    _pingCache[
+                                                            '${record.id}_1'] =
+                                                        -2; // انتظار (لودینگ)
+                                                    _pingCache[
+                                                        '${record.id}_2'] = -2;
+                                                  });
+                                                  final ping1 =
+                                                      await DnsPingHelper.ping(
+                                                          record.ip1);
+                                                  final ping2 =
+                                                      await DnsPingHelper.ping(
+                                                          record.ip2 ?? '');
+                                                  setState(() {
+                                                    _pingCache[
+                                                            '${record.id}_1'] =
+                                                        (ping1 < 0)
+                                                            ? -1
+                                                            : ping1;
+                                                    _pingCache[
+                                                            '${record.id}_2'] =
+                                                        (ping2 < 0)
+                                                            ? -1
+                                                            : ping2;
+                                                    _sortDnsRecords();
+                                                  });
+                                                },
+                                                onToggleLike: _toggleLikeDns,
+                                                onEdit: _editUserDns,
+                                                onDelete: _deleteUserDns,
+                                                isLoading: _isLoading,
+                                                isSelectionMode:
+                                                    _isSelectionMode,
+                                                isSelectedForBulk:
+                                                    _isDnsSelected(
+                                                        _filteredDnsRecords[
+                                                                index]
+                                                            .id),
+                                                onToggleSelection:
+                                                    _toggleDnsSelection,
+                                                onLongPress: (String dnsId) {
+                                                  _enterSelectionMode();
+                                                  _toggleDnsSelection(dnsId);
+                                                },
                                               );
-                                            },
-                                            child: DnsCard(
-                                              record:
-                                                  _filteredDnsRecords[index],
-                                              index: index,
-                                              isSelected: _selectedDnsId ==
-                                                  _filteredDnsRecords[index].id,
-                                              pingCache: _pingCache,
-                                              isUserDns: _isUserDns(
-                                                  _filteredDnsRecords[index]),
-                                              onConnect: _connectToDns,
-                                              likedDnsIds:
-                                                  _likedDnsIds.toList(),
-                                              onRePing: (record) async {
-                                                setState(() {
-                                                  _pingCache['${record.id}_1'] =
-                                                      -2; // انتظار (لودینگ)
-                                                  _pingCache['${record.id}_2'] =
-                                                      -2;
-                                                });
-                                                final ping1 =
-                                                    await DnsPingHelper.ping(
-                                                        record.ip1);
-                                                final ping2 =
-                                                    await DnsPingHelper.ping(
-                                                        record.ip2 ?? '');
-                                                setState(() {
-                                                  _pingCache['${record.id}_1'] =
-                                                      (ping1 < 0) ? -1 : ping1;
-                                                  _pingCache['${record.id}_2'] =
-                                                      (ping2 < 0) ? -1 : ping2;
-                                                  _sortDnsRecords();
-                                                });
+                                            }
+                                            return AnimatedBuilder(
+                                              animation: _animations[index],
+                                              builder: (context, child) {
+                                                return Opacity(
+                                                  opacity:
+                                                      _animations[index].value,
+                                                  child: Transform.translate(
+                                                    offset: Offset(
+                                                        0,
+                                                        50 *
+                                                            (1 -
+                                                                _animations[
+                                                                        index]
+                                                                    .value)),
+                                                    child: child,
+                                                  ),
+                                                );
                                               },
-                                              onToggleLike: _toggleLikeDns,
-                                              onEdit: _editUserDns,
-                                              onDelete: _deleteUserDns,
-                                              isLoading: _isLoading,
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    }
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-              if (_showSearch)
-                Positioned.fill(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _showSearch = false;
-                      });
-                    },
-                    child: Container(
-                      color: Colors.black
-                          .withValues(red: 0, green: 0, blue: 0, alpha: 51),
-                      alignment: Alignment.topCenter,
-                      child: SafeArea(
-                        child: Container(
-                          margin: const EdgeInsets.all(24),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.darkCardBackground
-                                : AppColors.pureWhite,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(
-                                    red: 0, green: 0, blue: 0, alpha: 26),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _searchController,
-                                  autofocus: true,
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? AppColors.textWhite
-                                        : AppColors.textPrimary,
+                                              child: DnsCard(
+                                                record:
+                                                    _filteredDnsRecords[index],
+                                                index: index,
+                                                isSelected: _selectedDnsId ==
+                                                    _filteredDnsRecords[index]
+                                                        .id,
+                                                pingCache: _pingCache,
+                                                isUserDns: _isUserDns(
+                                                    _filteredDnsRecords[index]),
+                                                onConnect: _connectToDns,
+                                                likedDnsIds:
+                                                    _likedDnsIds.toList(),
+                                                onRePing: (record) async {
+                                                  setState(() {
+                                                    _pingCache[
+                                                            '${record.id}_1'] =
+                                                        -2; // انتظار (لودینگ)
+                                                    _pingCache[
+                                                        '${record.id}_2'] = -2;
+                                                  });
+                                                  final ping1 =
+                                                      await DnsPingHelper.ping(
+                                                          record.ip1);
+                                                  final ping2 =
+                                                      await DnsPingHelper.ping(
+                                                          record.ip2 ?? '');
+                                                  setState(() {
+                                                    _pingCache[
+                                                            '${record.id}_1'] =
+                                                        (ping1 < 0)
+                                                            ? -1
+                                                            : ping1;
+                                                    _pingCache[
+                                                            '${record.id}_2'] =
+                                                        (ping2 < 0)
+                                                            ? -1
+                                                            : ping2;
+                                                    _sortDnsRecords();
+                                                  });
+                                                },
+                                                onToggleLike: _toggleLikeDns,
+                                                onEdit: _editUserDns,
+                                                onDelete: _deleteUserDns,
+                                                isLoading: _isLoading,
+                                                isSelectionMode:
+                                                    _isSelectionMode,
+                                                isSelectedForBulk:
+                                                    _isDnsSelected(
+                                                        _filteredDnsRecords[
+                                                                index]
+                                                            .id),
+                                                onToggleSelection:
+                                                    _toggleDnsSelection,
+                                                onLongPress: (String dnsId) {
+                                                  _enterSelectionMode();
+                                                  _toggleDnsSelection(dnsId);
+                                                },
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      }
+                                    },
                                   ),
-                                  decoration: InputDecoration(
-                                    hintText: context.tr('searchByNameOrIp'),
-                                    hintStyle: TextStyle(
+                                ),
+                              ],
+                            ),
+                          ),
+                if (_showSearch)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _showSearch = false;
+                        });
+                      },
+                      child: Container(
+                        color: Colors.black
+                            .withValues(red: 0, green: 0, blue: 0, alpha: 51),
+                        alignment: Alignment.topCenter,
+                        child: SafeArea(
+                          child: Container(
+                            margin: const EdgeInsets.all(24),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.darkCardBackground
+                                  : AppColors.pureWhite,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(
+                                      red: 0, green: 0, blue: 0, alpha: 26),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    autofocus: true,
+                                    style: TextStyle(
                                       color: isDark
-                                          ? AppColors.textLight
-                                          : AppColors.textSecondary,
+                                          ? AppColors.textWhite
+                                          : AppColors.textPrimary,
                                     ),
-                                    border: InputBorder.none,
-                                    fillColor: isDark
-                                        ? AppColors.darkNavy
-                                        : AppColors.pureWhite,
-                                    filled: true,
+                                    decoration: InputDecoration(
+                                      hintText: context.tr('searchByNameOrIp'),
+                                      hintStyle: TextStyle(
+                                        color: isDark
+                                            ? AppColors.textLight
+                                            : AppColors.textSecondary,
+                                      ),
+                                      border: InputBorder.none,
+                                      fillColor: isDark
+                                          ? AppColors.darkNavy
+                                          : AppColors.pureWhite,
+                                      filled: true,
+                                    ),
+                                    onChanged: (v) {
+                                      setState(() {
+                                        _searchQuery = v;
+                                        _createAnimations(
+                                            _filteredDnsRecords.length);
+                                        _animationController.reset();
+                                        _animationController.forward();
+                                      });
+                                    },
+                                    onSubmitted: (v) {
+                                      setState(() {
+                                        _searchQuery = v;
+                                        _showSearch = false;
+                                        _createAnimations(
+                                            _filteredDnsRecords.length);
+                                        _animationController.reset();
+                                        _animationController.forward();
+                                      });
+                                    },
                                   ),
-                                  onChanged: (v) {
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () {
                                     setState(() {
-                                      _searchQuery = v;
-                                      _createAnimations(
-                                          _filteredDnsRecords.length);
-                                      _animationController.reset();
-                                      _animationController.forward();
-                                    });
-                                  },
-                                  onSubmitted: (v) {
-                                    setState(() {
-                                      _searchQuery = v;
                                       _showSearch = false;
-                                      _createAnimations(
-                                          _filteredDnsRecords.length);
-                                      _animationController.reset();
-                                      _animationController.forward();
                                     });
                                   },
                                 ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.close),
-                                onPressed: () {
-                                  setState(() {
-                                    _showSearch = false;
-                                  });
-                                },
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
+              ],
+            ),
+          ),
+          floatingActionButton: FloatingActionButton(
+            child: const Icon(Icons.add),
+            onPressed: () async {
+              // دیگر محدودیتی برای اضافه کردن DNS هنگام تست وجود ندارد
+              final result = await showDialog(
+                context: context,
+                builder: (context) => AddDnsDialog(
+                  onAdd: (newRecord) async {
+                    // بروزرسانی فوری لیست بدون انتظار برای fetch
+                    setState(() {
+                      if (!_dnsRecords
+                          .any((record) => record.id == newRecord.id)) {
+                        _dnsRecords.add(newRecord);
+                        _sortDnsRecords();
+                      }
+                    });
+
+                    // بروزرسانی state لوکال از shared preferences
+                    await _loadLikedDns();
+                    await _loadUserDnsIds();
+
+                    // بروزرسانی cache در پس‌زمینه
+                    await fetchDnsListWithTimer(force: true);
+                  },
                 ),
-            ],
+              );
+              if (result is DnsRecord) {
+                _connectToDns(result);
+              }
+            },
           ),
         ),
-        floatingActionButton: FloatingActionButton(
-          child: const Icon(Icons.add),
-          onPressed: () async {
-            // دیگر محدودیتی برای اضافه کردن DNS هنگام تست وجود ندارد
-            final result = await showDialog(
-              context: context,
-              builder: (context) => AddDnsDialog(
-                onAdd: (newRecord) async {
-                  // بروزرسانی فوری لیست بدون انتظار برای fetch
-                  setState(() {
-                    if (!_dnsRecords
-                        .any((record) => record.id == newRecord.id)) {
-                      _dnsRecords.add(newRecord);
-                      _sortDnsRecords();
-                    }
-                  });
-
-                  // بروزرسانی state لوکال از shared preferences
-                  await _loadLikedDns();
-                  await _loadUserDnsIds();
-
-                  // بروزرسانی cache در پس‌زمینه
-                  await fetchDnsListWithTimer(force: true);
-                },
-              ),
-            );
-            if (result is DnsRecord) {
-              _connectToDns(result);
-            }
-          },
-        ),
-      ),
-    );
+      );
+    });
   }
 }

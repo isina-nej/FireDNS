@@ -1,7 +1,6 @@
+import 'package:firedns/api/models/user_dns_usage.dart';
+import 'package:firedns/path/path.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../path/path.dart';
-import '../models/user_dns_usage.dart';
 
 /// سرویس مدیریت اتصال کاربران به DNS
 class DnsUsageApiService {

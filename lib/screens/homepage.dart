@@ -6,18 +6,16 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firedns/blocs/dns/dns_bloc.dart';
+import 'package:firedns/blocs/dns/dns_state.dart';
+import 'package:firedns/controllers/theme_controller.dart';
+import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../blocs/dns/dns_bloc.dart';
-import '../blocs/dns/dns_state.dart';
-import '../controllers/theme_controller.dart';
-import '../path/path.dart';
 
 class FireDNSHomePage extends StatefulWidget {
   final String title;
@@ -82,8 +80,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
     final prefs = await SharedPreferences.getInstance();
     final cachedDnsList = prefs.getString('cached_dns_list');
     final selectedId = prefs.getString('cached_selected_dns');
-
-    // اگر کش وجود دارد، بلافاصله نمایش بده
     if (cachedDnsList != null && selectedId != null) {
       try {
         final List<dynamic> jsonList = List.from(jsonDecode(cachedDnsList));
@@ -105,7 +101,6 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         _setSelectedDns(null);
       }
     } else {
-      // اگر کش وجود ندارد، DNS پیش‌فرض را نمایش بده
       _setSelectedDns(null);
     }
   }
@@ -120,11 +115,8 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
         _dns1Controller.text = selected.ip1;
         _dns2Controller.text = selected.ip2 ?? '';
       } else {
-        // نمایش DNS پیش‌فرض اگر هیچ DNS انتخابی وجود ندارد
-        _selectedDnsLabel = 'Google DNS';
-        _selectedDnsIp = DnsConstants.defaultPrimaryDns;
-        _dns1Controller.text = DnsConstants.defaultPrimaryDns;
-        _dns2Controller.text = DnsConstants.defaultSecondaryDns;
+        _selectedDnsLabel = null;
+        _selectedDnsIp = null;
       }
     });
   }
@@ -614,132 +606,126 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                   }
                 }
               },
-              child: Consumer<LanguageManager>(
-                builder: (context, languageManager, child) {
-                  return Scaffold(
-                    key: _scaffoldKey,
-                    drawer: const CustomDrawer(),
-                    backgroundColor: isDark
-                        ? AppColors.darkBackground
-                        : AppColors.backgroundLight,
-                    appBar: AppBar(
-                      backgroundColor: isDark
-                          ? AppColors.darkBackground
-                          : AppColors.backgroundLight,
-                      elevation: 0,
-                      leading: IconButton(
-                        icon: Icon(
-                          Icons.menu,
+              child: Scaffold(
+                key: _scaffoldKey,
+                drawer: const CustomDrawer(),
+                backgroundColor: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.backgroundLight,
+                appBar: AppBar(
+                  backgroundColor: isDark
+                      ? AppColors.darkBackground
+                      : AppColors.backgroundLight,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: Icon(
+                      Icons.menu,
+                      color: isDark
+                          ? AppColors.darkIconPrimary
+                          : AppColors.textPrimary,
+                    ),
+                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  ),
+                  title: Text(
+                    context.tr('appTitle'),
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  centerTitle: true,
+                  toolbarHeight: kToolbarHeight,
+                  actions: [
+                    const NotificationBell(),
+                    IconButton(
+                      icon: CircleAvatar(
+                        backgroundColor: AppColors.backgroundGrey,
+                        child: Icon(
+                          Icons.person_outline,
                           color: isDark
                               ? AppColors.darkIconPrimary
                               : AppColors.textPrimary,
-                        ),
-                        onPressed: () =>
-                            _scaffoldKey.currentState?.openDrawer(),
-                      ),
-                      title: Text(
-                        context.tr('appTitle'),
-                        style: TextStyle(
-                          color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
+                          size: MediaQuery.of(context).size.width * 0.05,
                         ),
                       ),
-                      centerTitle: true,
-                      toolbarHeight: kToolbarHeight,
-                      actions: [
-                        const NotificationBell(),
-                        IconButton(
-                          icon: CircleAvatar(
-                            backgroundColor: AppColors.backgroundGrey,
-                            child: Icon(
-                              Icons.person_outline,
-                              color: isDark
-                                  ? AppColors.darkIconPrimary
-                                  : AppColors.textPrimary,
-                              size: MediaQuery.of(context).size.width * 0.05,
-                            ),
-                          ),
-                          onPressed: () {
-                            _showSnackBar(context.tr('profileComingSoon'));
-                          },
-                        ),
-                      ],
+                      onPressed: () {
+                        _showSnackBar(context.tr('profileComingSoon'));
+                      },
                     ),
-                    body: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final minCardHeight =
-                              MediaQuery.of(context).size.height * 0.2;
-                          const totalSpacing = 24.0;
-                          final availableHeight =
-                              constraints.maxHeight - totalSpacing;
-                          double cardHeight = availableHeight / 3;
-                          if (cardHeight < minCardHeight)
-                            cardHeight = minCardHeight;
-                          const cardPadding = EdgeInsets.all(12);
-                          return Padding(
-                            padding: cardPadding,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.max,
-                              children: [
-                                Expanded(
-                                  flex: 12,
-                                  child: (() {
-                                    print(
-                                        '🏠 HomePage build - vpnActive: $_vpnActive, vpnLoading: $_vpnLoading');
-                                    return ConnectionStatusCard(
-                                      height: cardHeight,
-                                      themeController: _themeController,
-                                      vpnActive: _vpnActive,
-                                      vpnLoading: _vpnLoading,
-                                      lottieController: _lottieController,
-                                      onToggleVpn: () =>
-                                          _toggleVpn(!_vpnActive),
-                                      selectedDnsLabel: _selectedDnsLabel,
-                                      selectedDnsIp: _selectedDnsIp,
-                                      dns1Controller: _dns1Controller,
-                                      dns2Controller: _dns2Controller,
-                                    );
-                                  })(),
-                                ),
-                                SizedBox(
-                                    height: MediaQuery.of(context).size.height *
-                                        0.01),
-                                Expanded(
-                                  flex: 10,
-                                  child: SpeedTestCard(
-                                    height: cardHeight,
-                                    themeController: _themeController,
-                                  ),
-                                ),
-                                SizedBox(
-                                    height: MediaQuery.of(context).size.height *
-                                        0.01),
-                                Expanded(
-                                  flex: 10,
-                                  child: ConfigurationCard(
-                                    height: cardHeight,
-                                    themeController: _themeController,
-                                    onDnsSelected: _handleDnsSelected,
-                                    vpnActive: _vpnActive,
-                                    deactivateVpn: _deactivateVpn,
-                                    activateVpn: _activateVpn,
-                                    loadSelectedDnsLabel: _loadSelectedDnsLabel,
-                                    showSnackBar: _showSnackBar,
-                                  ),
-                                ),
-                              ],
+                  ],
+                ),
+                body: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final minCardHeight =
+                          MediaQuery.of(context).size.height * 0.2;
+                      const totalSpacing = 24.0;
+                      final availableHeight =
+                          constraints.maxHeight - totalSpacing;
+                      double cardHeight = availableHeight / 3;
+                      if (cardHeight < minCardHeight)
+                        cardHeight = minCardHeight;
+                      const cardPadding = EdgeInsets.all(12);
+                      return Padding(
+                        padding: cardPadding,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            Expanded(
+                              flex: 12,
+                              child: (() {
+                                print(
+                                    '🏠 HomePage build - vpnActive: $_vpnActive, vpnLoading: $_vpnLoading');
+                                return ConnectionStatusCard(
+                                  height: cardHeight,
+                                  themeController: _themeController,
+                                  vpnActive: _vpnActive,
+                                  vpnLoading: _vpnLoading,
+                                  lottieController: _lottieController,
+                                  onToggleVpn: () => _toggleVpn(!_vpnActive),
+                                  selectedDnsLabel: _selectedDnsLabel,
+                                  selectedDnsIp: _selectedDnsIp,
+                                  dns1Controller: _dns1Controller,
+                                  dns2Controller: _dns2Controller,
+                                );
+                              })(),
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                },
+                            SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.01),
+                            Expanded(
+                              flex: 10,
+                              child: SpeedTestCard(
+                                height: cardHeight,
+                                themeController: _themeController,
+                              ),
+                            ),
+                            SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.01),
+                            Expanded(
+                              flex: 10,
+                              child: ConfigurationCard(
+                                height: cardHeight,
+                                themeController: _themeController,
+                                onDnsSelected: _handleDnsSelected,
+                                vpnActive: _vpnActive,
+                                deactivateVpn: _deactivateVpn,
+                                activateVpn: _activateVpn,
+                                loadSelectedDnsLabel: _loadSelectedDnsLabel,
+                                showSnackBar: _showSnackBar,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           );
