@@ -19,6 +19,9 @@ class DnsCard extends StatelessWidget {
   final Function(String) onToggleLike;
   final Function(DnsRecord) onEdit;
   final Function(DnsRecord) onDelete;
+  final Function(DnsRecord)? onCopy;
+  final Function(DnsRecord)? onBlock;
+  final Function(DnsRecord)? onReport;
   final bool isLoading;
   final List<String> likedDnsIds;
 
@@ -40,6 +43,9 @@ class DnsCard extends StatelessWidget {
     required this.onToggleLike,
     required this.onEdit,
     required this.onDelete,
+    this.onCopy,
+    this.onBlock,
+    this.onReport,
     required this.isLoading,
     required this.likedDnsIds,
     this.isSelectionMode = false,
@@ -110,12 +116,17 @@ class DnsCard extends StatelessWidget {
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.15,
         child: Card(
-          elevation: isSelected ? 4 : 1,
+          elevation: isSelectedForBulk ? 4 : (isSelected ? 4 : 1),
           color: isDark
-              ? (isSelected
-                  ? AppColors.darkCardBackground.withAlpha((0.8 * 255).round())
-                  : AppColors.darkCardBackground)
-              : (isSelected ? AppColors.selectedLight : Colors.white),
+              ? (isSelectedForBulk
+                  ? AppColors.brightBlue.withAlpha((0.1 * 255).round())
+                  : (isSelected
+                      ? AppColors.darkCardBackground
+                          .withAlpha((0.8 * 255).round())
+                      : AppColors.darkCardBackground))
+              : (isSelectedForBulk
+                  ? AppColors.brightBlue.withAlpha((0.15 * 255).round())
+                  : (isSelected ? AppColors.selectedLight : Colors.white)),
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -137,14 +148,23 @@ class DnsCard extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: isSelectedForBulk
-                    ? Border.all(color: AppColors.brightBlue, width: 2)
+                    ? Border.all(
+                        color:
+                            AppColors.brightBlue.withAlpha((0.3 * 255).round()),
+                        width: 1)
                     : null,
                 color: isDark
-                    ? (isSelected
-                        ? AppColors.darkCardBackground
-                            .withAlpha((0.8 * 255).round())
-                        : AppColors.darkCardBackground)
-                    : (isSelected ? AppColors.selectedLight : Colors.white),
+                    ? (isSelectedForBulk
+                        ? AppColors.brightBlue.withAlpha((0.1 * 255).round())
+                        : (isSelected
+                            ? AppColors.darkCardBackground
+                                .withAlpha((0.8 * 255).round())
+                            : AppColors.darkCardBackground))
+                    : (isSelectedForBulk
+                        ? AppColors.brightBlue.withAlpha((0.15 * 255).round())
+                        : (isSelected
+                            ? AppColors.selectedLight
+                            : Colors.white)),
               ),
               child: Padding(
                 padding:
@@ -235,6 +255,128 @@ class DnsCard extends StatelessWidget {
                                           : context.tr('addToFavorites'),
                                       onPressed: () => onToggleLike(record.id),
                                     ),
+                                    // Hide the three-dot menu when in selection mode
+                                    if (!isSelectionMode)
+                                      PopupMenuButton<String>(
+                                        icon: Icon(
+                                          Icons.more_vert,
+                                          color: isDark
+                                              ? AppColors.darkIconPrimary
+                                              : Colors.grey.shade600,
+                                        ),
+                                        onSelected: (value) {
+                                          switch (value) {
+                                            case 'copy':
+                                              onCopy?.call(record);
+                                              break;
+                                            case 'delete':
+                                              onDelete(record);
+                                              break;
+                                            case 'block':
+                                              onBlock?.call(record);
+                                              break;
+                                            case 'report':
+                                              onReport?.call(record);
+                                              break;
+                                            case 'like':
+                                              if (!likedDnsIds
+                                                  .contains(record.id)) {
+                                                onToggleLike(record.id);
+                                              }
+                                              break;
+                                            case 'unlike':
+                                              if (likedDnsIds
+                                                  .contains(record.id)) {
+                                                onToggleLike(record.id);
+                                              }
+                                              break;
+                                          }
+                                        },
+                                        itemBuilder: (BuildContext context) => [
+                                          // Like/Unlike option
+                                          if (likedDnsIds.contains(record.id))
+                                            PopupMenuItem<String>(
+                                              value: 'unlike',
+                                              child: Row(
+                                                children: [
+                                                  const Icon(
+                                                      Icons.favorite_border,
+                                                      color: Colors.grey,
+                                                      size: 18),
+                                                  const SizedBox(width: 8),
+                                                  Text(context.tr(
+                                                      'removeFromFavorites')),
+                                                ],
+                                              ),
+                                            )
+                                          else
+                                            PopupMenuItem<String>(
+                                              value: 'like',
+                                              child: Row(
+                                                children: [
+                                                  const Icon(Icons.favorite,
+                                                      color: Colors.red,
+                                                      size: 18),
+                                                  const SizedBox(width: 8),
+                                                  Text(context
+                                                      .tr('addToFavorites')),
+                                                ],
+                                              ),
+                                            ),
+                                          // Copy option
+                                          PopupMenuItem<String>(
+                                            value: 'copy',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.copy,
+                                                    size: 18),
+                                                const SizedBox(width: 8),
+                                                Text(context.tr('copy')),
+                                              ],
+                                            ),
+                                          ),
+                                          // Delete option (only for non-user DNS or in selection mode)
+                                          if (!isUserDns || isSelectionMode)
+                                            PopupMenuItem<String>(
+                                              value: 'delete',
+                                              child: Row(
+                                                children: [
+                                                  const Icon(Icons.delete,
+                                                      color: Colors.red,
+                                                      size: 18),
+                                                  const SizedBox(width: 8),
+                                                  Text(context.tr('delete')),
+                                                ],
+                                              ),
+                                            ),
+                                          // Block option
+                                          PopupMenuItem<String>(
+                                            value: 'block',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.block,
+                                                    color: Colors.orange,
+                                                    size: 18),
+                                                const SizedBox(width: 8),
+                                                Text(context.tr('block')),
+                                              ],
+                                            ),
+                                          ),
+                                          // Report option
+                                          PopupMenuItem<String>(
+                                            value: 'report',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.report,
+                                                    color: Colors.red,
+                                                    size: 18),
+                                                const SizedBox(width: 8),
+                                                Text(context.tr('report')),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     if (isUserDns) ...[
                                       IconButton(
                                         icon: const Icon(
@@ -584,25 +726,6 @@ class DnsCard extends StatelessWidget {
                           height: MediaQuery.of(context).size.width * 0.06,
                           child:
                               const CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                    if (isSelectedForBulk)
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: AppColors.brightBlue,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: const Icon(
-                            Icons.check,
-                            color: Colors.white,
-                            size: 16,
-                          ),
                         ),
                       ),
                   ],

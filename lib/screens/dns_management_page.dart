@@ -2,6 +2,7 @@ import 'package:firedns/controllers/theme_controller.dart';
 import 'package:firedns/models/dns_management.dart';
 import 'package:firedns/path/path.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
@@ -17,6 +18,7 @@ class _DnsManagementPageState extends State<DnsManagementPage>
     with TickerProviderStateMixin {
   late TabController _tabController;
   late ThemeController themeController;
+  late DnsManagementService _dnsManagementService;
 
   // Snackbar management state
   DateTime? _lastSnackBarTime;
@@ -26,7 +28,14 @@ class _DnsManagementPageState extends State<DnsManagementPage>
   void initState() {
     super.initState();
     themeController = Get.find<ThemeController>();
+    _dnsManagementService = DnsManagementService();
     _tabController = TabController(length: 3, vsync: this);
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await _dnsManagementService.loadData();
+    setState(() {});
   }
 
   @override
@@ -62,9 +71,9 @@ class _DnsManagementPageState extends State<DnsManagementPage>
           ],
         ),
         actions: [
-          Consumer<DnsManagementService>(
-            builder: (context, dnsManagement, child) {
-              final stats = dnsManagement.stats;
+          Builder(
+            builder: (context) {
+              final stats = _dnsManagementService.stats;
               return PopupMenuButton<String>(
                 onSelected: (value) {
                   switch (value) {
@@ -91,23 +100,26 @@ class _DnsManagementPageState extends State<DnsManagementPage>
           ),
         ],
       ),
-      body: Consumer<DnsManagementService>(
-        builder: (context, dnsManagement, child) {
+      body: Builder(
+        builder: (context) {
           return TabBarView(
             controller: _tabController,
             children: [
               _buildManagementList(
-                dnsManagement.getRecordsByStatus(DnsManagementStatus.blocked),
+                _dnsManagementService
+                    .getRecordsByStatus(DnsManagementStatus.blocked),
                 DnsManagementStatus.blocked,
                 isDark,
               ),
               _buildManagementList(
-                dnsManagement.getRecordsByStatus(DnsManagementStatus.deleted),
+                _dnsManagementService
+                    .getRecordsByStatus(DnsManagementStatus.deleted),
                 DnsManagementStatus.deleted,
                 isDark,
               ),
               _buildManagementList(
-                dnsManagement.getRecordsByStatus(DnsManagementStatus.reported),
+                _dnsManagementService
+                    .getRecordsByStatus(DnsManagementStatus.reported),
                 DnsManagementStatus.reported,
                 isDark,
               ),
@@ -307,7 +319,7 @@ class _DnsManagementPageState extends State<DnsManagementPage>
 
     switch (action) {
       case 'restore':
-        dnsManagement.restoreDns(record.dnsId).then((result) {
+        _dnsManagementService.restoreDns(record.dnsId).then((result) {
           SnackbarUtils.showSuccessSnackBar(
             context,
             result.message,
@@ -355,6 +367,7 @@ class _DnsManagementPageState extends State<DnsManagementPage>
     final dnsInfo =
         '${record.dnsLabel}\nIP1: ${record.dnsIp1}${record.dnsIp2 != null ? '\nIP2: ${record.dnsIp2}' : ''}';
     // TODO: Implement clipboard functionality with dnsInfo
+    Clipboard.setData(ClipboardData(text: dnsInfo));
     SnackbarUtils.showSuccessSnackBar(
       context,
       'اطلاعات DNS کپی شد',
@@ -383,8 +396,7 @@ class _DnsManagementPageState extends State<DnsManagementPage>
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              final dnsManagement = context.read<DnsManagementService>();
-              dnsManagement.clearAllData().then((result) {
+              _dnsManagementService.clearAllData().then((result) {
                 SnackbarUtils.showSuccessSnackBar(
                   context,
                   result.message,

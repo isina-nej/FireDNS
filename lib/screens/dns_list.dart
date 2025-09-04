@@ -11,6 +11,7 @@ import 'package:firedns/utils/dns_test_manager.dart';
 import 'package:firedns/widgets/dns_card.dart'; // Import the extracted DNS card widget
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,10 +28,14 @@ class _DnsListPageState extends State<DnsListPage>
   late List<Animation<double>> _animations;
 
   Set<String> _userDnsIds = {};
+  Set<String> _blockedDnsIds = {};
 
   // Selection mode variables
   bool _isSelectionMode = false;
   Set<String> _selectedDnsIds = {};
+
+  // DNS Management Service
+  late DnsManagementService _dnsManagementService;
 
   Future<void> _loadUserDnsIds() async {
     final prefs = await SharedPreferences.getInstance();
@@ -46,6 +51,13 @@ class _DnsListPageState extends State<DnsListPage>
     }
     setState(() {
       _userDnsIds = ids;
+    });
+  }
+
+  Future<void> _loadBlockedDnsIds() async {
+    // Load blocked DNS IDs from the management service
+    setState(() {
+      _blockedDnsIds = _dnsManagementService.blockedDnsIds;
     });
   }
 
@@ -94,29 +106,44 @@ class _DnsListPageState extends State<DnsListPage>
     return _selectedDnsIds.contains(dnsId);
   }
 
+  void _handleDelete(DnsRecord record) {
+    if (_isUserDns(record)) {
+      _deleteUserDns(record);
+    } else {
+      _deleteDnsFromCache(record);
+    }
+  }
+
   // Bulk action methods
   Future<void> _deleteSelectedDns() async {
-    final recordsToDelete = _dnsRecords
+    final userRecordsToDelete = _dnsRecords
         .where((record) =>
             _selectedDnsIds.contains(record.id) && _isUserDns(record))
         .toList();
+    
+    final nonUserRecordsToDelete = _dnsRecords
+        .where((record) =>
+            _selectedDnsIds.contains(record.id) && !_isUserDns(record))
+        .toList();
 
-    if (recordsToDelete.isEmpty) {
+    if (userRecordsToDelete.isEmpty && nonUserRecordsToDelete.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.tr('noUserDnsToDelete')),
+          content: Text(context.tr('noDnsSelected')),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
 
+    final totalToDelete = userRecordsToDelete.length + nonUserRecordsToDelete.length;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(context.tr('confirmDelete')),
         content: Text(
-            '${context.tr('deleteSelectedDnsConfirm')} ${recordsToDelete.length}'),
+            '${context.tr('deleteSelectedDnsConfirm')} $totalToDelete'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -131,23 +158,48 @@ class _DnsListPageState extends State<DnsListPage>
     );
 
     if (confirmed == true) {
-      final prefs = await SharedPreferences.getInstance();
-      final userDnsJson = prefs.getString('user_dns_list');
-      List<dynamic> userDnsList = [];
-      if (userDnsJson != null) {
-        try {
-          userDnsList = List.from(jsonDecode(userDnsJson));
-        } catch (_) {}
+      int successCount = 0;
+
+      // Delete user DNS
+      if (userRecordsToDelete.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        final userDnsJson = prefs.getString('user_dns_list');
+        List<dynamic> userDnsList = [];
+        if (userDnsJson != null) {
+          try {
+            userDnsList = List.from(jsonDecode(userDnsJson));
+          } catch (_) {}
+        }
+
+        for (final record in userRecordsToDelete) {
+          userDnsList.removeWhere((e) => e['id'] == record.id);
+          final liked = prefs.getStringList('liked_dns_ids') ?? [];
+          liked.remove(record.id);
+          await prefs.setStringList('liked_dns_ids', liked);
+        }
+
+        await prefs.setString('user_dns_list', jsonEncode(userDnsList));
+        successCount += userRecordsToDelete.length;
       }
 
-      for (final record in recordsToDelete) {
-        userDnsList.removeWhere((e) => e['id'] == record.id);
-        final liked = prefs.getStringList('liked_dns_ids') ?? [];
-        liked.remove(record.id);
-        await prefs.setStringList('liked_dns_ids', liked);
+      // Delete non-user DNS from cache
+      for (final record in nonUserRecordsToDelete) {
+        final result = await _dnsManagementService.deleteDns(
+          record.id,
+          record.label,
+          record.ip1,
+          record.ip2,
+        );
+        if (result.success) {
+          successCount++;
+        }
       }
 
-      await prefs.setString('user_dns_list', jsonEncode(userDnsList));
+      setState(() {
+        _dnsRecords.removeWhere((r) => _selectedDnsIds.contains(r.id));
+        _sortDnsRecords();
+      });
+
       await _loadCachedDnsList();
       _exitSelectionMode();
 
@@ -155,8 +207,8 @@ class _DnsListPageState extends State<DnsListPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                '${context.tr('selectedDnsDeleted')} ${recordsToDelete.length}'),
-            backgroundColor: Colors.green,
+                '${context.tr('selectedDnsDeleted')} $successCount/$totalToDelete'),
+            backgroundColor: successCount == totalToDelete ? Colors.green : Colors.orange,
           ),
         );
       }
@@ -290,11 +342,14 @@ class _DnsListPageState extends State<DnsListPage>
       vsync: this,
     );
     _animations = [];
+    _dnsManagementService = DnsManagementService();
     Future.microtask(() async {
       await DnsService.stopVpn();
       await _loadLikedDns();
       await _loadCachedDnsList();
       await _loadUserDnsIds();
+      await _loadBlockedDnsIds();
+      await _dnsManagementService.loadData();
       await fetchDnsListWithTimer();
       // بارگذاری پینگ‌های ذخیره شده از حافظه
       await _loadPersistentPingCache();
@@ -934,10 +989,15 @@ class _DnsListPageState extends State<DnsListPage>
   final TextEditingController _searchController = TextEditingController();
 
   List<DnsRecord> get _filteredDnsRecords {
-    if (_searchQuery.trim().isEmpty) return _dnsRecords;
+    List<DnsRecord> records = _dnsRecords;
+
+    // Filter out blocked DNS records
+    records = records.where((r) => !_blockedDnsIds.contains(r.id)).toList();
+
+    if (_searchQuery.trim().isEmpty) return records;
     final parts =
         _searchQuery.replaceAll(RegExp(r'\s+'), ' ').trim().split(' ');
-    return _dnsRecords.where((r) {
+    return records.where((r) {
       final label = r.label.replaceAll(' ', '').toLowerCase();
       final ip1 = r.ip1.replaceAll(' ', '').toLowerCase();
       final ip2 = (r.ip2 ?? '').replaceAll(' ', '').toLowerCase();
@@ -1014,6 +1074,308 @@ class _DnsListPageState extends State<DnsListPage>
         },
       ),
     );
+  }
+
+  Future<void> _copyDns(DnsRecord record) async {
+    final dnsInfo =
+        '${record.label}\nIP1: ${record.ip1}\nIP2: ${record.ip2 ?? 'N/A'}';
+    await Clipboard.setData(ClipboardData(text: dnsInfo));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('dnsCopied')),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  Future<void> _blockDns(DnsRecord record) async {
+    final result = await _dnsManagementService.blockDns(
+      record.id,
+      record.label,
+      record.ip1,
+      record.ip2,
+    );
+
+    if (result.success) {
+      setState(() {
+        _blockedDnsIds.add(record.id);
+        _dnsRecords.removeWhere((r) => r.id == record.id);
+        _sortDnsRecords();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteDnsFromCache(DnsRecord record) async {
+    final result = await _dnsManagementService.deleteDns(
+      record.id,
+      record.label,
+      record.ip1,
+      record.ip2,
+    );
+
+    if (result.success) {
+      setState(() {
+        _dnsRecords.removeWhere((r) => r.id == record.id);
+        _sortDnsRecords();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _reportDns(DnsRecord record) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('reportDns')),
+        content: Text(context.tr('reportDnsConfirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(context.tr('report')),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final result = await _dnsManagementService.reportDns(
+        record.id,
+        record.label,
+        record.ip1,
+        record.ip2,
+      );
+
+      if (result.success) {
+        setState(() {
+          _dnsRecords.removeWhere((r) => r.id == record.id);
+          _sortDnsRecords();
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.blue,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _copySelectedDns() async {
+    final selectedRecords = _dnsRecords
+        .where((record) => _selectedDnsIds.contains(record.id))
+        .toList();
+
+    if (selectedRecords.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('noDnsSelected')),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final dnsInfo = selectedRecords
+        .map((record) =>
+            '${record.label}\nIP1: ${record.ip1}\nIP2: ${record.ip2 ?? 'N/A'}')
+        .join('\n\n');
+
+    await Clipboard.setData(ClipboardData(text: dnsInfo));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              '${context.tr('selectedDnsCopied')} ${selectedRecords.length}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  Future<void> _blockSelectedDns() async {
+    final selectedRecords = _dnsRecords
+        .where((record) => _selectedDnsIds.contains(record.id))
+        .toList();
+
+    if (selectedRecords.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('noDnsSelected')),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('blockSelectedDns')),
+        content: Text(
+            '${context.tr('blockSelectedDnsConfirm')} ${selectedRecords.length}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(context.tr('block')),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      int successCount = 0;
+      for (final record in selectedRecords) {
+        final result = await _dnsManagementService.blockDns(
+          record.id,
+          record.label,
+          record.ip1,
+          record.ip2,
+        );
+        if (result.success) {
+          successCount++;
+        }
+      }
+
+      setState(() {
+        _blockedDnsIds.addAll(selectedRecords.map((r) => r.id));
+        _dnsRecords.removeWhere((r) => _selectedDnsIds.contains(r.id));
+        _sortDnsRecords();
+      });
+
+      _exitSelectionMode();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '${context.tr('selectedDnsBlocked')} $successCount/${selectedRecords.length}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _reportSelectedDns() async {
+    final selectedRecords = _dnsRecords
+        .where((record) => _selectedDnsIds.contains(record.id))
+        .toList();
+
+    if (selectedRecords.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('noDnsSelected')),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('reportSelectedDns')),
+        content: Text(
+            '${context.tr('reportSelectedDnsConfirm')} ${selectedRecords.length}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(context.tr('report')),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      int successCount = 0;
+      for (final record in selectedRecords) {
+        final result = await _dnsManagementService.reportDns(
+          record.id,
+          record.label,
+          record.ip1,
+          record.ip2,
+        );
+        if (result.success) {
+          successCount++;
+        }
+      }
+
+      setState(() {
+        _dnsRecords.removeWhere((r) => _selectedDnsIds.contains(r.id));
+        _sortDnsRecords();
+      });
+
+      _exitSelectionMode();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '${context.tr('selectedDnsReported')} $successCount/${selectedRecords.length}'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -1106,8 +1468,7 @@ class _DnsListPageState extends State<DnsListPage>
                             ],
                           ),
                         ),
-                        if (_selectedDnsIds
-                            .any((id) => _userDnsIds.contains(id)))
+                        if (_selectedDnsIds.isNotEmpty)
                           PopupMenuItem(
                             value: 'delete',
                             child: Row(
@@ -1118,12 +1479,48 @@ class _DnsListPageState extends State<DnsListPage>
                               ],
                             ),
                           ),
+                        PopupMenuItem(
+                          value: 'copy',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.copy, color: Colors.blue),
+                              const SizedBox(width: 8),
+                              Text(context.tr('copySelected')),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'block',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.block, color: Colors.orange),
+                              const SizedBox(width: 8),
+                              Text(context.tr('blockSelected')),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'report',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.report, color: Colors.red),
+                              const SizedBox(width: 8),
+                              Text(context.tr('reportSelected')),
+                            ],
+                          ),
+                        ),
                       ],
                       onSelected: (value) {
                         if (value == 'like') {
                           _likeSelectedDns();
                         } else if (value == 'delete') {
                           _deleteSelectedDns();
+                        } else if (value == 'copy') {
+                          _copySelectedDns();
+                        } else if (value == 'block') {
+                          _blockSelectedDns();
+                        } else if (value == 'report') {
+                          _reportSelectedDns();
                         }
                       },
                     ),
@@ -1529,7 +1926,12 @@ class _DnsListPageState extends State<DnsListPage>
                                                 },
                                                 onToggleLike: _toggleLikeDns,
                                                 onEdit: _editUserDns,
-                                                onDelete: _deleteUserDns,
+                                                onDelete: _isUserDns(_filteredDnsRecords[index]) 
+                                                    ? _deleteUserDns 
+                                                    : _deleteDnsFromCache,
+                                                onCopy: _copyDns,
+                                                onBlock: _blockDns,
+                                                onReport: _reportDns,
                                                 isLoading: _isLoading,
                                                 isSelectionMode:
                                                     _isSelectionMode,
@@ -1608,6 +2010,9 @@ class _DnsListPageState extends State<DnsListPage>
                                                 onToggleLike: _toggleLikeDns,
                                                 onEdit: _editUserDns,
                                                 onDelete: _deleteUserDns,
+                                                onCopy: _copyDns,
+                                                onBlock: _blockDns,
+                                                onReport: _reportDns,
                                                 isLoading: _isLoading,
                                                 isSelectionMode:
                                                     _isSelectionMode,
@@ -1681,7 +2086,12 @@ class _DnsListPageState extends State<DnsListPage>
                                                 },
                                                 onToggleLike: _toggleLikeDns,
                                                 onEdit: _editUserDns,
-                                                onDelete: _deleteUserDns,
+                                                onDelete: _isUserDns(_filteredDnsRecords[index]) 
+                                                    ? _deleteUserDns 
+                                                    : _deleteDnsFromCache,
+                                                onCopy: _copyDns,
+                                                onBlock: _blockDns,
+                                                onReport: _reportDns,
                                                 isLoading: _isLoading,
                                                 isSelectionMode:
                                                     _isSelectionMode,
@@ -1760,6 +2170,9 @@ class _DnsListPageState extends State<DnsListPage>
                                                 onToggleLike: _toggleLikeDns,
                                                 onEdit: _editUserDns,
                                                 onDelete: _deleteUserDns,
+                                                onCopy: _copyDns,
+                                                onBlock: _blockDns,
+                                                onReport: _reportDns,
                                                 isLoading: _isLoading,
                                                 isSelectionMode:
                                                     _isSelectionMode,
