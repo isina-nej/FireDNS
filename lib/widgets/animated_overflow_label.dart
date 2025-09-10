@@ -5,6 +5,7 @@ class AnimatedOverflowLabel extends StatefulWidget {
   final double width;
   final TextStyle style;
   const AnimatedOverflowLabel({
+    super.key,
     required this.label,
     required this.width,
     required this.style,
@@ -38,7 +39,7 @@ class _AnimatedOverflowLabelState extends State<AnimatedOverflowLabel>
     });
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 3500),
+      duration: const Duration(milliseconds: 3500),
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
   }
@@ -71,7 +72,7 @@ class _AnimatedOverflowLabelState extends State<AnimatedOverflowLabel>
             },
             child: ShaderMask(
               shaderCallback: (Rect bounds) {
-                return LinearGradient(
+                return const LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [

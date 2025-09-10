@@ -330,11 +330,19 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildLanguageOption(context, 'en', languageManager),
                 _buildLanguageOption(context, 'fa', languageManager),
+                _buildLanguageOption(context, 'en', languageManager),
                 _buildLanguageOption(context, 'ar', languageManager),
                 _buildLanguageOption(context, 'ru', languageManager),
                 _buildLanguageOption(context, 'zh', languageManager),
+                _buildLanguageOption(context, 'es', languageManager),
+                _buildLanguageOption(context, 'fr', languageManager),
+                _buildLanguageOption(context, 'de', languageManager),
+                _buildLanguageOption(context, 'pt', languageManager),
+                _buildLanguageOption(context, 'ja', languageManager),
+                _buildLanguageOption(context, 'ko', languageManager),
+                _buildLanguageOption(context, 'hi', languageManager),
+                _buildLanguageOption(context, 'it', languageManager),
               ],
             ),
           ),
@@ -363,9 +371,14 @@ class _SettingsPageState extends State<SettingsPage> {
     return Material(
       color: Colors.transparent,
       child: ListTile(
+        leading: Text(
+          _getLanguageFlag(language),
+          style: const TextStyle(fontSize: 24),
+        ),
         title: DefaultTextStyle(
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isDark ? AppColors.darkTextPrimary : Colors.black87,
               ),
           child: Text(_getLanguageDisplayName(context, language)),
         ),
@@ -376,16 +389,114 @@ class _SettingsPageState extends State<SettingsPage> {
               )
             : null,
         onTap: () async {
-          Navigator.pop(context);
-          switch (language) {
-            case 'en':
-              await languageManager.setEnglish();
-              break;
-            case 'fa':
-              await languageManager.setFarsi();
-              break;
-            default:
-              await languageManager.setEnglish();
+          final navigator = Navigator.of(context);
+          final messenger = ScaffoldMessenger.of(context);
+
+          navigator.pop();
+
+          // نمایش loading indicator
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogContext) => Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      context.tr('changingLanguage'),
+                      style: TextStyle(
+                        color:
+                            isDark ? AppColors.darkTextPrimary : Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          // تغییر زبان
+          try {
+            switch (language) {
+              case 'en':
+                await languageManager.setEnglish();
+                break;
+              case 'fa':
+                await languageManager.setFarsi();
+                break;
+              case 'ar':
+                await languageManager.setArabic();
+                break;
+              case 'ru':
+                await languageManager.setRussian();
+                break;
+              case 'zh':
+                await languageManager.setChinese();
+                break;
+              case 'es':
+                await languageManager.setSpanish();
+                break;
+              case 'fr':
+                await languageManager.setFrench();
+                break;
+              case 'de':
+                await languageManager.setGerman();
+                break;
+              case 'pt':
+                await languageManager.setPortuguese();
+                break;
+              case 'ja':
+                await languageManager.setJapanese();
+                break;
+              case 'ko':
+                await languageManager.setKorean();
+                break;
+              case 'hi':
+                await languageManager.setHindi();
+                break;
+              case 'it':
+                await languageManager.setItalian();
+                break;
+              default:
+                await languageManager.setEnglish();
+            }
+
+            // کمی صبر برای اعمال تغییرات
+            await Future.delayed(const Duration(milliseconds: 500));
+
+            if (mounted) {
+              navigator.pop(); // بستن dialog loading
+
+              // نمایش پیام موفقیت
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(context.tr('languageChanged')),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              navigator.pop(); // بستن dialog loading
+
+              // نمایش پیام خطا
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(context.tr('languageChangeError')),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
           }
         },
       ),
@@ -398,8 +509,63 @@ class _SettingsPageState extends State<SettingsPage> {
         return context.tr('english');
       case 'fa':
         return context.tr('persian');
+      case 'ar':
+        return context.tr('arabic');
+      case 'ru':
+        return context.tr('russian');
+      case 'zh':
+        return context.tr('chinese');
+      case 'es':
+        return context.tr('spanish');
+      case 'fr':
+        return context.tr('french');
+      case 'de':
+        return context.tr('german');
+      case 'pt':
+        return context.tr('portuguese');
+      case 'ja':
+        return context.tr('japanese');
+      case 'ko':
+        return context.tr('korean');
+      case 'hi':
+        return context.tr('hindi');
+      case 'it':
+        return context.tr('italian');
       default:
         return language;
+    }
+  }
+
+  String _getLanguageFlag(String language) {
+    switch (language) {
+      case 'fa':
+        return '🇮🇷';
+      case 'en':
+        return '🇺🇸';
+      case 'ar':
+        return '🇸🇦';
+      case 'ru':
+        return '🇷🇺';
+      case 'zh':
+        return '🇨🇳';
+      case 'es':
+        return '🇪🇸';
+      case 'fr':
+        return '🇫🇷';
+      case 'de':
+        return '🇩🇪';
+      case 'pt':
+        return '🇵🇹';
+      case 'ja':
+        return '🇯🇵';
+      case 'ko':
+        return '🇰🇷';
+      case 'hi':
+        return '🇮🇳';
+      case 'it':
+        return '🇮🇹';
+      default:
+        return '🇺🇸';
     }
   }
 
@@ -426,8 +592,11 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildTestTypeOption(context, 'ping', dnsTestSettingsService),
-                _buildTestTypeOption(context, 'dns', dnsTestSettingsService),
+                _buildTestTypeOption(context, 'auto', dnsTestSettingsService),
+                _buildTestTypeOption(
+                    context, 'simultaneous', dnsTestSettingsService),
+                _buildTestTypeOption(
+                    context, 'sequential', dnsTestSettingsService),
                 _buildAdvancedTestTypeOption(context, dnsTestSettingsService),
               ],
             ),
@@ -519,10 +688,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
   String _getTestTypeDisplayName(BuildContext context, String testType) {
     switch (testType) {
-      case 'ping':
-        return context.tr('pingTest');
-      case 'dns':
-        return context.tr('dnsTest');
+      case 'auto':
+        return context.tr('autoTest');
+      case 'simultaneous':
+        return context.tr('simultaneousTest');
+      case 'sequential':
+        return context.tr('sequentialTest');
+      case 'advanced':
+        return context.tr('advancedTest');
       default:
         return testType;
     }

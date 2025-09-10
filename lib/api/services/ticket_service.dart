@@ -39,7 +39,7 @@ class TicketService {
           (response.errorCode == '401' || response.errorCode == '403')) {
         final sessionResponse = await _sessionService.refreshSession();
         if (!sessionResponse.status) {
-          return ApiResponse<Ticket>(
+          return const ApiResponse<Ticket>(
             status: false,
             message: 'خطا در احراز هویت. لطفا دوباره وارد شوید.',
             errorCode: 'AUTH_ERROR',
@@ -59,7 +59,7 @@ class TicketService {
 
       return response;
     } catch (e) {
-      return ApiResponse<Ticket>(
+      return const ApiResponse<Ticket>(
         status: false,
         message: 'خطا در ارسال تیکت. لطفا دوباره تلاش کنید.',
         errorCode: 'TICKET_ERROR',

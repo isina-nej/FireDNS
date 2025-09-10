@@ -66,16 +66,16 @@ class DnsTestSettingsService extends ChangeNotifier {
   /// نام نوع تست به فارسی
   String getTestTypeName(String type, BuildContext context) {
     switch (type) {
+      case 'auto':
+        return context.tr('autoTest');
       case 'simultaneous':
         return context.tr('simultaneousTest');
       case 'sequential':
         return context.tr('sequentialTest');
       case 'advanced':
         return context.tr('advancedTest');
-      case 'auto':
-        return context.tr('autoTest');
       default:
-        return context.tr('simultaneousTest');
+        return context.tr('autoTest');
     }
   }
 }

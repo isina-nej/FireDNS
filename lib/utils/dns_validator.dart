@@ -36,8 +36,9 @@ class DnsValidator {
     if (firstOctet == 10) return true;
 
     // 172.16.0.0/12
-    if (firstOctet == 172 && secondOctet >= 16 && secondOctet <= 31)
+    if (firstOctet == 172 && secondOctet >= 16 && secondOctet <= 31) {
       return true;
+    }
 
     // 192.168.0.0/16
     if (firstOctet == 192 && secondOctet == 168) return true;

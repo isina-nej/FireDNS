@@ -13,6 +13,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DnsListPage extends StatefulWidget {
@@ -350,8 +351,6 @@ class _DnsListPageState extends State<DnsListPage>
     });
   }
 
-  String _testType = 'auto';
-
   @override
   void initState() {
     super.initState();
@@ -374,8 +373,8 @@ class _DnsListPageState extends State<DnsListPage>
       if (_sortType == 'ping') {
         _sortDnsRecords();
       }
+      // بارگذاری تنظیمات تست از Provider
       final prefs = await SharedPreferences.getInstance();
-      _testType = prefs.getString('dns_test_type') ?? 'auto';
       final lastPingStr = prefs.getString('last_auto_ping');
       if (lastPingStr != null) {
         try {
@@ -1575,135 +1574,88 @@ class _DnsListPageState extends State<DnsListPage>
                               setState(() => _testDialogOpen = false);
                             },
                           )
-                        : (_testType == 'auto'
-                            ? PopupMenuButton<String>(
-                                icon: Icon(
-                                  Icons.wifi_tethering,
-                                  color: isDark
-                                      ? AppColors.brightBlue
-                                      : AppColors.primaryBlue,
-                                  size:
-                                      MediaQuery.of(context).size.width * 0.07,
-                                ),
-                                tooltip: context.tr('dnsTest'),
-                                color: isDark
-                                    ? AppColors.darkCardBackground
-                                    : Colors.white,
-                                enabled:
-                                    !_loadingList && _dnsRecords.isNotEmpty,
-                                itemBuilder: (context) => [
-                                  PopupMenuItem(
-                                    value: 'simultaneous',
-                                    child: SizedBox(
-                                      width: MediaQuery.of(context).size.width *
-                                          0.4,
-                                      child: Text(
-                                        context.tr('simultaneousTest'),
-                                        style: TextStyle(
-                                          color: _testType == 'simultaneous'
-                                              ? (isDark
-                                                  ? AppColors.brightBlue
-                                                  : AppColors.primaryBlue)
-                                              : (isDark
-                                                  ? AppColors.darkTextPrimary
-                                                  : const Color(0xFF222B45)),
-                                          fontWeight:
-                                              _testType == 'simultaneous'
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                        ),
+                        : Consumer<DnsTestSettingsService>(
+                            builder: (context, dnsTestSettingsService, child) {
+                              return dnsTestSettingsService.testType == 'auto'
+                                  ? PopupMenuButton<String>(
+                                      icon: Icon(
+                                        Icons.wifi_tethering,
+                                        color: isDark
+                                            ? AppColors.brightBlue
+                                            : AppColors.primaryBlue,
+                                        size:
+                                            MediaQuery.of(context).size.width *
+                                                0.07,
                                       ),
-                                    ),
-                                  ),
-                                  PopupMenuItem(
-                                    value: 'sequential',
-                                    child: SizedBox(
-                                      width: MediaQuery.of(context).size.width *
-                                          0.4,
-                                      child: Text(
-                                        context.tr('sequentialTest'),
-                                        style: TextStyle(
-                                          color: _testType == 'sequential'
-                                              ? (isDark
-                                                  ? AppColors.brightBlue
-                                                  : AppColors.primaryBlue)
-                                              : (isDark
-                                                  ? AppColors.darkTextPrimary
-                                                  : const Color(0xFF222B45)),
-                                          fontWeight: _testType == 'sequential'
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  PopupMenuItem(
-                                    value: 'advanced',
-                                    child: SizedBox(
-                                      width: MediaQuery.of(context).size.width *
-                                          0.4,
-                                      child: Text(
-                                        context.tr('advancedTest'),
-                                        style: TextStyle(
-                                          color: _testType == 'advanced'
-                                              ? (isDark
-                                                  ? AppColors.brightBlue
-                                                  : AppColors.primaryBlue)
-                                              : (isDark
-                                                  ? AppColors.darkTextPrimary
-                                                  : const Color(0xFF222B45)),
-                                          fontWeight: _testType == 'advanced'
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                                onSelected: (value) async {
-                                  if (value == 'simultaneous') {
-                                    setState(() => _testType = 'simultaneous');
-                                    await _testAllDns();
-                                  } else if (value == 'sequential') {
-                                    setState(() => _testType = 'sequential');
-                                    await _testSequentialDns();
-                                  } else if (value == 'advanced') {
-                                    setState(() => _testType = 'advanced');
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: Text(context.tr('advancedTest')),
-                                        content: Text(context.tr('comingSoon')),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.of(context).pop(),
-                                            child: Text(context.tr('close')),
+                                      tooltip: context.tr('dnsTest'),
+                                      color: isDark
+                                          ? AppColors.darkCardBackground
+                                          : Colors.white,
+                                      enabled: !_loadingList &&
+                                          _dnsRecords.isNotEmpty,
+                                      itemBuilder: (context) => [
+                                        PopupMenuItem(
+                                          value: 'simultaneous',
+                                          child: SizedBox(
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.4,
+                                            child: Text(
+                                              context.tr('simultaneousTest'),
+                                              style: TextStyle(
+                                                color: isDark
+                                                    ? AppColors.darkTextPrimary
+                                                    : const Color(0xFF222B45),
+                                                fontWeight: FontWeight.normal,
+                                              ),
+                                            ),
                                           ),
-                                        ],
-                                      ),
-                                    );
-                                  }
-                                },
-                              )
-                            : IconButton(
-                                icon: Icon(
-                                  Icons.wifi_tethering,
-                                  color: isDark
-                                      ? AppColors.brightBlue
-                                      : AppColors.primaryBlue,
-                                  size:
-                                      MediaQuery.of(context).size.width * 0.07,
-                                ),
-                                tooltip: context.tr('dnsTest'),
-                                onPressed: !_loadingList &&
-                                        _dnsRecords.isNotEmpty
-                                    ? () async {
-                                        if (_testType == 'simultaneous') {
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'sequential',
+                                          child: SizedBox(
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.4,
+                                            child: Text(
+                                              context.tr('sequentialTest'),
+                                              style: TextStyle(
+                                                color: isDark
+                                                    ? AppColors.darkTextPrimary
+                                                    : const Color(0xFF222B45),
+                                                fontWeight: FontWeight.normal,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'advanced',
+                                          child: SizedBox(
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.4,
+                                            child: Text(
+                                              context.tr('advancedTest'),
+                                              style: TextStyle(
+                                                color: isDark
+                                                    ? AppColors
+                                                        .darkTextSecondary
+                                                    : Colors.grey,
+                                                fontWeight: FontWeight.normal,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                      onSelected: (value) async {
+                                        if (value == 'simultaneous') {
                                           await _testAllDns();
-                                        } else if (_testType == 'sequential') {
+                                        } else if (value == 'sequential') {
                                           await _testSequentialDns();
-                                        } else if (_testType == 'advanced') {
+                                        } else if (value == 'advanced') {
                                           showDialog(
                                             context: context,
                                             builder: (context) => AlertDialog(
@@ -1723,9 +1675,59 @@ class _DnsListPageState extends State<DnsListPage>
                                             ),
                                           );
                                         }
-                                      }
-                                    : null,
-                              )),
+                                      },
+                                    )
+                                  : IconButton(
+                                      icon: Icon(
+                                        Icons.wifi_tethering,
+                                        color: isDark
+                                            ? AppColors.brightBlue
+                                            : AppColors.primaryBlue,
+                                        size:
+                                            MediaQuery.of(context).size.width *
+                                                0.07,
+                                      ),
+                                      tooltip: context.tr('dnsTest'),
+                                      onPressed: !_loadingList &&
+                                              _dnsRecords.isNotEmpty
+                                          ? () async {
+                                              if (dnsTestSettingsService
+                                                      .testType ==
+                                                  'simultaneous') {
+                                                await _testAllDns();
+                                              } else if (dnsTestSettingsService
+                                                      .testType ==
+                                                  'sequential') {
+                                                await _testSequentialDns();
+                                              } else if (dnsTestSettingsService
+                                                      .testType ==
+                                                  'advanced') {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) =>
+                                                      AlertDialog(
+                                                    title: Text(context
+                                                        .tr('advancedTest')),
+                                                    content: Text(context
+                                                        .tr('comingSoon')),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop(),
+                                                        child: Text(context
+                                                            .tr('close')),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          : null,
+                                    );
+                            },
+                          ),
                     PopupMenuButton<String>(
                       icon: const Icon(Icons.sort),
                       tooltip: context.tr('sort'),

@@ -667,8 +667,9 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                       final availableHeight =
                           constraints.maxHeight - totalSpacing;
                       double cardHeight = availableHeight / 3;
-                      if (cardHeight < minCardHeight)
+                      if (cardHeight < minCardHeight) {
                         cardHeight = minCardHeight;
+                      }
                       const cardPadding = EdgeInsets.all(12);
                       return Padding(
                         padding: cardPadding,

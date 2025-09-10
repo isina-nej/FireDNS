@@ -374,17 +374,21 @@ class _FireDNSAppState extends State<FireDNSApp> {
                   curve: Curves.easeInOut,
                   child: Builder(
                     builder: (context) => GetMaterialApp(
+                      key: ValueKey(languageManager.locale
+                          .toString()), // Force rebuild on locale change
                       title: 'Fire DNS',
                       theme: Theme.of(context),
                       darkTheme: Theme.of(context),
                       themeMode: themeController.themeMode,
                       locale: languageManager.locale,
+                      fallbackLocale: const Locale('en', 'US'),
                       localizationsDelegates: const [
                         GlobalMaterialLocalizations.delegate,
                         GlobalWidgetsLocalizations.delegate,
                         GlobalCupertinoLocalizations.delegate,
                       ],
                       supportedLocales: LanguageManager.supportedLocales,
+                      debugShowCheckedModeBanner: false,
                       home: _showLoadingScreen
                           ? const LoadingScreen()
                           : _UpdateGate(
@@ -410,7 +414,6 @@ class _FireDNSAppState extends State<FireDNSApp> {
                                 ),
                               ),
                             ),
-                      debugShowCheckedModeBanner: false,
                     ),
                   ),
                 );

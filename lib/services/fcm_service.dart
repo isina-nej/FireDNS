@@ -90,7 +90,7 @@ class FcmService {
     // final key = _serviceAccount['private_key'];
     // TODO: Implement RS256 signing
     // For now, this is a placeholder. You need to implement actual RS256 signing
-    final signature = '';
+    const signature = '';
 
     return '$header.$claims.$signature';
   }
