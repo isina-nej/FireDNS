@@ -36,8 +36,8 @@ class ConnectionStatusCard extends StatelessWidget {
     final isDark = themeController.isDarkModeActive(context);
 
     // Simple debug print
-    print(
-        '� ConnectionStatusCard build - vpnActive: $vpnActive, vpnLoading: $vpnLoading');
+    AppLogger.debug(
+        '🔌 ConnectionStatusCard build - vpnActive: $vpnActive, vpnLoading: $vpnLoading');
 
     return Container(
       width: double.infinity,
@@ -163,7 +163,7 @@ class ConnectionStatusCard extends StatelessWidget {
                               boxShadow: [
                                 BoxShadow(
                                   color: (color ?? AppColors.statusDisconnected)
-                                      .withOpacity(0.3),
+                                      .withValues(alpha: 0.3),
                                   blurRadius: 12,
                                   spreadRadius: 2,
                                   offset: const Offset(0, 3),
@@ -199,7 +199,7 @@ class ConnectionStatusCard extends StatelessWidget {
                                       BoxShadow(
                                         color: (color ??
                                                 AppColors.statusDisconnected)
-                                            .withOpacity(0.3),
+                                            .withValues(alpha: 0.3),
                                         blurRadius: 12,
                                         spreadRadius: 2,
                                         offset: const Offset(0, 3),
@@ -221,11 +221,12 @@ class ConnectionStatusCard extends StatelessWidget {
                                     );
                                   },
                                   child: (() {
-                                    print(
+                                    AppLogger.debug(
                                         '🎯 AnimatedSwitcher - vpnLoading: $vpnLoading, vpnActive: $vpnActive');
 
                                     if (vpnLoading) {
-                                      print('🎯 Showing loading icon');
+                                      AppLogger.debug(
+                                          '🎯 Showing loading icon');
                                       return SizedBox(
                                         key: const ValueKey('loading'),
                                         width: responsiveSize(85, context,
@@ -244,7 +245,8 @@ class ConnectionStatusCard extends StatelessWidget {
                                         ),
                                       );
                                     } else if (vpnActive) {
-                                      print('🎯 Showing WiFiConnecting icon');
+                                      AppLogger.debug(
+                                          '🎯 Showing WiFiConnecting icon');
                                       return SizedBox(
                                         key: const ValueKey('connected'),
                                         width: responsiveSize(85, context,
@@ -263,7 +265,7 @@ class ConnectionStatusCard extends StatelessWidget {
                                         ),
                                       );
                                     } else {
-                                      print('🎯 Showing power icon');
+                                      AppLogger.debug('🎯 Showing power icon');
                                       return SizedBox(
                                         key: const ValueKey('power'),
                                         width: responsiveSize(85, context,

@@ -1,5 +1,6 @@
 import 'package:firedns/api/models/notification_model.dart';
 import 'package:firedns/constants/welcome_messages.dart';
+import 'package:firedns/services/app_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// مدیریت نوتیفیکیشن‌های خوش‌آمدگویی
@@ -14,7 +15,7 @@ class WelcomeNotificationManager {
       final hasShown = prefs.getBool(_welcomeShownKey) ?? false;
       return !hasShown;
     } catch (e) {
-      print('Error checking welcome notification status: $e');
+      AppLogger.debug('Error checking welcome notification status: $e');
       return true; // در صورت خطا، نوتیفیکیشن نمایش داده شود
     }
   }
@@ -30,7 +31,7 @@ class WelcomeNotificationManager {
           lastWelcomeLanguage != currentLanguage &&
           WelcomeMessages.supportedLanguages.contains(currentLanguage);
     } catch (e) {
-      print('Error checking language change for welcome: $e');
+      AppLogger.debug('Error checking language change for welcome: $e');
       return false;
     }
   }
@@ -44,7 +45,7 @@ class WelcomeNotificationManager {
       await prefs.setBool(_welcomeShownKey, true);
       await prefs.setString(_lastLanguageKey, currentLanguage);
     } catch (e) {
-      print('Error marking welcome notification as shown: $e');
+      AppLogger.debug('Error marking welcome notification as shown: $e');
     }
   }
 
@@ -82,7 +83,7 @@ class WelcomeNotificationManager {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString('language_code') ?? 'fa';
     } catch (e) {
-      print('Error getting current language: $e');
+      AppLogger.debug('Error getting current language: $e');
       return 'fa';
     }
   }
@@ -94,7 +95,7 @@ class WelcomeNotificationManager {
       await prefs.remove(_welcomeShownKey);
       await prefs.remove(_lastLanguageKey);
     } catch (e) {
-      print('Error resetting welcome status: $e');
+      AppLogger.debug('Error resetting welcome status: $e');
     }
   }
 }

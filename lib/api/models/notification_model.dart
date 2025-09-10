@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// انواع اعلان
 enum NotificationType {
   info,
@@ -63,11 +65,11 @@ class NotificationModel {
         isRead: json['isRead'] as bool? ?? false,
       );
 
-      print('Successfully parsed notification: ${model.id}');
+      debugPrint('Successfully parsed notification: ${model.id}');
       return model;
     } catch (e) {
-      print('Error parsing notification from JSON: $e');
-      print('Problematic JSON: $json');
+      debugPrint('Error parsing notification from JSON: $e');
+      debugPrint('Problematic JSON: $json');
       rethrow;
     }
   }

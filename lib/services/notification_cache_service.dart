@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:firedns/api/models/notification_model.dart';
+import 'package:firedns/services/app_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationCacheService {
@@ -15,26 +16,26 @@ class NotificationCacheService {
       // تبدیل به JSON و ذخیره
       final notificationsJson = notifications.map((n) => n.toJson()).toList();
       final jsonString = jsonEncode(notificationsJson);
-      print('Caching notifications: $jsonString');
+      AppLogger.debug('Caching notifications: $jsonString');
 
       // ذخیره در SharedPreferences
       final success = await prefs.setString(_notificationsKey, jsonString);
       if (!success) {
-        print('Failed to save notifications to cache');
+        AppLogger.error('Failed to save notifications to cache');
         return false;
       }
 
       // تایید ذخیره‌سازی
       final savedData = prefs.getString(_notificationsKey);
       if (savedData == null) {
-        print('Failed to verify cached data');
+        AppLogger.error('Failed to verify cached data');
         return false;
       }
-      print('Verified cached data: $savedData');
+      AppLogger.debug('Verified cached data: $savedData');
 
       return true;
     } catch (e) {
-      print('Error caching notifications: $e');
+      AppLogger.error('Error caching notifications: $e');
       return false;
     }
   }
@@ -44,7 +45,7 @@ class NotificationCacheService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final cachedData = prefs.getString(_notificationsKey);
-      print('Reading from cache: $cachedData');
+      AppLogger.debug('Reading from cache: $cachedData');
 
       if (cachedData != null && cachedData.isNotEmpty) {
         try {
@@ -56,27 +57,27 @@ class NotificationCacheService {
               final notification = NotificationModel.fromJson(json);
               notifications.add(notification);
             } catch (e) {
-              print('Error parsing individual notification: $e');
-              print('Problematic JSON: $json');
+              AppLogger.error('Error parsing individual notification: $e');
+              AppLogger.error('Problematic JSON: $json');
               // ادامه پردازش سایر نوتیفیکیشن‌ها
               continue;
             }
           }
 
-          print(
+          AppLogger.debug(
               'Successfully parsed ${notifications.length} notifications from cache');
           return notifications;
         } catch (e) {
-          print('Error decoding JSON from cache: $e');
-          print('Invalid cached data: $cachedData');
+          AppLogger.error('Error decoding JSON from cache: $e');
+          AppLogger.error('Invalid cached data: $cachedData');
           // در صورت خطا در کل داده، کش را پاک می‌کنیم
           await clearCache();
         }
       }
     } catch (e) {
-      print('Error reading from cache: $e');
+      AppLogger.error('Error reading from cache: $e');
     }
-    print('No valid cached notifications found, returning empty list');
+    AppLogger.info('No valid cached notifications found, returning empty list');
     return [];
   }
 
@@ -90,7 +91,8 @@ class NotificationCacheService {
 
       // بررسی وجود نوتیفیکیشن تکراری
       if (notifications.any((n) => n.id == notification.id)) {
-        print('Notification with ID ${notification.id} already exists');
+        AppLogger.warning(
+            'Notification with ID ${notification.id} already exists');
         return true;
       }
 
@@ -104,12 +106,13 @@ class NotificationCacheService {
 
       final success = await cacheNotifications(notifications);
       if (!success) {
-        print('Failed to cache notification with ID ${notification.id}');
+        AppLogger.error(
+            'Failed to cache notification with ID ${notification.id}');
       }
       return success;
     } catch (e) {
-      print('Error adding notification to cache: $e');
-      print('Notification details: ${notification.toJson()}');
+      AppLogger.error('Error adding notification to cache: $e');
+      AppLogger.error('Notification details: ${notification.toJson()}');
       return false;
     }
   }

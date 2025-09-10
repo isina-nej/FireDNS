@@ -1,0 +1,222 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, latest-changes ]
+  pull_request:
+    branches: [ main, develop, latest-changes ]
+
+jobs:
+  test:
+    name: Test & Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.0'
+        cache: true
+
+    - name: Get dependencies
+      run: flutter pub get
+
+    - name: Verify formatting
+      run: flutter format --output=none --set-exit-if-changed .
+
+    - name: Analyze code
+      run: flutter analyze
+
+    - name: Run tests
+      run: flutter test --coverage
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: coverage/lcov.info
+        fail_ci_if_error: false
+
+  build-android:
+    name: Build Android
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.0'
+        cache: true
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Get dependencies
+      run: flutter pub get
+
+    - name: Build APK
+      run: flutter build apk --release
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apk
+        path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-windows:
+    name: Build Windows
+    needs: test
+    runs-on: windows-latest
+    if: github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.0'
+        cache: true
+
+    - name: Get dependencies
+      run: flutter pub get
+
+    - name: Build Windows
+      run: flutter build windows --release
+
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-build
+        path: build/windows/x64/runner/Release/
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.0'
+        cache: true
+
+    - name: Get dependencies
+      run: flutter pub get
+
+    - name: Run pub audit
+      run: flutter pub deps --dev
+
+    - name: Check for security vulnerabilities
+      run: |
+        if flutter pub deps | grep -i "security\|vulnerability\|critical"; then
+          echo "⚠️ Potential security issues found"
+          exit 1
+        fi
+
+  performance-test:
+    name: Performance Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.0'
+        cache: true
+
+    - name: Get dependencies
+      run: flutter pub get
+
+    - name: Build and measure
+      run: |
+        echo "📊 Building and measuring app size..."
+        flutter build apk --target-platform android-arm64 --analyze-size
+        
+    - name: Comment app size
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = './build/app/outputs/flutter-apk/';
+          if (fs.existsSync(path)) {
+            const stats = fs.statSync(path + 'app-release.apk');
+            const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📱 **APK Size**: ${sizeMB} MB`
+            });
+          }
+
+  deploy:
+    name: Deploy
+    needs: [test, build-android, build-windows]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download Android artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: android-apk
+        path: ./artifacts/
+
+    - name: Download Windows artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: windows-build
+        path: ./artifacts/
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: FireDNS ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+  notify:
+    name: Notify
+    needs: [test, build-android, build-windows]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: needs.test.result == 'success' && needs.build-android.result == 'success'
+      run: |
+        echo "✅ All tests passed and builds successful!"
+        
+    - name: Notify failure
+      if: failure()
+      run: |
+        echo "❌ Pipeline failed. Check the logs for details."

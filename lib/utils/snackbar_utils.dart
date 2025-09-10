@@ -21,25 +21,25 @@ SnackBarStyle getSnackBarStyle(SnackBarType type, bool isDark) {
     case SnackBarType.success:
       return SnackBarStyle(
         backgroundColor: const Color(0xFF2E7D32), // Dark green
-        borderColor: const Color(0xFF4CAF50).withOpacity(0.5),
+        borderColor: const Color(0xFF4CAF50).withValues(alpha: 0.5),
         icon: Icons.check_circle,
       );
     case SnackBarType.error:
       return SnackBarStyle(
         backgroundColor: const Color(0xFFD32F2F), // Dark red
-        borderColor: const Color(0xFFE57373).withOpacity(0.5),
+        borderColor: const Color(0xFFE57373).withValues(alpha: 0.5),
         icon: Icons.error,
       );
     case SnackBarType.warning:
       return SnackBarStyle(
         backgroundColor: const Color(0xFFEF6C00), // Dark orange
-        borderColor: const Color(0xFFFFB74D).withOpacity(0.5),
+        borderColor: const Color(0xFFFFB74D).withValues(alpha: 0.5),
         icon: Icons.warning,
       );
     case SnackBarType.info:
       return SnackBarStyle(
         backgroundColor: const Color(0xFF1976D2), // Dark blue
-        borderColor: const Color(0xFF64B5F6).withOpacity(0.5),
+        borderColor: const Color(0xFF64B5F6).withValues(alpha: 0.5),
         icon: Icons.info,
       );
   }

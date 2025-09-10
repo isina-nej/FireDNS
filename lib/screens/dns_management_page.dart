@@ -180,7 +180,7 @@ class _DnsManagementPageState extends State<DnsManagementPage>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: _getStatusColor(status).withOpacity(0.3),
+          color: _getStatusColor(status).withValues(alpha: 0.3),
           width: 1,
         ),
       ),

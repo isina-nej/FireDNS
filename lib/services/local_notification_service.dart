@@ -1,4 +1,5 @@
 import 'package:firedns/routes/app_routes.dart';
+import 'package:firedns/services/app_logger.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'navigation_service.dart';
@@ -37,7 +38,8 @@ class LocalNotificationService {
       initSettings,
       onDidReceiveNotificationResponse:
           (NotificationResponse notificationResponse) {
-        print('Notification clicked: ${notificationResponse.payload}');
+        AppLogger.debug(
+            'Notification clicked: ${notificationResponse.payload}');
         if (notificationResponse.payload != null) {
           try {
             // پیلود حاوی اطلاعات مسیریابی است
@@ -46,7 +48,7 @@ class LocalNotificationService {
               arguments: notificationResponse.payload,
             );
           } catch (e) {
-            print('Error handling notification tap: $e');
+            AppLogger.debug('Error handling notification tap: $e');
             NavigationService.navigatorKey.currentState
                 ?.pushNamed(AppRoutes.notifications);
           }
@@ -99,7 +101,7 @@ class LocalNotificationService {
         payload: payload,
       );
     } catch (e) {
-      print('Error showing notification: $e');
+      AppLogger.debug('Error showing notification: $e');
     }
   }
 }

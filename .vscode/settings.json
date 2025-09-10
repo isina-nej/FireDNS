@@ -2,8 +2,41 @@
     "cmake.sourceDirectory": "E:/project/FireDNS/firedns/linux",
     "python-envs.defaultEnvManager": "ms-python.python:system",
     "python-envs.pythonProjects": [],
+    // Dart & Flutter Settings
     "dart.flutterSdkPath": ".fvm/flutter_sdk",
     "dart.sdkPath": ".fvm/flutter_sdk/bin/cache/dart-sdk",
+    "dart.lineLength": 120,
+    "dart.previewCommitCharacters": true,
+    "dart.closingLabels": true,
+    "dart.insertArgumentPlaceholders": true,
+    "dart.showTodos": true,
+    "dart.renameFilesWithClasses": "prompt",
+    "dart.warnWhenEditingFilesOutsideWorkspace": true,
+    "dart.analysisServerFolding": true,
+    "dart.debugExternalPackageLibraries": false,
+    "dart.debugSdkLibraries": false,
+    "dart.evaluateGettersInDebugViews": true,
+    "dart.showTestCodeLens": true,
+    // Flutter Settings
+    "flutter.createOrganization": "com.firedns",
+    "flutter.flutterCreateAndroidLanguage": "kotlin",
+    "flutter.flutterCreateIOSLanguage": "swift",
+    "flutter.showEmulators": "local",
+    "flutter.checkForSdkUpdates": true,
+    "flutter.experimentalRefactors": true,
+    // Editor Settings
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    "editor.rulers": [
+        80,
+        120
+    ],
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 120,
     "search.exclude": {
         "**/node_modules": true,
         "**/build": true,
@@ -32,12 +65,6 @@
         "windows/build",
         "web/build"
     ],
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-        "source.fixAll": "explicit",
-        "source.organizeImports": "explicit"
-    },
-    "dart.lineLength": 80,
     "[dart]": {
         "editor.defaultFormatter": "Dart-Code.dart-code",
         "editor.formatOnSave": true,

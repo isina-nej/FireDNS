@@ -1,14 +1,12 @@
+import 'package:firedns/api/models/notification_model.dart';
+import 'package:firedns/controllers/theme_controller.dart';
+import 'package:firedns/path/path.dart';
+import 'package:firedns/services/navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import 'package:firedns/api/models/notification_model.dart';
-import 'package:firedns/controllers/theme_controller.dart';
-import 'package:firedns/path/path.dart';
-import 'package:firedns/services/navigation_service.dart';
-import 'package:firedns/services/notification_service.dart';
 
 /// ویجت پاپ‌آپ اعلانات با طراحی بهبود یافته
 class NotificationPopup extends StatefulWidget {

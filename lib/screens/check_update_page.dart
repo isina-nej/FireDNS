@@ -217,8 +217,8 @@ class _CheckUpdatePageState extends State<CheckUpdatePage>
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           BoxShadow(
-                                            color:
-                                                Colors.green.withOpacity(0.2),
+                                            color: Colors.green
+                                                .withValues(alpha: 0.2),
                                             blurRadius: 30,
                                             spreadRadius: 2,
                                           ),

@@ -40,7 +40,7 @@ class AboutPage extends StatelessWidget {
                 boxShadow: [
                   if (!isDark)
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.07),
+                      color: Colors.black.withValues(alpha: 0.07),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -85,8 +85,8 @@ class AboutPage extends StatelessWidget {
                         boxShadow: [
                           BoxShadow(
                             color: isDark
-                                ? Colors.black.withOpacity(0.3)
-                                : Colors.blue.withOpacity(0.15),
+                                ? Colors.black.withValues(alpha: 0.3)
+                                : Colors.blue.withValues(alpha: 0.15),
                             blurRadius: 24,
                             offset: const Offset(0, 8),
                           ),
@@ -141,8 +141,8 @@ class AboutPage extends StatelessWidget {
                   Card(
                     elevation: isDark ? 0 : 3,
                     color: isDark
-                        ? AppColors.darkSurfaceVariant.withOpacity(0.85)
-                        : Colors.white.withOpacity(0.85),
+                        ? AppColors.darkSurfaceVariant.withValues(alpha: 0.85)
+                        : Colors.white.withValues(alpha: 0.85),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
@@ -188,8 +188,8 @@ class AboutPage extends StatelessWidget {
                   Card(
                     elevation: isDark ? 0 : 2,
                     color: isDark
-                        ? AppColors.darkSurfaceVariant.withOpacity(0.92)
-                        : Colors.white.withOpacity(0.92),
+                        ? AppColors.darkSurfaceVariant.withValues(alpha: 0.92)
+                        : Colors.white.withValues(alpha: 0.92),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -268,10 +268,12 @@ class AboutPage extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
-          color: isDark ? color.withOpacity(0.18) : color.withOpacity(0.09),
+          color: isDark
+              ? color.withValues(alpha: 0.18)
+              : color.withValues(alpha: 0.09),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: color.withOpacity(isDark ? 0.5 : 0.3),
+            color: color.withValues(alpha: isDark ? 0.5 : 0.3),
             width: MediaQuery.of(context).size.width * 0.003,
           ),
         ),

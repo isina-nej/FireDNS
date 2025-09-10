@@ -314,12 +314,12 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                           curve: Curves.easeInOut,
                           decoration: BoxDecoration(
                             color: isDark
-                                ? Colors.white.withOpacity(0.08)
-                                : Colors.white.withOpacity(0.45),
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : Colors.white.withValues(alpha: 0.45),
                             borderRadius: BorderRadius.circular(36),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
+                                color: Colors.black.withValues(alpha: 0.08),
                                 blurRadius: 24,
                                 offset: const Offset(0, 8),
                               ),
@@ -539,12 +539,12 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                             curve: Curves.easeInOut,
                             decoration: BoxDecoration(
                               color: isDark
-                                  ? Colors.white.withOpacity(0.10)
-                                  : Colors.white.withOpacity(0.60),
+                                  ? Colors.white.withValues(alpha: 0.10)
+                                  : Colors.white.withValues(alpha: 0.60),
                               borderRadius: BorderRadius.circular(28),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.10),
+                                  color: Colors.black.withValues(alpha: 0.10),
                                   blurRadius: 18,
                                   offset: const Offset(0, 6),
                                 ),
@@ -628,8 +628,8 @@ class _SpeedTestPageState extends State<SpeedTestPage> {
                                         borderRadius: BorderRadius.circular(16),
                                         boxShadow: [
                                           BoxShadow(
-                                            color:
-                                                Colors.black.withOpacity(0.08),
+                                            color: Colors.black
+                                                .withValues(alpha: 0.08),
                                             blurRadius: 8,
                                             offset: const Offset(0, 2),
                                           ),

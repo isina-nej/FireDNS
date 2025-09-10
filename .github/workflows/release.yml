@@ -1,0 +1,175 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Simple changelog generation
+        CHANGELOG=$(git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)
+        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: FireDNS ${{ github.ref }}
+        body: |
+          ## What's Changed
+          ${{ steps.changelog.outputs.CHANGELOG }}
+          
+          ## Downloads
+          - **Android APK**: Download below
+          - **Windows**: Download below
+          
+          ## Installation
+          1. Download the appropriate file for your platform
+          2. For Android: Enable "Install from unknown sources" and install the APK
+          3. For Windows: Extract and run the executable
+          
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }}
+        draft: false
+        prerelease: ${{ contains(github.ref, '-') }}
+
+  build-and-upload:
+    name: Build and Upload Release Assets
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: android
+            build_cmd: flutter build apk --release --split-per-abi
+            asset_path: build/app/outputs/flutter-apk/
+            asset_name: FireDNS-Android
+          - os: windows-latest
+            platform: windows
+            build_cmd: flutter build windows --release
+            asset_path: build/windows/x64/runner/Release/
+            asset_name: FireDNS-Windows
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.0'
+        cache: true
+
+    - name: Setup Java (Android only)
+      if: matrix.platform == 'android'
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Get dependencies
+      run: flutter pub get
+
+    - name: Build ${{ matrix.platform }}
+      run: ${{ matrix.build_cmd }}
+
+    - name: Package Android APKs
+      if: matrix.platform == 'android'
+      run: |
+        cd build/app/outputs/flutter-apk/
+        zip -r ../../../FireDNS-Android-APKs.zip *.apk
+        cd ../../../../
+        
+    - name: Package Windows build
+      if: matrix.platform == 'windows'
+      run: |
+        Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath FireDNS-Windows.zip
+
+    - name: Upload Android Release Asset
+      if: matrix.platform == 'android'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./FireDNS-Android-APKs.zip
+        asset_name: FireDNS-Android-APKs.zip
+        asset_content_type: application/zip
+
+    - name: Upload Windows Release Asset
+      if: matrix.platform == 'windows'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./FireDNS-Windows.zip
+        asset_name: FireDNS-Windows.zip
+        asset_content_type: application/zip
+
+  publish-to-stores:
+    name: Publish to Stores
+    needs: [create-release, build-and-upload]
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.ref, '-') }} # Only for stable releases
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.0'
+        cache: true
+
+    - name: Build for Google Play (if secrets available)
+      if: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      run: |
+        echo "🚀 Building for Google Play Store..."
+        flutter build appbundle --release
+        
+    # Note: Actual publishing would require additional setup and secrets
+    - name: Publish to Google Play
+      if: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      run: |
+        echo "📱 Would publish to Google Play Store here"
+        echo "Note: Requires fastlane and Google Play service account setup"
+        
+    - name: Publish to Microsoft Store
+      if: ${{ secrets.MICROSOFT_STORE_CREDENTIALS }}
+      run: |
+        echo "🏪 Would publish to Microsoft Store here"
+        echo "Note: Requires Microsoft Store certification and credentials"
+
+  notify-release:
+    name: Notify Release
+    needs: [create-release, build-and-upload]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Notify success
+      run: |
+        echo "🎉 Release ${{ github.ref }} has been successfully created!"
+        echo "📦 Assets have been uploaded and are ready for download"

@@ -85,7 +85,7 @@ class SpeedTestCard extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.brightBlue.withOpacity(0.08),
+                        color: AppColors.brightBlue.withValues(alpha: 0.08),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -128,7 +128,7 @@ class SpeedTestCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.textSuccess.withOpacity(0.3),
+                      color: AppColors.textSuccess.withValues(alpha: 0.3),
                       blurRadius: 8,
                       spreadRadius: 1,
                       offset: const Offset(0, 2),
@@ -184,7 +184,7 @@ class SpeedTestCard extends StatelessWidget {
               color: (isDark
                       ? AppColors.darkTextSecondary
                       : AppColors.textSecondary)
-                  .withOpacity(0.05),
+                  .withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
             ),
             child: RichText(

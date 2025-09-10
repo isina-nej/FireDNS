@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firedns/api/models/notification_model.dart';
 import 'package:firedns/routes/app_routes.dart';
+import 'package:firedns/services/app_logger.dart';
 
 import 'local_notification_service.dart';
 import 'navigation_service.dart';
@@ -39,8 +40,8 @@ class FirebaseMessagingService {
     // بررسی نوتیفیکیشن اولیه در صورت باز شدن اپ از حالت terminated
     final initialMessage = await _firebaseMessaging.getInitialMessage();
     if (initialMessage != null) {
-      print('App opened from terminated state via notification');
-      print('Initial message data: ${initialMessage.data}');
+      AppLogger.info('App opened from terminated state via notification');
+      AppLogger.info('Initial message data: ${initialMessage.data}');
       // تاخیر برای اطمینان از آماده بودن نویگیتور
       Future.delayed(const Duration(seconds: 1), () {
         _handleNotificationNavigation(initialMessage);
@@ -68,18 +69,18 @@ class FirebaseMessagingService {
 
     // دریافت FCM token
     String? token = await _firebaseMessaging.getToken();
-    print('==============================================');
-    print('FCM Token: $token');
-    print('==============================================');
+    AppLogger.debug('==============================================');
+    AppLogger.debug('FCM Token: $token');
+    AppLogger.debug('==============================================');
 
     // تنظیم handlers برای دریافت پیام‌ها در فورگراند
     // نمایش نوتیفیکیشن در حالت فورگراند
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      print('Got a message whilst in the foreground!');
-      print('Message data: ${message.data}');
+      AppLogger.info('Got a message whilst in the foreground!');
+      AppLogger.info('Message data: ${message.data}');
 
       if (message.notification != null) {
-        print('Message notification: ${message.notification}');
+        AppLogger.info('Message notification: ${message.notification}');
 
         // ساخت مدل نوتیفیکیشن
         final notification = NotificationModel(
@@ -95,9 +96,10 @@ class FirebaseMessagingService {
         // ذخیره در کش
         try {
           await NotificationCacheService.addNotification(notification);
-          print('Firebase notification saved to cache: ${notification.id}');
+          AppLogger.info(
+              'Firebase notification saved to cache: ${notification.id}');
         } catch (e) {
-          print('Error saving firebase notification to cache: $e');
+          AppLogger.error('Error saving firebase notification to cache: $e');
         }
 
         // نمایش نوتیفیکیشن
@@ -113,8 +115,8 @@ class FirebaseMessagingService {
 
     // وقتی اپلیکیشن از طریق نوتیفیکیشن باز می‌شود
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('A new onMessageOpenedApp event was published!');
-      print('Message data: ${message.data}');
+      AppLogger.info('A new onMessageOpenedApp event was published!');
+      AppLogger.info('Message data: ${message.data}');
       _handleNotificationNavigation(message);
     });
   }

@@ -15,28 +15,55 @@ class ErrorBoundary extends StatefulWidget {
 
   @override
   State<ErrorBoundary> createState() => _ErrorBoundaryState();
+
+  /// Static method to wrap any widget with error boundary
+  static Widget wrap(
+    Widget child, {
+    Widget? errorWidget,
+    Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    return ErrorBoundary(
+      errorWidget: errorWidget,
+      onError: onError,
+      child: child,
+    );
+  }
 }
 
 class _ErrorBoundaryState extends State<ErrorBoundary> {
   Object? _error;
+  bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
-    // تنظیم هندلر خطا برای این ویجت
-    ErrorWidget.builder = (FlutterErrorDetails errorDetails) {
-      _handleError(errorDetails.exception);
-      return _buildErrorWidget();
+    // تنظیم error handler سراسری در صورت نیاز
+    FlutterError.onError = (FlutterErrorDetails details) {
+      if (mounted && !_hasError) {
+        _handleError(details.exception, details.stack ?? StackTrace.empty);
+      }
+      // همچنان خطا را به handler پیش‌فرض ارسال کنیم
+      FlutterError.presentError(details);
     };
   }
 
-  void _handleError(Object error) {
-    setState(() {
-      _error = error;
-    });
+  void _handleError(Object error, StackTrace stackTrace) {
+    if (mounted && !_hasError) {
+      setState(() {
+        _error = error;
+        _hasError = true;
+      });
 
-    // فراخوانی callback اگر وجود داشته باشد
-    widget.onError?.call(error, StackTrace.empty);
+      // فراخوانی callback اگر وجود داشته باشد
+      widget.onError?.call(error, stackTrace);
+    }
+  }
+
+  void retry() {
+    setState(() {
+      _error = null;
+      _hasError = false;
+    });
   }
 
   Widget _buildErrorWidget() {
@@ -55,12 +82,12 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.error_outline,
             color: Colors.red,
-            size: MediaQuery.of(context).size.width * 0.12,
+            size: 48,
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+          const SizedBox(height: 16),
           const Text(
             'Unexpected Error',
             style: TextStyle(
@@ -69,7 +96,7 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
               color: Colors.red,
             ),
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+          const SizedBox(height: 8),
           Text(
             _error?.toString() ?? 'Unknown error occurred',
             style: const TextStyle(
@@ -78,6 +105,15 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
             ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: retry,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Retry'),
+          ),
         ],
       ),
     );
@@ -85,21 +121,11 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
 
   @override
   Widget build(BuildContext context) {
-    if (_error != null) {
+    if (_hasError) {
       return _buildErrorWidget();
     }
 
-    // استفاده از Builder برای گرفتن خطاها
-    return Builder(
-      builder: (context) {
-        try {
-          return widget.child;
-        } catch (error) {
-          _handleError(error);
-          return _buildErrorWidget();
-        }
-      },
-    );
+    return widget.child;
   }
 }
 

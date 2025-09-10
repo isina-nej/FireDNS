@@ -10,13 +10,13 @@ class AppUpdater {
     required ThemeController themeController,
     required LanguageManager languageManager,
   }) async {
-    print('🔄 در حال بررسی آپدیت...');
+    AppLogger.debug('🔄 در حال بررسی آپدیت...');
     final languageCode = Localizations.localeOf(context).languageCode;
     final (isLatest, updateInfo) =
         await UpdateChecker.checkForUpdates(languageCode: languageCode);
 
     if (!isLatest && updateInfo != null && context.mounted) {
-      print('📢 نسخه جدید پیدا شد - نمایش صفحه آپدیت');
+      AppLogger.debug('📢 نسخه جدید پیدا شد - نمایش صفحه آپدیت');
 
       // نمایش صفحه آپدیت با GetX
       Get.to(() => ForceUpdatePage(
@@ -24,7 +24,7 @@ class AppUpdater {
             currentAppVersion: UpdateChecker.currentVersion,
           ));
 
-      print('⏳ منتظر اقدام کاربر برای آپدیت...');
+      AppLogger.debug('⏳ منتظر اقدام کاربر برای آپدیت...');
       return false;
     }
 

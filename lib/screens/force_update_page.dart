@@ -58,26 +58,27 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
         _errorMessage = '';
       });
 
-      print('🔄 درخواست اطلاعات آپدیت برای نسخه ${widget.currentAppVersion}');
+      AppLogger.info(
+          '🔄 درخواست اطلاعات آپدیت برای نسخه ${widget.currentAppVersion}');
       final response =
           await _updateApiService.getUpdateInfo(widget.currentAppVersion);
 
       if (response.status && response.data != null) {
-        print('✅ اطلاعات آپدیت دریافت شد');
-        print('📝 توضیحات: ${response.data!.description}');
-        print('🔄 نوع آپدیت: ${response.data!.updateType}');
+        AppLogger.info('✅ اطلاعات آپدیت دریافت شد');
+        AppLogger.info('📝 توضیحات: ${response.data!.description}');
+        AppLogger.info('🔄 نوع آپدیت: ${response.data!.updateType}');
         setState(() {
           _updateInfo = response.data!;
         });
         _animationController.forward();
       } else {
-        print('❌ خطا در دریافت اطلاعات: ${response.message}');
+        AppLogger.warning('❌ خطا در دریافت اطلاعات: ${response.message}');
         setState(() {
           _errorMessage = response.message;
         });
       }
     } catch (e) {
-      print('⚠️ خطای غیرمنتظره: $e');
+      AppLogger.error('⚠️ خطای غیرمنتظره: $e');
       setState(() {
         _errorMessage = context.tr('updateInfoError');
       });
@@ -89,7 +90,7 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
   }
 
   Future<void> _launchUpdateUrl(String url) async {
-    print('🌐 باز کردن لینک آپدیت: $url');
+    AppLogger.info('🌐 باز کردن لینک آپدیت: $url');
     final uri = Uri.parse(url);
     try {
       final launched = await launchUrl(
@@ -97,7 +98,7 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
         mode: LaunchMode.externalApplication,
       );
       if (!launched && context.mounted) {
-        print('❌ خطا در باز کردن لینک');
+        AppLogger.warning('❌ خطا در باز کردن لینک');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(context.tr('cannotOpenWebsite')),
@@ -106,7 +107,7 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
         );
       }
     } catch (e) {
-      print('⚠️ خطا در باز کردن لینک: $e');
+      AppLogger.error('⚠️ خطا در باز کردن لینک: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -161,7 +162,7 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.grey.shade900.withOpacity(0.5)
+            ? Colors.grey.shade900.withValues(alpha: 0.5)
             : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
@@ -328,7 +329,7 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
               icon: const Icon(Icons.do_not_disturb),
               label: Text(context.tr('dontShowAgain')),
               onPressed: () async {
-                print(
+                AppLogger.info(
                     '💾 ذخیره نسخه ${updateInfo.latestVersion} برای عدم نمایش مجدد');
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setString(
@@ -448,8 +449,8 @@ class _ForceUpdatePageState extends State<ForceUpdatePage>
                                     padding: const EdgeInsets.all(20),
                                     decoration: BoxDecoration(
                                       color: (isDark
-                                          ? Colors.red.withOpacity(0.1)
-                                          : Colors.red.withOpacity(0.05)),
+                                          ? Colors.red.withValues(alpha: 0.1)
+                                          : Colors.red.withValues(alpha: 0.05)),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(

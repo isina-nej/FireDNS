@@ -99,7 +99,7 @@ class AppThemes {
     // تم فیلدهای ورودی
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.lightGray.withOpacity(0.1),
+      fillColor: AppColors.lightGray.withValues(alpha: 0.1),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusM),
         borderSide: const BorderSide(
@@ -151,7 +151,7 @@ class AppThemes {
         if (states.contains(WidgetState.selected)) {
           return AppColors.fireRed;
         }
-        return AppColors.lightGray.withOpacity(0.3);
+        return AppColors.lightGray.withValues(alpha: 0.3);
       }),
     ),
 

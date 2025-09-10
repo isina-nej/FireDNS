@@ -106,21 +106,13 @@ class _DnsListPageState extends State<DnsListPage>
     return _selectedDnsIds.contains(dnsId);
   }
 
-  void _handleDelete(DnsRecord record) {
-    if (_isUserDns(record)) {
-      _deleteUserDns(record);
-    } else {
-      _deleteDnsFromCache(record);
-    }
-  }
-
   // Bulk action methods
   Future<void> _deleteSelectedDns() async {
     final userRecordsToDelete = _dnsRecords
         .where((record) =>
             _selectedDnsIds.contains(record.id) && _isUserDns(record))
         .toList();
-    
+
     final nonUserRecordsToDelete = _dnsRecords
         .where((record) =>
             _selectedDnsIds.contains(record.id) && !_isUserDns(record))
@@ -136,14 +128,15 @@ class _DnsListPageState extends State<DnsListPage>
       return;
     }
 
-    final totalToDelete = userRecordsToDelete.length + nonUserRecordsToDelete.length;
+    final totalToDelete =
+        userRecordsToDelete.length + nonUserRecordsToDelete.length;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(context.tr('confirmDelete')),
-        content: Text(
-            '${context.tr('deleteSelectedDnsConfirm')} $totalToDelete'),
+        content:
+            Text('${context.tr('deleteSelectedDnsConfirm')} $totalToDelete'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -208,7 +201,8 @@ class _DnsListPageState extends State<DnsListPage>
           SnackBar(
             content: Text(
                 '${context.tr('selectedDnsDeleted')} $successCount/$totalToDelete'),
-            backgroundColor: successCount == totalToDelete ? Colors.green : Colors.orange,
+            backgroundColor:
+                successCount == totalToDelete ? Colors.green : Colors.orange,
           ),
         );
       }
@@ -236,6 +230,30 @@ class _DnsListPageState extends State<DnsListPage>
           content: Text(
               '${context.tr('selectedDnsLiked')} ${_selectedDnsIds.length}'),
           backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  Future<void> _unlikeSelectedDns() async {
+    final prefs = await SharedPreferences.getInstance();
+    final liked = prefs.getStringList('liked_dns_ids') ?? [];
+
+    for (final dnsId in _selectedDnsIds) {
+      liked.remove(dnsId);
+    }
+
+    await prefs.setStringList('liked_dns_ids', liked);
+    await _loadLikedDns();
+    _sortDnsRecords();
+    _exitSelectionMode();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              '${context.tr('selectedDnsUnliked')} ${_selectedDnsIds.length}'),
+          backgroundColor: Colors.orange,
         ),
       );
     }
@@ -717,7 +735,9 @@ class _DnsListPageState extends State<DnsListPage>
                           isCompleted = true;
                           // کمی صبر کن تا کاربر progress کامل رو ببینه
                           Future.delayed(const Duration(milliseconds: 500), () {
-                            if (mounted && !isCancelled) {
+                            if (mounted &&
+                                !isCancelled &&
+                                dialogContext.mounted) {
                               Navigator.of(dialogContext).pop();
                             }
                           });
@@ -1468,6 +1488,17 @@ class _DnsListPageState extends State<DnsListPage>
                             ],
                           ),
                         ),
+                        PopupMenuItem(
+                          value: 'unlike',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.favorite_border,
+                                  color: Colors.grey),
+                              const SizedBox(width: 8),
+                              Text(context.tr('unlikeSelected')),
+                            ],
+                          ),
+                        ),
                         if (_selectedDnsIds.isNotEmpty)
                           PopupMenuItem(
                             value: 'delete',
@@ -1513,6 +1544,8 @@ class _DnsListPageState extends State<DnsListPage>
                       onSelected: (value) {
                         if (value == 'like') {
                           _likeSelectedDns();
+                        } else if (value == 'unlike') {
+                          _unlikeSelectedDns();
                         } else if (value == 'delete') {
                           _deleteSelectedDns();
                         } else if (value == 'copy') {
@@ -1926,8 +1959,10 @@ class _DnsListPageState extends State<DnsListPage>
                                                 },
                                                 onToggleLike: _toggleLikeDns,
                                                 onEdit: _editUserDns,
-                                                onDelete: _isUserDns(_filteredDnsRecords[index]) 
-                                                    ? _deleteUserDns 
+                                                onDelete: _isUserDns(
+                                                        _filteredDnsRecords[
+                                                            index])
+                                                    ? _deleteUserDns
                                                     : _deleteDnsFromCache,
                                                 onCopy: _copyDns,
                                                 onBlock: _blockDns,
@@ -2086,8 +2121,10 @@ class _DnsListPageState extends State<DnsListPage>
                                                 },
                                                 onToggleLike: _toggleLikeDns,
                                                 onEdit: _editUserDns,
-                                                onDelete: _isUserDns(_filteredDnsRecords[index]) 
-                                                    ? _deleteUserDns 
+                                                onDelete: _isUserDns(
+                                                        _filteredDnsRecords[
+                                                            index])
+                                                    ? _deleteUserDns
                                                     : _deleteDnsFromCache,
                                                 onCopy: _copyDns,
                                                 onBlock: _blockDns,

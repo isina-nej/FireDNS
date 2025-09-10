@@ -157,7 +157,7 @@ class _NotificationListPageState extends State<NotificationListPage> {
                                 style: AppTextStyles.buttonMedium(context)),
                             style: TextButton.styleFrom(
                               backgroundColor:
-                                  AppColors.primaryBlue.withOpacity(0.1),
+                                  AppColors.primaryBlue.withValues(alpha: 0.1),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8)),
                             ),
@@ -210,7 +210,7 @@ class _NotificationListPageState extends State<NotificationListPage> {
                       direction: DismissDirection.endToStart,
                       background: Container(
                         decoration: BoxDecoration(
-                          color: AppColors.textError.withOpacity(0.08),
+                          color: AppColors.textError.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         alignment: Alignment.centerRight,
@@ -242,7 +242,8 @@ class _NotificationListPageState extends State<NotificationListPage> {
                             ? AppColors.selectedLight
                             : (notification.isRead
                                 ? AppColors.backgroundWhite
-                                : AppColors.selectedLight.withOpacity(0.7)),
+                                : AppColors.selectedLight
+                                    .withValues(alpha: 0.7)),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
                           onTap: () {
@@ -405,8 +406,8 @@ class _NotificationListPageState extends State<NotificationListPage> {
   }
 
   Widget _getNotificationIcon(NotificationType type) {
-    final themeController = Get.find<ThemeController>();
-    final isDark = themeController.isDarkModeActive(context);
+    // final themeController = Get.find<ThemeController>();
+    // final isDark = themeController.isDarkModeActive(context);
 
     late IconData iconData;
     late Color color;
@@ -431,7 +432,7 @@ class _NotificationListPageState extends State<NotificationListPage> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         shape: BoxShape.circle,
       ),
       child: Icon(

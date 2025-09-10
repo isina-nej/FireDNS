@@ -28,7 +28,8 @@ class OptimizedSpeedResultTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade50,
+        color:
+            isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark ? Colors.white12 : Colors.grey.shade200,
@@ -94,7 +95,8 @@ class OptimizedInfoTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade50,
+        color:
+            isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark ? Colors.white12 : Colors.grey.shade200,

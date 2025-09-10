@@ -27,8 +27,9 @@ export '../screens/profile_page.dart';
 export '../screens/settings_page.dart';
 export '../screens/speed_test_page.dart';
 export '../screens/ticket_page.dart';
-export '../services/crash_reporting_service.dart';
 // services
+export '../services/app_logger.dart';
+export '../services/crash_reporting_service.dart';
 export '../services/dns_management_service.dart';
 export '../services/dns_selection_service.dart';
 export '../services/dns_service.dart';

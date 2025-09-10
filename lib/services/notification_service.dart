@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firedns/api/models/notification_model.dart';
+import 'package:firedns/services/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,7 +47,7 @@ class NotificationService extends ChangeNotifier {
       _notificationsEnabled = prefs.getBool(_notificationsEnabledKey) ?? true;
       // اینجا نیازی به notifyListeners نیست چون در fetchNotifications فراخوانی می‌شود
     } catch (e) {
-      print('Error loading notification settings: $e');
+      AppLogger.error('Error loading notification settings: $e');
       _notificationsEnabled = true;
     }
   }
@@ -57,7 +58,7 @@ class NotificationService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_notificationsEnabledKey, _notificationsEnabled);
     } catch (e) {
-      print('Error saving notification settings: $e');
+      AppLogger.debug('Error saving notification settings: $e');
     }
   }
 
@@ -73,9 +74,9 @@ class NotificationService extends ChangeNotifier {
 
   /// دریافت اعلانات از کش
   Future<void> fetchNotifications() async {
-    print('Fetching notifications...');
+    AppLogger.debug('Fetching notifications...');
     if (!_notificationsEnabled) {
-      print('Notifications are disabled');
+      AppLogger.debug('Notifications are disabled');
       return;
     }
 
@@ -84,15 +85,16 @@ class NotificationService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      print('Getting notifications from cache...');
+      AppLogger.debug('Getting notifications from cache...');
       final notifications =
           await NotificationCacheService.getCachedNotifications();
       _notifications =
           notifications.reversed.toList(); // نمایش جدیدترین‌ها در ابتدا
-      print('Received ${_notifications.length} notifications from cache');
+      AppLogger.debug(
+          'Received ${_notifications.length} notifications from cache');
 
       if (_notifications.isEmpty) {
-        print('Adding welcome notification...');
+        AppLogger.debug('Adding welcome notification...');
 
         // بررسی اینکه آیا نوتیفیکیشن خوش‌آمدگویی نیاز است یا خیر
         final shouldShow =
@@ -104,22 +106,23 @@ class NotificationService extends ChangeNotifier {
       }
 
       _unreadCount = _notifications.where((n) => !n.isRead).length;
-      print('Unread count: $_unreadCount');
+      AppLogger.debug('Unread count: $_unreadCount');
       _notificationStreamController.add(_notifications);
     } catch (e) {
       _errorMessage = 'خطا در دریافت اعلانات';
-      print('Error fetching notifications: $e');
+      AppLogger.debug('Error fetching notifications: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
-      print('Fetch complete. Has notifications: ${_notifications.isNotEmpty}');
+      AppLogger.debug(
+          'Fetch complete. Has notifications: ${_notifications.isNotEmpty}');
     }
   }
 
   /// اضافه کردن نوتیفیکیشن جدید
   Future<void> addNotification(NotificationModel notification) async {
     try {
-      print('Adding notification: ${notification.id}');
+      AppLogger.debug('Adding notification: ${notification.id}');
 
       // اضافه کردن به لیست محلی
       _notifications.insert(0, notification);
@@ -130,20 +133,21 @@ class NotificationService extends ChangeNotifier {
       final success =
           await NotificationCacheService.addNotification(notification);
       if (!success) {
-        print('Failed to cache notification');
+        AppLogger.debug('Failed to cache notification');
         // حذف از لیست محلی در صورت خطا
         _notifications.removeAt(0);
         _notificationStreamController.add(_notifications);
         notifyListeners();
         _errorMessage = 'خطا در ذخیره اعلان';
       } else {
-        print('Successfully added and cached notification');
+        AppLogger.debug('Successfully added and cached notification');
         // تایید با بازخوانی از کش
         final cached = await NotificationCacheService.getCachedNotifications();
-        print('Verified cached notifications count: ${cached.length}');
+        AppLogger.debug(
+            'Verified cached notifications count: ${cached.length}');
       }
     } catch (e) {
-      print('Error adding notification: $e');
+      AppLogger.debug('Error adding notification: $e');
       _errorMessage = 'خطا در ذخیره اعلان';
       notifyListeners();
     }
@@ -164,7 +168,7 @@ class NotificationService extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('Error marking notification as read: $e');
+      AppLogger.debug('Error marking notification as read: $e');
       return false;
     }
   }
@@ -179,7 +183,7 @@ class NotificationService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error marking all notifications as read: $e');
+      AppLogger.debug('Error marking all notifications as read: $e');
       return false;
     }
   }
@@ -193,7 +197,7 @@ class NotificationService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error deleting notification: $e');
+      AppLogger.debug('Error deleting notification: $e');
       return false;
     }
   }
@@ -222,9 +226,9 @@ class NotificationService extends ChangeNotifier {
       // علامت‌گذاری نوتیفیکیشن خوش‌آمدگویی به عنوان نمایش داده شده
       await WelcomeNotificationManager.markWelcomeNotificationShown();
 
-      print('Welcome notification created successfully');
+      AppLogger.debug('Welcome notification created successfully');
     } catch (e) {
-      print('Error creating welcome notification: $e');
+      AppLogger.debug('Error creating welcome notification: $e');
 
       // در صورت خطا، نوتیفیکیشن فارسی پیش‌فرض ایجاد کن
       final fallbackNotification = NotificationModel(
@@ -259,7 +263,8 @@ class NotificationService extends ChangeNotifier {
           .shouldUpdateWelcomeForLanguageChange();
 
       if (shouldUpdate) {
-        print('Language changed, creating new welcome notification...');
+        AppLogger.debug(
+            'Language changed, creating new welcome notification...');
 
         // حذف نوتیفیکیشن‌های خوش‌آمدگویی قبلی
         await _removeOldWelcomeNotifications();
@@ -273,7 +278,7 @@ class NotificationService extends ChangeNotifier {
         await WelcomeNotificationManager.markWelcomeNotificationShown();
       }
     } catch (e) {
-      print('Error checking language change for welcome: $e');
+      AppLogger.debug('Error checking language change for welcome: $e');
     }
   }
 
@@ -304,7 +309,7 @@ class NotificationService extends ChangeNotifier {
       print(
           'Removed ${welcomeNotificationIds.length} old welcome notifications');
     } catch (e) {
-      print('Error removing old welcome notifications: $e');
+      AppLogger.debug('Error removing old welcome notifications: $e');
     }
   }
 

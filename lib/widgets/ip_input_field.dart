@@ -241,8 +241,8 @@ class _IpInputFieldState extends State<IpInputField> {
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: widget.isDarkMode
-                            ? AppColors.textLight.withOpacity(0.3)
-                            : AppColors.textSecondary.withOpacity(0.3),
+                            ? AppColors.textLight.withValues(alpha: 0.3)
+                            : AppColors.textSecondary.withValues(alpha: 0.3),
                         width: 0.5,
                       ),
                       borderRadius: BorderRadius.circular(4),
@@ -251,8 +251,8 @@ class _IpInputFieldState extends State<IpInputField> {
                       Icons.content_paste,
                       size: 14,
                       color: widget.isDarkMode
-                          ? AppColors.textLight.withOpacity(0.7)
-                          : AppColors.textSecondary.withOpacity(0.7),
+                          ? AppColors.textLight.withValues(alpha: 0.7)
+                          : AppColors.textSecondary.withValues(alpha: 0.7),
                     ),
                   ),
                 ),
@@ -307,7 +307,7 @@ class _IpInputFieldState extends State<IpInputField> {
               color: (widget.isDarkMode
                       ? AppColors.textLight
                       : AppColors.textSecondary)
-                  .withOpacity(0.5),
+                  .withValues(alpha: 0.5),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -321,8 +321,8 @@ class _IpInputFieldState extends State<IpInputField> {
                 color: _hasError
                     ? Colors.red
                     : (widget.isDarkMode
-                        ? AppColors.textLight.withOpacity(0.3)
-                        : AppColors.textSecondary.withOpacity(0.3)),
+                        ? AppColors.textLight.withValues(alpha: 0.3)
+                        : AppColors.textSecondary.withValues(alpha: 0.3)),
               ),
               borderRadius: BorderRadius.circular(8),
             ),

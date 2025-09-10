@@ -366,7 +366,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
       String? carrierName;
       String? mobileNetworkType;
 
-      if (connectivity == ConnectivityResult.mobile) {
+      if (connectivity.contains(ConnectivityResult.mobile)) {
         // استفاده از اطلاعات پیش‌فرض برای اتصال موبایل
         connectionType = 'MOBILE';
         carrierName = 'Unknown';
@@ -678,7 +678,7 @@ class _FireDNSHomePageState extends State<FireDNSHomePage>
                             Expanded(
                               flex: 12,
                               child: (() {
-                                print(
+                                AppLogger.debug(
                                     '🏠 HomePage build - vpnActive: $_vpnActive, vpnLoading: $_vpnLoading');
                                 return ConnectionStatusCard(
                                   height: cardHeight,

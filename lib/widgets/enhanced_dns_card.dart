@@ -88,7 +88,7 @@ class EnhancedDnsCard extends StatelessWidget {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.brightBlue.withOpacity(0.3),
+                      color: AppColors.brightBlue.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     )
@@ -125,7 +125,7 @@ class EnhancedDnsCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.9),
+                      color: Colors.orange.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
@@ -222,10 +222,10 @@ class EnhancedDnsCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.brightBlue.withOpacity(0.1),
+                color: AppColors.brightBlue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: AppColors.brightBlue.withOpacity(0.3),
+                  color: AppColors.brightBlue.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -307,7 +307,8 @@ class EnhancedDnsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: pingStatus.backgroundColor.withOpacity(isBlocked ? 0.5 : 1.0),
+        color:
+            pingStatus.backgroundColor.withValues(alpha: isBlocked ? 0.5 : 1.0),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -347,11 +348,11 @@ class EnhancedDnsCard extends StatelessWidget {
 
   Color _getCardColor(bool isDark, bool isSelected, bool isBlocked) {
     if (isSelected) {
-      return AppColors.brightBlue.withOpacity(0.1);
+      return AppColors.brightBlue.withValues(alpha: 0.1);
     }
     if (isBlocked) {
       return (isDark ? AppColors.darkCardBackground : Colors.white)
-          .withOpacity(0.7);
+          .withValues(alpha: 0.7);
     }
     return isDark ? AppColors.darkCardBackground : Colors.white;
   }
@@ -361,21 +362,22 @@ class EnhancedDnsCard extends StatelessWidget {
       return AppColors.brightBlue;
     }
     if (isBlocked) {
-      return Colors.orange.withOpacity(0.5);
+      return Colors.orange.withValues(alpha: 0.5);
     }
     return isDark ? Colors.white12 : Colors.grey.shade200;
   }
 
   Color _getTextColor(bool isDark, bool isBlocked) {
     if (isBlocked) {
-      return (isDark ? Colors.white : Colors.black87).withOpacity(0.7);
+      return (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.7);
     }
     return isDark ? Colors.white : Colors.black87;
   }
 
   Color _getSecondaryTextColor(bool isDark, bool isBlocked) {
     if (isBlocked) {
-      return (isDark ? Colors.white70 : Colors.grey.shade600).withOpacity(0.7);
+      return (isDark ? Colors.white70 : Colors.grey.shade600)
+          .withValues(alpha: 0.7);
     }
     return isDark ? Colors.white70 : Colors.grey.shade600;
   }

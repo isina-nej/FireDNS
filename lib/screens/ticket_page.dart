@@ -209,8 +209,8 @@ class _TicketPageState extends State<TicketPage>
                         margin: const EdgeInsets.symmetric(horizontal: 0),
                         padding: const EdgeInsets.all(0),
                         color: (isDark
-                            ? Colors.black.withOpacity(0.25)
-                            : Colors.white.withOpacity(0.25)),
+                            ? Colors.black.withValues(alpha: 0.25)
+                            : Colors.white.withValues(alpha: 0.25)),
                         child: Padding(
                           padding: const EdgeInsets.all(0),
                           child: AnimatedSwitcher(
@@ -244,8 +244,8 @@ class _TicketPageState extends State<TicketPage>
                 boxShadow: [
                   BoxShadow(
                     color: isDark
-                        ? Colors.blueAccent.withOpacity(0.2)
-                        : Colors.blue.withOpacity(0.12),
+                        ? Colors.blueAccent.withValues(alpha: 0.2)
+                        : Colors.blue.withValues(alpha: 0.12),
                     blurRadius: 40,
                     spreadRadius: 2,
                   ),
@@ -270,20 +270,20 @@ class _TicketPageState extends State<TicketPage>
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: (isDark
-                    ? Colors.white.withOpacity(0.05)
-                    : Colors.white.withOpacity(0.7)),
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.white.withValues(alpha: 0.7)),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.07),
+                    color: Colors.black.withValues(alpha: 0.07),
                     blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),
                 ],
                 border: Border.all(
                   color: isDark
-                      ? Colors.blueGrey.withOpacity(0.2)
-                      : Colors.blue.withOpacity(0.08),
+                      ? Colors.blueGrey.withValues(alpha: 0.2)
+                      : Colors.blue.withValues(alpha: 0.08),
                   width: 1.2,
                 ),
               ),
@@ -377,20 +377,20 @@ class _TicketPageState extends State<TicketPage>
             margin: const EdgeInsets.only(bottom: 18),
             decoration: BoxDecoration(
               color: (isDark
-                  ? Colors.white.withOpacity(0.04)
-                  : Colors.white.withOpacity(0.7)),
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : Colors.white.withValues(alpha: 0.7)),
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
               ],
               border: Border.all(
                 color: isDark
-                    ? Colors.blueGrey.withOpacity(0.13)
-                    : Colors.blue.withOpacity(0.08),
+                    ? Colors.blueGrey.withValues(alpha: 0.13)
+                    : Colors.blue.withValues(alpha: 0.08),
                 width: 1.1,
               ),
             ),
@@ -490,20 +490,20 @@ class _TicketPageState extends State<TicketPage>
             margin: const EdgeInsets.only(bottom: 18),
             decoration: BoxDecoration(
               color: (isDark
-                  ? Colors.white.withOpacity(0.04)
-                  : Colors.white.withOpacity(0.7)),
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : Colors.white.withValues(alpha: 0.7)),
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
               ],
               border: Border.all(
                 color: isDark
-                    ? Colors.blueGrey.withOpacity(0.13)
-                    : Colors.blue.withOpacity(0.08),
+                    ? Colors.blueGrey.withValues(alpha: 0.13)
+                    : Colors.blue.withValues(alpha: 0.08),
                 width: 1.1,
               ),
             ),
@@ -525,13 +525,13 @@ class _TicketPageState extends State<TicketPage>
                     hintText: context.tr('enterTicketSubject'),
                     hintStyle: TextStyle(
                       color: isDark
-                          ? AppColors.darkTextSecondary.withOpacity(0.5)
-                          : AppColors.textSecondary.withOpacity(0.5),
+                          ? AppColors.darkTextSecondary.withValues(alpha: 0.5)
+                          : AppColors.textSecondary.withValues(alpha: 0.5),
                     ),
                     filled: true,
                     fillColor: isDark
                         ? AppColors.darkBackground
-                        : AppColors.backgroundGrey.withOpacity(0.3),
+                        : AppColors.backgroundGrey.withValues(alpha: 0.3),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
@@ -560,20 +560,20 @@ class _TicketPageState extends State<TicketPage>
             margin: const EdgeInsets.only(bottom: 18),
             decoration: BoxDecoration(
               color: (isDark
-                  ? Colors.white.withOpacity(0.04)
-                  : Colors.white.withOpacity(0.7)),
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : Colors.white.withValues(alpha: 0.7)),
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
               ],
               border: Border.all(
                 color: isDark
-                    ? Colors.blueGrey.withOpacity(0.13)
-                    : Colors.blue.withOpacity(0.08),
+                    ? Colors.blueGrey.withValues(alpha: 0.13)
+                    : Colors.blue.withValues(alpha: 0.08),
                 width: 1.1,
               ),
             ),
@@ -595,13 +595,13 @@ class _TicketPageState extends State<TicketPage>
                     hintText: context.tr('enterTicketMessage'),
                     hintStyle: TextStyle(
                       color: isDark
-                          ? AppColors.darkTextSecondary.withOpacity(0.5)
-                          : AppColors.textSecondary.withOpacity(0.5),
+                          ? AppColors.darkTextSecondary.withValues(alpha: 0.5)
+                          : AppColors.textSecondary.withValues(alpha: 0.5),
                     ),
                     filled: true,
                     fillColor: isDark
                         ? AppColors.darkBackground
-                        : AppColors.backgroundGrey.withOpacity(0.3),
+                        : AppColors.backgroundGrey.withValues(alpha: 0.3),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
@@ -634,10 +634,10 @@ class _TicketPageState extends State<TicketPage>
               padding: const EdgeInsets.all(14),
               margin: const EdgeInsets.only(bottom: 18),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.13),
+                color: Colors.red.withValues(alpha: 0.13),
                 borderRadius: BorderRadius.circular(10),
-                border:
-                    Border.all(color: Colors.red.withOpacity(0.18), width: 1),
+                border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.18), width: 1),
               ),
               child: Row(
                 children: [
@@ -686,12 +686,13 @@ class _TicketPageState extends State<TicketPage>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.brightBlue,
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: AppColors.brightBlue.withOpacity(0.5),
+                disabledBackgroundColor:
+                    AppColors.brightBlue.withValues(alpha: 0.5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
                 elevation: 2,
-                shadowColor: AppColors.brightBlue.withOpacity(0.18),
+                shadowColor: AppColors.brightBlue.withValues(alpha: 0.18),
               ),
             ),
           ),

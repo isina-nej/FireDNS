@@ -1,5 +1,6 @@
 import 'package:firedns/api/models/update_info.dart';
 import 'package:firedns/api/services/update_api_service.dart';
+import 'package:firedns/services/app_logger.dart';
 
 /// کلاس مدیریت بررسی آپدیت برنامه
 class UpdateChecker {
@@ -14,45 +15,48 @@ class UpdateChecker {
   /// بررسی آپدیت بودن برنامه و دریافت اطلاعات آپدیت
   static Future<(bool isLatest, UpdateInfo? updateInfo)> checkForUpdates(
       {String? languageCode}) async {
-    print('🔍 شروع بررسی آپدیت جدید...');
-    print('📱 نسخه فعلی برنامه: $currentVersion');
+    AppLogger.debug('🔍 شروع بررسی آپدیت جدید...');
+    AppLogger.debug('📱 نسخه فعلی برنامه: $currentVersion');
 
     try {
-      print('🌐 درخواست بررسی آپدیت...');
+      AppLogger.debug('🌐 درخواست بررسی آپدیت...');
       final response = await _updateApiService.getUpdateInfo(currentVersion);
 
       if (response.status && response.data != null) {
         final updateInfo = response.data!;
-        print('📦 آخرین نسخه موجود: ${updateInfo.latestVersion}');
+        AppLogger.debug('📦 آخرین نسخه موجود: ${updateInfo.latestVersion}');
 
         final isLatest =
             _compareVersions(currentVersion, updateInfo.latestVersion) >= 0;
-        print(isLatest ? '✨ برنامه به روز است' : '🔄 نسخه جدید در دسترس است');
+        AppLogger.debug(
+            isLatest ? '✨ برنامه به روز است' : '🔄 نسخه جدید در دسترس است');
 
         if (!isLatest) {
-          print('📝 توضیحات آپدیت: ${updateInfo.description}');
-          print('🔄 نوع آپدیت: ${updateInfo.updateType}');
-          print('✨ ویژگی‌های جدید: ${updateInfo.features.join(", ")}');
-          print('🔧 تغییرات: ${updateInfo.changes.join(", ")}');
+          AppLogger.debug('📝 توضیحات آپدیت: ${updateInfo.description}');
+          AppLogger.debug('🔄 نوع آپدیت: ${updateInfo.updateType}');
+          AppLogger.debug(
+              '✨ ویژگی‌های جدید: ${updateInfo.features.join(", ")}');
+          AppLogger.debug('🔧 تغییرات: ${updateInfo.changes.join(", ")}');
         }
 
         return (isLatest, updateInfo);
       } else {
-        print('⚠️ خطا در دریافت اطلاعات آپدیت: ${response.message}');
+        AppLogger.warning(
+            '⚠️ خطا در دریافت اطلاعات آپدیت: ${response.message}');
       }
     } catch (e) {
-      print('⚠️ خطا در بررسی آپدیت: $e');
+      AppLogger.error('⚠️ خطا در بررسی آپدیت: $e');
     }
 
-    print('ℹ️ به دلیل خطا، فرض می‌کنیم برنامه به روز است');
+    AppLogger.info('ℹ️ به دلیل خطا، فرض می‌کنیم برنامه به روز است');
     return (true, null);
   }
 
   /// مقایسه نسخه‌ها (برمی‌گرداند: 1 اگر فعلی جدیدتر، 0 برابر، -1 اگر قدیمی‌تر)
   static int _compareVersions(String v1, String v2) {
-    print('🔄 مقایسه نسخه‌ها:');
-    print('  - نسخه فعلی: $v1');
-    print('  - نسخه جدید: $v2');
+    AppLogger.debug('🔄 مقایسه نسخه‌ها:');
+    AppLogger.debug('  - نسخه فعلی: $v1');
+    AppLogger.debug('  - نسخه جدید: $v2');
 
     final parts1 =
         v1.split(RegExp(r'[.+]')).map(int.tryParse).whereType<int>().toList();

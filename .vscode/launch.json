@@ -69,6 +69,48 @@
                 "lib/main.dart"
             ],
             "cwd": "."
+        },
+        {
+            "name": "FireDNS Tests",
+            "request": "launch",
+            "type": "dart",
+            "program": "test/",
+            "args": [
+                "--coverage"
+            ],
+            "console": "debugConsole",
+            "env": {
+                "FLUTTER_TEST": "true"
+            }
+        },
+        {
+            "name": "FireDNS Tests (Single File)",
+            "request": "launch",
+            "type": "dart",
+            "program": "${file}",
+            "console": "debugConsole",
+            "env": {
+                "FLUTTER_TEST": "true"
+            }
+        },
+        {
+            "name": "Integration Tests",
+            "request": "launch",
+            "type": "dart",
+            "program": "integration_test/app_test.dart",
+            "args": [
+                "-d",
+                "chrome"
+            ]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Debug & Test",
+            "configurations": [
+                "FireDNS (Debug)",
+                "FireDNS Tests"
+            ]
         }
     ]
 }

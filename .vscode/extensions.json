@@ -1,0 +1,19 @@
+{
+    "recommendations": [
+        "dart-code.flutter",
+        "dart-code.dart-code",
+        "ms-vscode.vscode-json",
+        "bradlc.vscode-tailwindcss",
+        "github.vscode-pull-request-github",
+        "github.copilot",
+        "ms-vscode.hexeditor",
+        "redhat.vscode-yaml",
+        "formulahendry.code-runner",
+        "ms-vscode.test-adapter-converter",
+        "hbenl.vscode-test-explorer",
+        "alexisvt.flutter-snippets",
+        "nash.awesome-flutter-snippets",
+        "gornivv.vscode-flutter-files",
+        "robert-brunhage.flutter-riverpod-snippets"
+    ]
+}

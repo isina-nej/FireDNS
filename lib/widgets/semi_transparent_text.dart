@@ -11,21 +11,21 @@ class SemiTransparentText extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const SemiTransparentText({
-    Key? key,
+    super.key,
     required this.text,
     required this.style,
     this.backgroundColor = Colors.black,
     this.opacity = 0.15,
     this.padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: backgroundColor.withOpacity(opacity),
+        color: backgroundColor.withValues(alpha: opacity),
         borderRadius: borderRadius ?? BorderRadius.circular(8),
       ),
       child: Text(

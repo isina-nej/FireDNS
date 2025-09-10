@@ -27,12 +27,12 @@ import 'widgets/theme_widgets.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  print('Handling a background message: ${message.messageId}');
+  debugPrint('Handling a background message: ${message.messageId}');
 
   // پردازش پیام در پس‌زمینه
   if (message.notification != null) {
-    print('Background Message Title: ${message.notification?.title}');
-    print('Background Message Body: ${message.notification?.body}');
+    debugPrint('Background Message Title: ${message.notification?.title}');
+    debugPrint('Background Message Body: ${message.notification?.body}');
 
     // نمایش نوتیفیکیشن در پس‌زمینه
     await LocalNotificationService.showNotification(

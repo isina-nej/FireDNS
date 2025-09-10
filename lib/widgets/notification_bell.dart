@@ -90,7 +90,7 @@ class _NotificationBellState extends State<NotificationBell>
       }
     } catch (e) {
       // در صورت عدم دسترسی به Provider، خطا را نادیده بگیر
-      print('Error accessing NotificationService: $e');
+      AppLogger.warning('Error accessing NotificationService: $e');
     }
   }
 
@@ -137,7 +137,7 @@ class _NotificationBellState extends State<NotificationBell>
           }
         } catch (e) {
           // در صورت عدم دسترسی به Provider، خطا را نادیده بگیر
-          print('Error accessing NotificationService in build: $e');
+          AppLogger.warning('Error accessing NotificationService in build: $e');
         }
 
         return GestureDetector(
@@ -185,7 +185,7 @@ class _NotificationBellState extends State<NotificationBell>
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.fireRed.withOpacity(0.3),
+                            color: AppColors.fireRed.withValues(alpha: 0.3),
                             blurRadius: 4,
                             spreadRadius: 1,
                           ),

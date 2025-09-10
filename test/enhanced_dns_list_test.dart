@@ -8,8 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('Enhanced DNS List Tests', () {
-    late SharedPreferences mockPrefs;
-
     setUpAll(() async {
       // Initialize GetX
       Get.testMode = true;
@@ -21,7 +19,7 @@ void main() {
         'user_dns_list': '[]',
         'reported_dns_list': '[]',
       });
-      mockPrefs = await SharedPreferences.getInstance();
+      await SharedPreferences.getInstance();
 
       // Put ThemeController
       Get.put(ThemeController());

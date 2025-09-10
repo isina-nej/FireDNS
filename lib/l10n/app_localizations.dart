@@ -2377,11 +2377,9 @@ class AppLocalizations {
     }
   };
 
-
   static String translate(String key, String languageCode) {
     return _localizedStrings[languageCode]?[key] ?? key;
   }
-
 
   static String get(String key, String languageCode) {
     return translate(key, languageCode);

@@ -56,7 +56,7 @@ class SessionApiService {
       // اگر jwt وجود ندارد، یک سشن جدید ایجاد می‌کنیم
       if (currentJwt == null || currentJwt.isEmpty) {
         // اینجا می‌توانیم از initSession استفاده کنیم یا کاربر را به صفحه ورود هدایت کنیم
-        return ApiResponse<SessionData>(
+        return const ApiResponse<SessionData>(
           status: false,
           message: 'لطفا دوباره وارد شوید.',
           errorCode: 'NO_JWT_ERROR',
